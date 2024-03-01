@@ -29,7 +29,7 @@
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <PackageReleaseNotes>grep</PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
-    <Copyright>Copyright (c) 2021,2024 Yung, Chun Kau</Copyright>
+    <Copyright>Copyright (c) 2024 Yung, Chun Kau</Copyright>
     <PackageLicense>GPL-3.0 License</PackageLicense>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageProjectUrl>https://github.com/ck-yung/grep</PackageProjectUrl>
@@ -45,6 +45,17 @@
     <Compile Remove="nupkg\**" />
     <EmbeddedResource Remove="nupkg\**" />
     <None Remove="nupkg\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
