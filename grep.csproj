@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove=".gitignore" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Title>grep</Title>
+    <PackageId>grep</PackageId>
+    <PackageVersion>0.0.1.0</PackageVersion>
+    <Version>0.0.1.0</Version>
+    <Authors>Yung, Chun Kau</Authors>
+    <Description>Simple GREP</Description>
+    <Summary>
+       Provide a simple GREP tool because it is NOT a built-in tool in Windows.
+   </Summary>
+    <PackageTags>grep</PackageTags>
+    <PackAsTool>true</PackAsTool>
+    <Company>https://github.com/ck-yung/grep</Company>
+    <ToolCommandName>grep</ToolCommandName>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+    <PackageReleaseNotes>grep</PackageReleaseNotes>
+    <RepositoryType>git</RepositoryType>
+    <Copyright>Copyright (c) 2021,2024 Yung, Chun Kau</Copyright>
+    <PackageLicense>GPL-3.0 License</PackageLicense>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl>https://github.com/ck-yung/grep</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ck-yung/grep</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageDependencies></PackageDependencies>
+    <PackageDevelopmentDependency></PackageDevelopmentDependency>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="nupkg\**" />
+    <EmbeddedResource Remove="nupkg\**" />
+    <None Remove="nupkg\**" />
+  </ItemGroup>
+
+</Project>
