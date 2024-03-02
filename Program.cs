@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace grep;
@@ -13,6 +14,13 @@ class Program
         {
             RunMain(args);
         }
+        catch (MissingValueException mve)
+        {
+            if (false == string.IsNullOrEmpty(mve.Message))
+            {
+                Console.WriteLine(mve.Message);
+            }
+        }
         catch (ArgumentException ae)
         {
             Console.WriteLine(ae.Message);
@@ -25,16 +33,18 @@ class Program
 
     static bool PrintSyntax(bool isDetailed = false)
     {
-        Console.WriteLine(isDetailed ? $"{nameof(grep)} -?" : $"{nameof(grep)} --help");
+        Console.WriteLine(isDetailed
+            ? $"{nameof(grep)} -?"
+            : $"{nameof(grep)} --help");
         Console.WriteLine($"""
-            {nameof(grep)} [OPTIONS] REGEX FILE [FILE ..]
-            {nameof(grep)} [OPTIONS] REGEX --files-from FILES-FROM
+            {nameof(grep)} [OPTIONS] REGEX [FILE [FILE ..]]
             """);
         if (isDetailed)
         {
             Console.WriteLine($"""
 
             OPTIONS:            DEFAULT  ALTERATIVE
+              --files-from               FILES-FROM
               --verbose         off      on
               --case-sensitive  on       off
               --word            off      on
@@ -52,9 +62,28 @@ class Program
               -l       --file-match on
               -v       --invert-match on
 
-            Read console input if FILES-FROM is -
+            Read redir console input if FILES-FROM is -
+            Read console keyboard input if FILES-FROM is --
             """);
         }
+        return false;
+    }
+
+    static bool PrintVersion()
+    {
+        var asm = Assembly.GetExecutingAssembly();
+        var asmName = asm?.GetName();
+        var nameThe = asmName?.Name ?? "?";
+        var version = asmName?.Version?.ToString() ?? "???";
+        var aa = asm?.GetCustomAttributes(
+            typeof(AssemblyCopyrightAttribute),
+            inherit: false);
+        var copyright = "????";
+        if ((aa!=null) && (aa.Length > 0))
+        {
+            copyright = ((AssemblyCopyrightAttribute)aa[0]).Copyright;
+        }
+        Console.WriteLine($"{nameThe} {version} {copyright}");
         return false;
     }
 
@@ -65,11 +94,15 @@ class Program
     const string OptCountOnly = "--count";
     const string OptFileMatch = "--file-match";
     const string OptInvertMatch = "--invert-match";
+    const string OptColor = "--color";
 
     static bool RunMain(string[] args)
     {
-        if (args.Any((it) => it == "--help")) return PrintSyntax(true);
-        if (args.Length < 2) return PrintSyntax();
+        if (args.Any((it) => it == "--help"))
+            return PrintSyntax(true);
+        if (args.Any((it) => it == "--version"))
+            return PrintVersion();
+        if (args.Length < 1) return PrintSyntax();
 
         var qry = from arg in args
                   join help in new string[] { "-?", "-h"}
@@ -97,6 +130,11 @@ class Program
                 string? lineThe;
                 if ("-" == path)
                 {
+                    if (true != Console.IsInputRedirected)
+                    {
+                        throw new ArgumentException(
+                            "Console input is NOT redirected!");
+                    }
                     IEnumerable<string> PathsFromConsole()
                     {
                         while (null != (lineThe = Console.ReadLine()))
@@ -106,6 +144,24 @@ class Program
                     }
                     return (_) => PathsFromConsole();
                 }
+
+                if ("--" == path)
+                {
+                    if (true == Console.IsInputRedirected)
+                    {
+                        throw new ArgumentException(
+                            "Console input is redirected but -- is assigned to --files-from!");
+                    }
+                    IEnumerable<string> PathsFromConsole()
+                    {
+                        while (null != (lineThe = Console.ReadLine()))
+                        {
+                            yield return lineThe;
+                        }
+                    }
+                    return (_) => PathsFromConsole();
+                }
+
                 if (true != File.Exists(path))
                     throw new ArgumentException($"'{path}' to {OptFilesFrom} is NOT found!");
                 var inpFs = File.OpenText(path);
@@ -204,6 +260,19 @@ class Program
                 return (_) => true;
             });
 
+        (var initColor, flagedArgs) = Parse<bool, bool>(flagedArgs,
+            name: OptColor, init: (_) => ForeColor.Init("Red"),
+            parse: (flag) => (_) => ForeColor.Init(flag),
+            whenMissingValue: ForeColor.Help);
+        if (Console.IsOutputRedirected)
+        {
+            ForeColor.Disable();
+        }
+        else
+        {
+            initColor(true);
+        }
+
         var argsRest = flagedArgs.Select((it) => it.Arg).ToArray();
         if (argsRest.Length < 1)
         {
@@ -262,15 +331,15 @@ class Program
         var ndxLast = 0;
         foreach ((var ndx, var len) in foundQueue)
         {
+            ForeColor.Swith();
             switch (ndxLast, ndx)
             {
                 case (0, 0): break;
                 default:
-                    Console.ForegroundColor = OldColor;
                     Console.Write(lineRead[ndxLast..ndx]);
                     break;
             }
-            Console.ForegroundColor = RedColor;
+            ForeColor.Swith();
             Console.Write(lineRead[ndx..(ndx + len)]);
             ndxLast = ndx + len;
         }
@@ -279,6 +348,7 @@ class Program
         {
             Console.Write(lineRead[ndxLast..]);
         }
+        ForeColor.Reset();
         Console.WriteLine();
         return true;
     };

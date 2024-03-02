@@ -1,10 +1,12 @@
-﻿using Microsoft.VisualBasic;
-using System.Collections.Immutable;
-using System.Linq;
+﻿using System.Collections.Immutable;
 
 namespace grep;
 
 record FlagedArg(bool Flag, string Arg);
+
+class MissingValueException(string Message) : Exception(Message)
+{
+}
 
 static class Options
 {
@@ -64,8 +66,9 @@ static class Options
         }
     }
 
-    static IEnumerable<FlagedArg> SelectWithFlag(IEnumerable<FlagedArg> args,
-        string name)
+    static IEnumerable<FlagedArg> SelectWithFlag(
+        IEnumerable<FlagedArg> args,
+        string name, Func<string> whenMissingValue)
     {
         var itrThe = args.GetEnumerator();
         while (itrThe.MoveNext())
@@ -79,8 +82,7 @@ static class Options
                 }
                 else
                 {
-                    throw new ArgumentException(
-                        $"Missing value to {name}");
+                    throw new MissingValueException(whenMissingValue());
                 }
             }
             else
@@ -92,17 +94,21 @@ static class Options
 
     public static (Func<T, R>, IEnumerable<FlagedArg>) Parse<T, R>(
         IEnumerable<FlagedArg> args, string name,
-        Func<T, R> init, Func<string, Func<T, R>> parse)
+        Func<T, R> init, Func<string, Func<T, R>> parse,
+        Func<string>? whenMissingValue = null)
     {
-        var qryFlaged = SelectWithFlag(args, name)
+        string DefaultMissingValue() => $"Missing value to {name}";
+
+        var qryFlaged = SelectWithFlag(args, name,
+            whenMissingValue ?? DefaultMissingValue)
             .GroupBy((it) => it.Flag)
             .ToDictionary((grp) => grp.Key,
             elementSelector: (grp) => grp.AsEnumerable());
 
-        IEnumerable<FlagedArg>? qryNotFound;
-        if (false == qryFlaged.TryGetValue(false, out qryNotFound))
+        IEnumerable<FlagedArg> qryNotFound = [];
+        if (qryFlaged.TryGetValue(false, out var tmpNotFound))
         {
-            qryNotFound = Array.Empty<FlagedArg>();
+            qryNotFound = tmpNotFound;
         }
 
         if (qryFlaged.TryGetValue(true, out var qryFound))
