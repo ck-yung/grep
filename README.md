@@ -40,7 +40,7 @@ OPTIONS:            DEFAULT  ALTERATIVE
 
 ## Demo
 
-![Color Feature](https://github.com/ck-yung/grep/blob/main/images/help.gif)
+![Color Feature](https://github.com/ck-yung/grep/blob/master/images/help.gif)
 
 Yung, Chun Kau
 
