@@ -24,6 +24,7 @@ OPTIONS:            DEFAULT  ALTERATIVE
   --count           off      on
   --file-match      off      on
   --invert-match    off      on
+  --color           RED      COLOR
 ```
 ## Short-Cut
 ```
