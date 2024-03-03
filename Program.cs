@@ -72,6 +72,7 @@ class Program
               --file-match      off      on
               --invert-match    off      on
               --quiet           off      on
+              --max-count       UNLIMIT  NUMBER
               --files-from               FILES-FROM
               --file                     REGEX-FILE
 
@@ -83,6 +84,7 @@ class Program
               -l       --file-match on
               -v       --invert-match on
               -q       --quiet on
+              -m       --max-count
               -T       --files-from
               -f       --file
 
@@ -121,6 +123,7 @@ class Program
     const string OptColor = "--color";
     const string OptWildFile = "--file";
     const string OptQuiet = "--quiet";
+    const string OptMaxCount = "--max-count";
 
     static bool LogVerboseImpl(string msg)
     {
@@ -156,6 +159,7 @@ class Program
         {
             ["-T"] = OptFilesFrom,
             ["-f"] = OptWildFile,
+            ["-m"] = OptMaxCount,
         }.ToImmutableDictionary(), new Dictionary<string, string[]>()
         {
             ["-i"] = [OptCaseSensitive, "off"],
@@ -187,6 +191,27 @@ class Program
                     return Never<string>.Holds;
                 }
                 return (msg) => LogVerboseImpl(msg);
+            });
+
+        (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
+            name: OptMaxCount, init: Always<bool>.True,
+            parse: (numThe) =>
+            {
+                if (int.TryParse(numThe, out var maxThe))
+                {
+                    if (maxThe < 1)
+                    {
+                        throw new ArgumentException(
+                            $"{maxThe} to {OptMaxCount} is an invalid number!");
+                    }
+                    Counter.SetLimit(maxThe);
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        $"'{numThe}' to {OptMaxCount} is NOT an number!");
+                }
+                return Always<bool>.True;
             });
 
         (var filesFrom, flagedArgs) = Parse<string[], IEnumerable<string>>(
@@ -262,15 +287,16 @@ class Program
             });
 
         (var _, flagedArgs) = Parse<bool, bool>(flagedArgs,
-            name: OptLineNumber, init: (_) => true,
+            name: OptLineNumber, init: Always<bool>.True,
             parse: (flag) =>
             {
                 if (flag == "on")
                 {
-                    PrintLineNumber = (it) => Console.Write($"{it}:");
+                    Counter.EnablePrint(flag: true);
+                    //PrintLineNumber = (it) => Console.Write($"{it}:"); ** TODO
                     return (_) => true;
                 };
-                return (_) => true;
+                return Always<bool>.True;
             });
 
         (var postMatch, flagedArgs) = Parse<PostMatchParam, bool>(flagedArgs,
@@ -298,9 +324,10 @@ class Program
                     DefaultPostMatch = (it) =>
                     {
                         Console.WriteLine(it.Path + ":");
-                        PrintLineNumber(it.Index);
+                        //PrintLineNumber(it.Index);
+                        var rtn = Counter.Print(it.Index);
                         Console.WriteLine(it.Line);
-                        return true;
+                        return rtn;
                     };
                     return (matches) => true != matches.Any();
                 }
@@ -335,7 +362,7 @@ class Program
                         flagFound = false;
                     };
                 };
-                return (_) => true;
+                return Always<bool>.True;
             });
 
         (var generateRegex, flagedArgs) = Parse<string[], WildFileResult>(
@@ -433,6 +460,7 @@ class Program
             (var inpFs, var close, var printFilename) = OpenTextFile(filename);
             int cntLine = 0;
             int cntFound = 0;
+            Counter.Reset();
             string? lineRead;
             while (null != (lineRead = inpFs.ReadLine()))
             {
@@ -471,7 +499,7 @@ class Program
             () => Console.Write($"{filename}:"));
     }
 
-    static Action<int> PrintLineNumber { get; set; } = (_) => { };
+    //static Action<int> PrintLineNumber { get; set; } = (_) => { }; ** TODO
     static Action<string, int> PrintFoundCount { get; set; } = (_, _)  => { };
     record PostMatchParam(string Path, int Index, string Line,
         MatchCollection Matches, Action PrintFilename);
@@ -488,7 +516,8 @@ class Program
             lastIndex = match.Index + match.Length;
         }
         printFilename();
-        PrintLineNumber(lineNbr);
+        //PrintLineNumber(lineNbr); ** TODO
+        var rtn = Counter.Print(lineNbr);
         var ndxLast = 0;
         foreach ((var ndx, var len) in foundQueue)
         {
@@ -511,6 +540,6 @@ class Program
         }
         ForeColor.Reset();
         Console.WriteLine();
-        return true;
+        return rtn;
     };
 }

@@ -3,14 +3,55 @@ using System.Text.RegularExpressions;
 
 namespace grep;
 
-public class Always<T>
+internal class Always<T>
 {
     static public readonly Func<T, bool> True = (_) => true;
 }
 
-public class Never<T>
+internal class Never<T>
 {
     static public readonly Func<T, bool> Holds = (_) => false;
+}
+
+internal static class Counter
+{
+    static Action<int> PrintAction = (_) => { };
+
+    public static void EnablePrint(bool flag)
+    {
+        if (flag)
+        {
+            PrintAction =
+                (number) => Console.Write($"{number}:");
+        }
+        else
+        {
+            PrintAction = (_) => { };
+        }
+    }
+
+    public static void Reset()
+    {
+        Index = 0;
+    }
+
+    static int Index = 0;
+    static Func<int, bool> CheckByMax { get; set; } = Always<int>.True;
+
+    public static bool SetLimit(int max)
+    {
+        if (max < 1) return false;
+        CheckByMax = (number) => number < max;
+        return true;
+    }
+
+    /// <returns>False if no more printing is allowed</returns>
+    public static bool Print(int lineNumber)
+    {
+        PrintAction(lineNumber);
+        Index += 1;
+        return CheckByMax(Index);
+    }
 }
 
 record WildFileResult(
