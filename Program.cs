@@ -31,11 +31,31 @@ class Program
         }
     }
 
+    static bool LogDebugFlag { get; set; } = false;
+
+    static void LogDebug(string format, params object[] args)
+    {
+        if (LogDebugFlag)
+        {
+            var msg = String.Format(format, args);
+            Console.WriteLine($"dbg: {msg}");
+        }
+    }
+
+    static void LogDebug(string format, string[] args)
+    {
+        if (LogDebugFlag)
+        {
+            var msg = String.Format(format, string.Join(";", args));
+            Console.WriteLine($"dbg: {msg}");
+        }
+    }
+
     static bool PrintSyntax(bool isDetailed = false)
     {
-        Console.WriteLine(isDetailed
-            ? $"{nameof(grep)} -?"
-            : $"{nameof(grep)} --help");
+        if (false == isDetailed)
+            Console.WriteLine($"{nameof(grep)} -?");
+
         Console.WriteLine($"""
             {nameof(grep)} [OPTIONS] REGEX [FILE [FILE ..]]
             """);
@@ -44,28 +64,30 @@ class Program
             Console.WriteLine($"""
 
             OPTIONS:            DEFAULT  ALTERATIVE
-              --verbose         off      on
+              --color           RED      COLOR
               --case-sensitive  on       off
               --word            off      on
               --line-number     off      on
               --count           off      on
               --file-match      off      on
               --invert-match    off      on
+              --quiet           off      on
               --files-from               FILES-FROM
               --file                     REGEX-FILE
 
             Short-Cut
-              -T       --files-from
-              -f       --file
               -i       --case-sensitive off
               -w       --word on
               -n       --line-number on
               -c       --count on
               -l       --file-match on
               -v       --invert-match on
+              -q       --quiet on
+              -T       --files-from
+              -f       --file
 
-            Read redir console input if FILES-FROM or FILE is -
-            Read console keyboard input if FILES-FROM is --
+            Read redir console input if FILES-FROM or REGEX-FILE is -
+            Read redir console input if no FILE is given.
             """);
         }
         return false;
@@ -85,7 +107,7 @@ class Program
         {
             copyright = ((AssemblyCopyrightAttribute)aa[0]).Copyright;
         }
-        Console.WriteLine($"{nameThe}/C# {version} {copyright}");
+        Console.WriteLine($"{nameThe}/C# v{version} {copyright}");
         return false;
     }
 
@@ -98,17 +120,34 @@ class Program
     const string OptInvertMatch = "--invert-match";
     const string OptColor = "--color";
     const string OptWildFile = "--file";
+    const string OptQuiet = "--quiet";
+
+    static bool LogVerboseImpl(string msg)
+    {
+        Console.WriteLine(msg);
+        return true;
+    }
+    static Func<string, bool> LogVerbose { get; set; }
+        = (msg) => LogVerboseImpl(msg);
+
+    static bool CheckPathExists(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return false;
+        if (File.Exists(path)) return true;
+        LogVerbose($"File '{path}' is NOT found.");
+        return false;
+    }
 
     static bool RunMain(string[] args)
     {
-        if (args.Any((it) => it == "--help"))
+        if (args.Any((it) => it == "-?"))
             return PrintSyntax(true);
         if (args.Any((it) => it == "--version"))
             return PrintVersion();
         if (args.Length < 1) return PrintSyntax();
 
         var qry = from arg in args
-                  join help in new string[] { "-?", "-h"}
+                  join help in new string[] { "--help", "-h" }
                   on arg equals help into helpQuery
                   from found in helpQuery select found;
         if (qry.Any()) return PrintSyntax();
@@ -125,25 +164,43 @@ class Program
             ["-c"] = [OptCountOnly, "on"],
             ["-l"] = [OptFileMatch, "on"],
             ["-v"] = [OptInvertMatch, "on"],
+            ["-q"] = [OptQuiet, "on"],
         }.ToImmutableDictionary());
 
-        (var logDebug, flagedArgs) = Parse<string, bool>(flagedArgs,
+        (var _, flagedArgs) = Parse<string, bool>(flagedArgs,
             name: "--debug", init: (_) => false,
             parse: (flag) =>
             {
                 if (flag == "on")
                 {
-                    return (msg) =>
-                    {
-                        Console.WriteLine($"dbg: {msg}");
-                        return true;
-                    };
+                    LogDebugFlag = true;
                 }
                 return (_) => false;
             });
 
-        (var filesFrom, flagedArgs) = Parse<bool, IEnumerable<string>>(flagedArgs,
-            name: OptFilesFrom, init: (_) => Array.Empty<string>(),
+        (LogVerbose, flagedArgs) = Parse<string, bool>(flagedArgs,
+            name: OptQuiet, init: (msg) => LogVerboseImpl(msg),
+            parse: (flag) =>
+            {
+                if (flag == "on")
+                {
+                    return Never<string>.Holds;
+                }
+                return (msg) => LogVerboseImpl(msg);
+            });
+
+        (var filesFrom, flagedArgs) = Parse<string[], IEnumerable<string>>(
+            flagedArgs, name: OptFilesFrom,
+            init: (paths) =>
+            {
+                if (paths.Length > 0)
+                    return paths
+                    .Select((it) => it.Trim())
+                    .Where((it) => CheckPathExists(it))
+                    .Distinct();
+                if (Console.IsInputRedirected) return [""];
+                throw new ArgumentException("No file is given.");
+            },
             parse: (path) =>
             {
                 string? lineThe;
@@ -161,28 +218,16 @@ class Program
                             yield return lineThe;
                         }
                     }
-                    return (_) => PathsFromConsole();
-                }
-
-                if ("--" == path)
-                {
-                    if (true == Console.IsInputRedirected)
-                    {
-                        throw new ArgumentException(
-                            "Console input is redirected but -- is assigned to --files-from!");
-                    }
-                    IEnumerable<string> PathsFromConsole()
-                    {
-                        while (null != (lineThe = Console.ReadLine()))
-                        {
-                            yield return lineThe;
-                        }
-                    }
-                    return (_) => PathsFromConsole();
+                    return (paths) => PathsFromConsole()
+                    .Union(paths)
+                    .Select((it) => it.Trim())
+                    .Where((it) => CheckPathExists(it))
+                    .Distinct();
                 }
 
                 if (true != File.Exists(path))
-                    throw new ArgumentException($"'{path}' to {OptFilesFrom} is NOT found!");
+                    throw new ArgumentException(
+                        $"File '{path}' to {OptFilesFrom} is NOT found!");
                 var inpFs = File.OpenText(path);
                 IEnumerable<string> FilesFromFile()
                 {
@@ -192,7 +237,11 @@ class Program
                     }
                     inpFs.Close();
                 }
-                return (_) => FilesFromFile();
+                return (paths) => FilesFromFile()
+                .Union(paths)
+                .Select((it) => it.Trim())
+                .Where((it) => CheckPathExists(it))
+                .Distinct();
             });
 
         (var toWord, flagedArgs) = Parse<string, string>(flagedArgs,
@@ -272,7 +321,17 @@ class Program
                     };
                     PrintFoundCount = (path, count) =>
                     {
-                        if (flagFound) Console.WriteLine(path);
+                        if (flagFound)
+                        {
+                            if (string.IsNullOrEmpty(path))
+                            {
+                                Console.WriteLine("The input is matched to the regex.");
+                            }
+                            else
+                            {
+                                Console.WriteLine(path);
+                            }
+                        }
                         flagFound = false;
                     };
                 };
@@ -288,17 +347,17 @@ class Program
                     Console.WriteLine("No Regex is found.");
                     throw new MissingValueException("");
                 }
-                logDebug($"< argsThe='{string.Join(";", argsThe)}'");
+                LogDebug("< argsThe='{0}'", argsThe);
                 var regEx = makeRegex(toWord(argsThe[0]));
-                logDebug($"Regex('{argsThe[0]}') => '{regEx}'");
+                LogDebug("Regex('{0}') => '{1}'", argsThe[0], regEx);
                 argsThe = argsThe.Skip(1).ToArray();
-                logDebug($"> argsThe='{string.Join(";", argsThe)}'");
+                LogDebug("> argsThe='{0}'", argsThe);
                 return new(argsThe, (it) => regEx.Matches(it));
             },
-            parse: (path) =>
+            parse: (regexFrom) =>
             {
                 string[] lines;
-                if (path == "-")
+                if (regexFrom == "-")
                 {
                     if (true != Console.IsInputRedirected)
                     {
@@ -317,16 +376,14 @@ class Program
                 }
                 else
                 {
-                    if (true != File.Exists(path))
+                    if (true != File.Exists(regexFrom))
                     {
                         throw new ArgumentException(
-                            $"File '{path}' to {OptWildFile} is NOT found!");
+                            $"File '{regexFrom}' to {OptWildFile} is NOT found!");
                     }
-                    lines = File.ReadAllLines(path);
+                    lines = File.ReadAllLines(regexFrom);
                 }
 
-                var fakeWild = new Regex("a");
-                var falseMatches = fakeWild.Matches("z");
                 var allWilds = lines
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0)
@@ -337,20 +394,20 @@ class Program
                 if (allWilds.Length == 0)
                 {
                     throw new ArgumentException(
-                        $"File '{path}' to {OptWildFile} is EMPTY!");
+                        $"Regex file '{regexFrom}' to {OptWildFile} is blank!");
                 }
 
-                Func<string, MatchCollection> funcThe = (it) =>
+                var fakeWild = new Regex("a");
+                var falseMatches = fakeWild.Matches("z");
+                Func<string, MatchCollection> funcMatch = (it) =>
                 {
-                    foreach (var wild in allWilds)
-                    {
-                        var matchResult = wild.Matches(it);
-                        if (matchResult.Any()) return matchResult;
-                    }
-                    return falseMatches;
+                    var matchesFound = allWilds
+                    .Select((it2) => it2.Matches(it))
+                    .FirstOrDefault((it2) => it2.Any());
+                    return matchesFound ?? falseMatches;
                 };
 
-                return (argsThe) => new(argsThe, funcThe);
+                return (argsThe) => new(argsThe, funcMatch);
             });
 
         (var initColor, flagedArgs) = Parse<bool, bool>(flagedArgs,
@@ -369,59 +426,60 @@ class Program
         (var argsRest, var matchFunc) = generateRegex(
             flagedArgs.Select((it) => it.Arg).ToArray());
 
-        foreach (var filename in filesFrom(true)
-            .Select((it) => it.Trim())
-            .Where((it) => File.Exists(it))
-            .Union(
-            argsRest
-            .Where((it) => File.Exists(it) || it == "-"))
-            .Distinct())
+        var cntFileProcessed = 0;
+        foreach (var filename in filesFrom(argsRest))
         {
-            logDebug($"File:'{filename}'");
-            (var inpFs, var close) = OpenTextFile(filename);
+            LogDebug("File:'{0}'", filename);
+            (var inpFs, var close, var printFilename) = OpenTextFile(filename);
             int cntLine = 0;
             int cntFound = 0;
             string? lineRead;
             while (null != (lineRead = inpFs.ReadLine()))
             {
                 cntLine += 1;
-                logDebug($"{cntLine}:'{lineRead}'");
+                LogDebug("{0}:'{1}'", cntLine, lineRead);
                 var matches = matchFunc(lineRead);
                 if (true != checkMatches(matches)) continue;
                 cntFound += 1;
-                if (true != postMatch(new(filename, cntLine, lineRead, matches)))
+                if (true != postMatch(new(filename, cntLine, lineRead,
+                    matches, printFilename)))
                 {
                     break;
                 }
             }
             close(inpFs);
             PrintFoundCount(filename, cntFound);
+            cntFileProcessed += 1;
+        }
+        if (1 > cntFileProcessed)
+        {
+            LogVerbose("No file is processed.");
         }
         return true;
     }
 
-    static (StreamReader, Action<StreamReader>) OpenTextFile(string filename)
+    static (StreamReader, Action<StreamReader>, Action PrintFilename)
+        OpenTextFile(string filename)
     {
-        if (filename == "-")
+        if (string.IsNullOrEmpty(filename))
         {
-            if (true != Console.IsInputRedirected)
-            {
-                throw new ArgumentException(
-                    "Console input is NOT redir but FILE '-' is found");
-            }
             return (new StreamReader(
-                Console.OpenStandardInput()), (_) => { });
+                Console.OpenStandardInput()),
+                (_) => { }, () => { });
         }
-        return (File.OpenText(filename), (it) => it.Close());
+        return (File.OpenText(filename), (it) => it.Close(),
+            () => Console.Write($"{filename}:"));
     }
 
     static Action<int> PrintLineNumber { get; set; } = (_) => { };
     static Action<string, int> PrintFoundCount { get; set; } = (_, _)  => { };
-    record PostMatchParam(string Path, int Index, string Line, MatchCollection Matches);
+    record PostMatchParam(string Path, int Index, string Line,
+        MatchCollection Matches, Action PrintFilename);
 
     static Func<PostMatchParam, bool> DefaultPostMatch { get; set; } = (param) =>
     {
-        (var filename, var lineNbr, var lineRead, var matches) = param;
+        (var filename, var lineNbr, var lineRead,
+        var matches, var printFilename) = param;
         var foundQueue = new List<(int, int)>();
         var lastIndex = 0;
         foreach (Match match in matches)
@@ -429,7 +487,7 @@ class Program
             foundQueue.Add((match.Index, match.Length));
             lastIndex = match.Index + match.Length;
         }
-        Console.Write($"{filename}:");
+        printFilename();
         PrintLineNumber(lineNbr);
         var ndxLast = 0;
         foreach ((var ndx, var len) in foundQueue)

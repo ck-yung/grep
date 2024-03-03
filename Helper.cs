@@ -3,6 +3,16 @@ using System.Text.RegularExpressions;
 
 namespace grep;
 
+public class Always<T>
+{
+    static public readonly Func<T, bool> True = (_) => true;
+}
+
+public class Never<T>
+{
+    static public readonly Func<T, bool> Holds = (_) => false;
+}
+
 record WildFileResult(
     string[] Args,
     Func<string, MatchCollection> Match);
@@ -37,6 +47,12 @@ static class ForeColor
         {
             Disable();
             return true;
+        }
+
+        if (0 == string.Compare("color", color, ignoreCase: true))
+        {
+            Help();
+            throw new MissingValueException("");
         }
 
         if (0 == string.Compare("inverse", color, ignoreCase: true))

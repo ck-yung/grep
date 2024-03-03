@@ -10,35 +10,35 @@ grep [OPTIONS] REGEX FILE [FILE ..]
 ```
 grep Syntax README.md
 
-dir2 -sb *cs | grep using -T -
+dir2 -sb *cs | grep syntax -niT -
 ```
 
 ## Options
 ```
-OPTIONS:            DEFAULT  ALTERATIVE
-  --files-from               FILES-FROM
-  --verbose         off      on
+  NAME              DEFAULT  ALTERATIVE
+  --color           READ     color
   --case-sensitive  on       off
   --word            off      on
   --line-number     off      on
   --count           off      on
   --file-match      off      on
   --invert-match    off      on
-  --color           RED      COLOR
+  --files-from               FILES-FROM
+  --file                     REGEX-FILE
 ```
 ## Short-Cut
 ```
-  -T       --files-from
   -i       --case-sensitive off
   -w       --word on
   -n       --line-number on
   -c       --count on
   -l       --file-match on
   -v       --invert-match on
+  -T       --files-from
+  -f       --file
 ```
-* Read redir console input if ```FILE``` is -
-* Read redir console input if ```FILES-FROM``` is -
-* Read console keyboard input if ```FILES-FROM``` is --
+
+* Read redir console input if ```FILES-FROM``` or ```REG-FILE``` is -
 
 ## Demo
 
