@@ -41,7 +41,7 @@ OPTIONS:            DEFAULT  ALTERATIVE
 
 ## Demo
 
-![Color Feature](https://dev.azure.com/yungchunkau/_git/info?path=/grep_demo01.gif)
+![Color Feature](https://raw.githubusercontent.com/ck-yung/grep/master/images/help.gif)
 
 Yung, Chun Kau
 
