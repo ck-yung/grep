@@ -42,9 +42,14 @@ OPTIONS:            DEFAULT  ALTERATIVE
 ## Demo
 
 ![Color Feature](https://dev.azure.com/yungchunkau/_git/info?path=/grep_demo01.gif)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fck-yung%2Fgrep.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fck-yung%2Fgrep?ref=badge_shield)
 
 Yung, Chun Kau
 
 <yung.chun.kau@gmail.com>
 
 2024 March
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fck-yung%2Fgrep.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fck-yung%2Fgrep?ref=badge_large)
