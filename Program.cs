@@ -72,6 +72,7 @@ class Program
               --file-match      off      on
               --invert-match    off      on
               --quiet           off      on
+              --show-filename   on       off
               --max-count       UNLIMIT  NUMBER
               --files-from               FILES-FROM
               --file                     REGEX-FILE
@@ -84,6 +85,7 @@ class Program
               -l       --file-match on
               -v       --invert-match on
               -q       --quiet on
+              -h       --show-filename off
               -m       --max-count
               -T       --files-from
               -f       --file
@@ -124,6 +126,7 @@ class Program
     const string OptWildFile = "--file";
     const string OptQuiet = "--quiet";
     const string OptMaxCount = "--max-count";
+    const string OptShowFilename = "--show-filename";
 
     static bool LogVerboseImpl(string msg)
     {
@@ -132,6 +135,14 @@ class Program
     }
     static Func<string, bool> LogVerbose { get; set; }
         = (msg) => LogVerboseImpl(msg);
+
+    static bool PrintFilenameImpl(string filename)
+    {
+        Console.Write(filename+":");
+        return true;
+    }
+    static Func<string, bool> PrintFilename { get; set; }
+        = (path) => PrintFilenameImpl(path);
 
     static bool CheckPathExists(string path)
     {
@@ -143,17 +154,16 @@ class Program
 
     static bool RunMain(string[] args)
     {
-        if (args.Any((it) => it == "-?"))
-            return PrintSyntax(true);
         if (args.Any((it) => it == "--version"))
             return PrintVersion();
-        if (args.Length < 1) return PrintSyntax();
 
         var qry = from arg in args
-                  join help in new string[] { "--help", "-h" }
+                  join help in new string[] { "--help", "-?" }
                   on arg equals help into helpQuery
                   from found in helpQuery select found;
-        if (qry.Any()) return PrintSyntax();
+        if (qry.Any()) return PrintSyntax(isDetailed: true);
+
+        if (args.Length < 1) return PrintSyntax();
 
         var flagedArgs = args.ToFlagedArgs(new Dictionary<string, string>()
         {
@@ -169,6 +179,7 @@ class Program
             ["-l"] = [OptFileMatch, "on"],
             ["-v"] = [OptInvertMatch, "on"],
             ["-q"] = [OptQuiet, "on"],
+            ["-h"] = [OptShowFilename, "off"],
         }.ToImmutableDictionary());
 
         (var _, flagedArgs) = Parse<string, bool>(flagedArgs,
@@ -212,6 +223,17 @@ class Program
                         $"'{numThe}' to {OptMaxCount} is NOT an number!");
                 }
                 return Always<bool>.True;
+            });
+
+        (PrintFilename, flagedArgs) = Parse<string, bool>(flagedArgs,
+            name: OptShowFilename, init: (path) => PrintFilenameImpl(path),
+            parse: (flag) =>
+            {
+                if (0 == string.Compare("off", flag, ignoreCase: true))
+                {
+                    return Never<string>.Holds;
+                }
+                return (path) => PrintFilenameImpl(path);
             });
 
         (var filesFrom, flagedArgs) = Parse<string[], IEnumerable<string>>(
@@ -293,7 +315,6 @@ class Program
                 if (flag == "on")
                 {
                     Counter.EnablePrint(flag: true);
-                    //PrintLineNumber = (it) => Console.Write($"{it}:"); ** TODO
                     return (_) => true;
                 };
                 return Always<bool>.True;
@@ -496,10 +517,9 @@ class Program
                 (_) => { }, () => { });
         }
         return (File.OpenText(filename), (it) => it.Close(),
-            () => Console.Write($"{filename}:"));
+            () => PrintFilename(filename));
     }
 
-    //static Action<int> PrintLineNumber { get; set; } = (_) => { }; ** TODO
     static Action<string, int> PrintFoundCount { get; set; } = (_, _)  => { };
     record PostMatchParam(string Path, int Index, string Line,
         MatchCollection Matches, Action PrintFilename);
@@ -516,7 +536,6 @@ class Program
             lastIndex = match.Index + match.Length;
         }
         printFilename();
-        //PrintLineNumber(lineNbr); ** TODO
         var rtn = Counter.Print(lineNbr);
         var ndxLast = 0;
         foreach ((var ndx, var len) in foundQueue)

@@ -16,13 +16,15 @@ dir2 -sb *cs | grep syntax -niT -
 ## Options
 ```
   NAME              DEFAULT  ALTERATIVE
-  --color           READ     color
+  --color           RED      color
   --case-sensitive  on       off
   --word            off      on
   --line-number     off      on
   --count           off      on
   --file-match      off      on
   --invert-match    off      on
+  --show-filename   on       off
+  --max-count       UNLIMIT  NUMBER
   --files-from               FILES-FROM
   --file                     REGEX-FILE
 ```
@@ -34,6 +36,8 @@ dir2 -sb *cs | grep syntax -niT -
   -c       --count on
   -l       --file-match on
   -v       --invert-match on
+  -h       --show-filename off
+  -m       --max-count
   -T       --files-from
   -f       --file
 ```
