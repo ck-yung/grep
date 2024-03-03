@@ -1,5 +1,5 @@
 # grep
-**v0.0.2.0**
+**v0.0.3.0**
 
 ## Syntax:
 ```
@@ -36,6 +36,7 @@ OPTIONS:            DEFAULT  ALTERATIVE
   -l       --file-match on
   -v       --invert-match on
 ```
+* Read redir console input if ```FILE``` is -
 * Read redir console input if ```FILES-FROM``` is -
 * Read console keyboard input if ```FILES-FROM``` is --
 

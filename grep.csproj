@@ -18,7 +18,7 @@
     <PackageVersion>0.0.2.0</PackageVersion>
     <Version>0.0.2.0</Version>
     <Authors>Yung, Chun Kau</Authors>
-    <Description>Simple GREP</Description>
+    <Description>Simple grep</Description>
     <Summary>
        Provide a simple GREP tool because it is NOT a built-in tool in Windows.
    </Summary>
@@ -39,6 +39,8 @@
     <PackageDevelopmentDependency></PackageDevelopmentDependency>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <AssemblyVersion>0.0.3.0</AssemblyVersion>
+    <FileVersion>0.0.3.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

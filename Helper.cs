@@ -1,10 +1,19 @@
-﻿namespace grep;
+﻿using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+
+namespace grep;
+
+record WildFileResult(
+    string[] Args,
+    Func<string, MatchCollection> Match);
 
 static class ForeColor
 {
     static bool State = false;
     static ConsoleColor OldForeground { get; set; }
-    static ConsoleColor FoundForeground { get; set; }
+    static ConsoleColor OldBackground { get; set; }
+    static ConsoleColor HighlightForeground { get; set; }
+    static ConsoleColor HighlightBackground { get; set; }
 
     static bool TryParseToForeColor(string arg, out ConsoleColor output)
     {
@@ -22,7 +31,6 @@ static class ForeColor
         return rtn;
     }
 
-
     public static bool Init(string color)
     {
         if (0 == string.Compare("off", color, ignoreCase: true))
@@ -31,10 +39,27 @@ static class ForeColor
             return true;
         }
 
+        if (0 == string.Compare("inverse", color, ignoreCase: true))
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                HighlightForeground = Console.BackgroundColor;
+                HighlightBackground = Console.ForegroundColor;
+            }
+            else
+            {
+                HighlightForeground = ConsoleColor.Red;
+                HighlightBackground = Console.BackgroundColor;
+            }
+            return true;
+        }
+
         OldForeground = Console.ForegroundColor;
+        OldBackground = Console.BackgroundColor;
         if (TryParseToForeColor(color, out var tmp))
         {
-            FoundForeground = tmp;
+            HighlightForeground = tmp;
+            HighlightBackground = Console.BackgroundColor;
         }
         else
         {
@@ -54,7 +79,8 @@ static class ForeColor
 
     public static Action Swith { get; private set; } = () =>
     {
-        Console.ForegroundColor = State ? FoundForeground : OldForeground;
+        Console.ForegroundColor = State ? HighlightForeground : OldForeground;
+        Console.BackgroundColor = State ? HighlightBackground : OldBackground;
         State = !State;
     };
 
@@ -93,6 +119,12 @@ static class ForeColor
         Console.WriteLine($"Value to '--color' :");
         //                    123456789.12.
         Console.WriteLine($"\tOff          Disable");
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        { //                      123456789.12.
+            Console.WriteLine($"\tInverse      Switch Background and Foreground");
+        }
+
         foreach (ConsoleColor cr2 in Enum.GetValues(typeof(ConsoleColor)))
         {
             Console.Write($"\t{cr2,-12}");

@@ -44,7 +44,6 @@ class Program
             Console.WriteLine($"""
 
             OPTIONS:            DEFAULT  ALTERATIVE
-              --files-from               FILES-FROM
               --verbose         off      on
               --case-sensitive  on       off
               --word            off      on
@@ -52,9 +51,12 @@ class Program
               --count           off      on
               --file-match      off      on
               --invert-match    off      on
-            
+              --files-from               FILES-FROM
+              --file                     REGEX-FILE
+
             Short-Cut
               -T       --files-from
+              -f       --file
               -i       --case-sensitive off
               -w       --word on
               -n       --line-number on
@@ -62,7 +64,7 @@ class Program
               -l       --file-match on
               -v       --invert-match on
 
-            Read redir console input if FILES-FROM is -
+            Read redir console input if FILES-FROM or FILE is -
             Read console keyboard input if FILES-FROM is --
             """);
         }
@@ -83,7 +85,7 @@ class Program
         {
             copyright = ((AssemblyCopyrightAttribute)aa[0]).Copyright;
         }
-        Console.WriteLine($"{nameThe} {version} {copyright}");
+        Console.WriteLine($"{nameThe}/C# {version} {copyright}");
         return false;
     }
 
@@ -95,6 +97,7 @@ class Program
     const string OptFileMatch = "--file-match";
     const string OptInvertMatch = "--invert-match";
     const string OptColor = "--color";
+    const string OptWildFile = "--file";
 
     static bool RunMain(string[] args)
     {
@@ -113,6 +116,7 @@ class Program
         var flagedArgs = args.ToFlagedArgs(new Dictionary<string, string>()
         {
             ["-T"] = OptFilesFrom,
+            ["-f"] = OptWildFile,
         }.ToImmutableDictionary(), new Dictionary<string, string[]>()
         {
             ["-i"] = [OptCaseSensitive, "off"],
@@ -122,6 +126,21 @@ class Program
             ["-l"] = [OptFileMatch, "on"],
             ["-v"] = [OptInvertMatch, "on"],
         }.ToImmutableDictionary());
+
+        (var logDebug, flagedArgs) = Parse<string, bool>(flagedArgs,
+            name: "--debug", init: (_) => false,
+            parse: (flag) =>
+            {
+                if (flag == "on")
+                {
+                    return (msg) =>
+                    {
+                        Console.WriteLine($"dbg: {msg}");
+                        return true;
+                    };
+                }
+                return (_) => false;
+            });
 
         (var filesFrom, flagedArgs) = Parse<bool, IEnumerable<string>>(flagedArgs,
             name: OptFilesFrom, init: (_) => Array.Empty<string>(),
@@ -260,6 +279,80 @@ class Program
                 return (_) => true;
             });
 
+        (var generateRegex, flagedArgs) = Parse<string[], WildFileResult>(
+            flagedArgs, name: OptWildFile,
+            init: (argsThe) =>
+            {
+                if (argsThe.Length == 0)
+                {
+                    Console.WriteLine("No Regex is found.");
+                    throw new MissingValueException("");
+                }
+                logDebug($"< argsThe='{string.Join(";", argsThe)}'");
+                var regEx = makeRegex(toWord(argsThe[0]));
+                logDebug($"Regex('{argsThe[0]}') => '{regEx}'");
+                argsThe = argsThe.Skip(1).ToArray();
+                logDebug($"> argsThe='{string.Join(";", argsThe)}'");
+                return new(argsThe, (it) => regEx.Matches(it));
+            },
+            parse: (path) =>
+            {
+                string[] lines;
+                if (path == "-")
+                {
+                    if (true != Console.IsInputRedirected)
+                    {
+                        throw new ArgumentException(
+                            $"Console input is NOT redir but '-' is assigned to {OptWildFile}");
+                    }
+                    IEnumerable<string> ReadConsoleAllLines()
+                    {
+                        string? lineRead;
+                        while (null != (lineRead = Console.ReadLine()))
+                        {
+                            yield return lineRead;
+                        }
+                    }
+                    lines = ReadConsoleAllLines().ToArray();
+                }
+                else
+                {
+                    if (true != File.Exists(path))
+                    {
+                        throw new ArgumentException(
+                            $"File '{path}' to {OptWildFile} is NOT found!");
+                    }
+                    lines = File.ReadAllLines(path);
+                }
+
+                var fakeWild = new Regex("a");
+                var falseMatches = fakeWild.Matches("z");
+                var allWilds = lines
+                .Select((it) => it.Trim())
+                .Where((it) => it.Length > 0)
+                .Distinct()
+                .Select((it) => makeRegex(toWord(it)))
+                .ToArray();
+
+                if (allWilds.Length == 0)
+                {
+                    throw new ArgumentException(
+                        $"File '{path}' to {OptWildFile} is EMPTY!");
+                }
+
+                Func<string, MatchCollection> funcThe = (it) =>
+                {
+                    foreach (var wild in allWilds)
+                    {
+                        var matchResult = wild.Matches(it);
+                        if (matchResult.Any()) return matchResult;
+                    }
+                    return falseMatches;
+                };
+
+                return (argsThe) => new(argsThe, funcThe);
+            });
+
         (var initColor, flagedArgs) = Parse<bool, bool>(flagedArgs,
             name: OptColor, init: (_) => ForeColor.Init("Red"),
             parse: (flag) => (_) => ForeColor.Init(flag),
@@ -273,30 +366,27 @@ class Program
             initColor(true);
         }
 
-        var argsRest = flagedArgs.Select((it) => it.Arg).ToArray();
-        if (argsRest.Length < 1)
-        {
-            return PrintSyntax();
-        }
-
-        var regEx = makeRegex(toWord(argsRest.First()));
+        (var argsRest, var matchFunc) = generateRegex(
+            flagedArgs.Select((it) => it.Arg).ToArray());
 
         foreach (var filename in filesFrom(true)
+            .Select((it) => it.Trim())
+            .Where((it) => File.Exists(it))
             .Union(
             argsRest
-            .Skip(1)
-            .Select((it) => it.Trim())
+            .Where((it) => File.Exists(it) || it == "-"))
             .Distinct())
-            .Where((it) => File.Exists(it)))
         {
-            using var inpFs = File.OpenText(filename);
+            logDebug($"File:'{filename}'");
+            (var inpFs, var close) = OpenTextFile(filename);
             int cntLine = 0;
             int cntFound = 0;
             string? lineRead;
             while (null != (lineRead = inpFs.ReadLine()))
             {
                 cntLine += 1;
-                var matches = regEx.Matches(lineRead);
+                logDebug($"{cntLine}:'{lineRead}'");
+                var matches = matchFunc(lineRead);
                 if (true != checkMatches(matches)) continue;
                 cntFound += 1;
                 if (true != postMatch(new(filename, cntLine, lineRead, matches)))
@@ -304,13 +394,26 @@ class Program
                     break;
                 }
             }
+            close(inpFs);
             PrintFoundCount(filename, cntFound);
         }
         return true;
     }
 
-    static ConsoleColor OldColor { get; set; } = Console.ForegroundColor;
-    static ConsoleColor RedColor { get; set; } = ConsoleColor.Red;
+    static (StreamReader, Action<StreamReader>) OpenTextFile(string filename)
+    {
+        if (filename == "-")
+        {
+            if (true != Console.IsInputRedirected)
+            {
+                throw new ArgumentException(
+                    "Console input is NOT redir but FILE '-' is found");
+            }
+            return (new StreamReader(
+                Console.OpenStandardInput()), (_) => { });
+        }
+        return (File.OpenText(filename), (it) => it.Close());
+    }
 
     static Action<int> PrintLineNumber { get; set; } = (_) => { };
     static Action<string, int> PrintFoundCount { get; set; } = (_, _)  => { };
