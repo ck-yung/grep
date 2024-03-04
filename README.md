@@ -3,15 +3,21 @@
 
 ## Syntax:
 ```
-grep [OPTIONS] REGEX FILE [FILE ..]
+grep [OPTIONS] REGEX   [FILE [FILE ..]]
+
+grep [OPTIONS] --file REGEX-FILE   [FILE [FILE ..]]
 ```
 
 ### Examples
 ```
-grep Syntax README.md
+grep Syn.*x README.md
 
-dir2 -sb *cs | grep syntax -niT -
+dir2 -sb *cs | grep syn.*x -niT -
+
+cat *cs | grep using.*Linq
 ```
+
+* Remark: ```FILE``` does not support wild card.
 
 ## Options
 ```
@@ -43,6 +49,8 @@ dir2 -sb *cs | grep syntax -niT -
 ```
 
 * Read redir console input if ```FILES-FROM``` or ```REG-FILE``` is -
+
+* Read redir console input if no ```FILE``` is given.
 
 ## Demo
 

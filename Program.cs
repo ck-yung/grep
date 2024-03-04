@@ -58,6 +58,7 @@ class Program
 
         Console.WriteLine($"""
             {nameof(grep)} [OPTIONS] REGEX [FILE [FILE ..]]
+            {nameof(grep)} [OPTIONS] --file REGEX-FILE [FILE [FILE ..]]
             """);
         if (isDetailed)
         {
@@ -92,6 +93,7 @@ class Program
 
             Read redir console input if FILES-FROM or REGEX-FILE is -
             Read redir console input if no FILE is given.
+            FILE does not support wild card.
             """);
         }
         return false;
