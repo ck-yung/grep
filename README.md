@@ -35,7 +35,7 @@ dir2 -sd | grep !lost+found
   --max-count           UNLIMIT  NUMBER
   --files-from                   FILES-FROM
   --file                         REGEX-FILE
-  --fixed-pattern-file           FIXED-PATTERN-FILE
+  --fixed-text-file              FIXED-PATTERN-FILE
 ```
 ## Short-Cut
 ```
@@ -49,7 +49,7 @@ dir2 -sd | grep !lost+found
   -m       --max-count
   -T       --files-from
   -f       --file
-  -F       --fixed-pattern-file
+  -F       --fixed-text-file
 ```
 
 * Read redir console input if ```FILES-FROM``` or ```REG-FILE``` is -

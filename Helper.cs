@@ -19,6 +19,12 @@ internal static class Helper
         .Select((it) => new REGEX.Regex(it))
         .ToArray();
 
+    public static Func<string, string, bool> TextContains { get; private set; } =
+        (text, finding) => text.Contains(finding);
+
+    public static Func<string, string, int> TextIndexOf { get; private set; } =
+        (text, finding) => text.IndexOf(finding);
+
     public static void RegexByWordPattern()
     {
         ToPattern = (it) => [
@@ -35,6 +41,12 @@ internal static class Helper
             MakeRegex = (pattern) => ToPattern(pattern)
             .Select((it) => new REGEX.Regex(it, REGEX.RegexOptions.IgnoreCase))
             .ToArray();
+
+            TextContains = (text, finding) =>
+            text.Contains(finding, StringComparison.InvariantCultureIgnoreCase);
+
+            TextIndexOf = (text, finding) =>
+            text.IndexOf(finding, StringComparison.InvariantCultureIgnoreCase);
         }
     }
 
@@ -45,10 +57,10 @@ internal static class Helper
         var flag = false;
         var offset = 0;
         List<Match> matches = new();
-        while (text[offset ..].Contains(fixedText))
+        while (TextContains(text[offset ..], fixedText))
         {
             flag = true;
-            var index = text[offset ..].IndexOf(fixedText);
+            var index = TextIndexOf(text[offset ..], fixedText);
             matches.Add(new(offset+index, fixedLength));
             offset += index;
             offset += fixedLength;

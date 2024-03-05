@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
+using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace grep;
 
@@ -67,7 +67,7 @@ class Program
               --max-count       UNLIMIT  NUMBER
               --files-from               FILES-FROM
               --file                     REGEX-FILE
-              --fixed-pattern-file       PATTERN-FILE
+              --fixed-text-file          PATTERN-FILE
 
             Short-Cut
               -i       --case-sensitive off
@@ -81,7 +81,7 @@ class Program
               -m       --max-count
               -T       --files-from
               -f       --file
-              -F       --fixed-pattern-file
+              -F       --fixed-text-file
 
             Read redir console input if FILES-FROM or REGEX-FILE is -
             Read redir console input if no FILE is given.
@@ -120,6 +120,7 @@ class Program
     const string OptQuiet = "--quiet";
     const string OptMaxCount = "--max-count";
     const string OptShowFilename = "--show-filename";
+    const string OptFixedTextFrom = "--fixed-text-file";
 
     static bool LogVerboseImpl(string msg)
     {
@@ -145,6 +146,15 @@ class Program
         return false;
     }
 
+    static IEnumerable<string> PathsFromConsole()
+    {
+        string? lineThe;
+        while (null != (lineThe = Console.ReadLine()))
+        {
+            yield return lineThe;
+        }
+    }
+
     static bool RunMain(string[] args)
     {
         if (args.Any((it) => it == "--version"))
@@ -163,6 +173,7 @@ class Program
             ["-T"] = OptFilesFrom,
             ["-f"] = OptWildFile,
             ["-m"] = OptMaxCount,
+            ["-F"] = OptFixedTextFrom,
         }.ToImmutableDictionary(), new Dictionary<string, string[]>()
         {
             ["-i"] = [OptCaseSensitive, "off"],
@@ -249,20 +260,12 @@ class Program
             },
             parse: (path) =>
             {
-                string? lineThe;
                 if ("-" == path)
                 {
                     if (true != Console.IsInputRedirected)
                     {
                         throw new ArgumentException(
                             "Console input is NOT redirected!");
-                    }
-                    IEnumerable<string> PathsFromConsole()
-                    {
-                        while (null != (lineThe = Console.ReadLine()))
-                        {
-                            yield return lineThe;
-                        }
                     }
                     return (paths) => PathsFromConsole()
                     .Union(paths)
@@ -274,6 +277,7 @@ class Program
                 if (true != File.Exists(path))
                     throw new ArgumentException(
                         $"File '{path}' to {OptFilesFrom} is NOT found!");
+                string? lineThe;
                 var inpFs = File.OpenText(path);
                 IEnumerable<string> FilesFromFile()
                 {
@@ -385,32 +389,101 @@ class Program
                 return Always<bool>.True;
             });
 
+        (var fixedTextFrom, flagedArgs) = Parse<bool, string[]>(
+            flagedArgs, name: OptFixedTextFrom,
+            init: (_) => [],
+            parse: (path) =>
+            {
+                IEnumerable<string> GetLinesFromFile()
+                {
+                    if ("-" == path)
+                    {
+                        if (true != Console.IsInputRedirected)
+                        {
+                            throw new ArgumentException(
+                                $"Console input to {OptFixedTextFrom} is NOT redirected!");
+                        }
+                        return PathsFromConsole()
+                        .Select((it) => it.Trim())
+                        .Where((it) => it.Length > 0)
+                        .Distinct();
+                    }
+
+                    IEnumerable<string> GetLinesFromFile2()
+                    {
+                        if (true != File.Exists(path))
+                            throw new ArgumentException(
+                                $"File '{path}' to {OptFixedTextFrom} is NOT found!");
+                        string? lineThe;
+                        var inpFs = File.OpenText(path);
+                        IEnumerable<string> FilesFromFile()
+                        {
+                            while (null != (lineThe = inpFs.ReadLine()))
+                            {
+                                yield return lineThe;
+                            }
+                            inpFs.Close();
+                        }
+                        return FilesFromFile();
+                    }
+                    return GetLinesFromFile2();
+                }
+
+                var aa = GetLinesFromFile()
+                .Select((it) => it.Trim())
+                .Where((it) => it.Length > 0)
+                .Distinct()
+                .ToArray();
+
+                if (aa.Length == 0)
+                {
+                    if (path == "-") throw new ArgumentException(
+                        $"Console input to {nameof(grep)} is nothing.");
+                    throw new ArgumentException(
+                        $"File '{path}' to {OptFixedTextFrom} contains nothing.");
+                }
+
+                return (_) => aa;
+            });
+
         (var generateMatchFunction, flagedArgs) = Parse<string[], WildFileResult>(
             flagedArgs, name: OptWildFile,
             init: (argsThe) =>
             {
-                if (argsThe.Length == 0)
-                {
-                    Console.WriteLine("No Regex is found.");
-                    throw new MissingValueException("");
-                }
-                Log.Debug("< argsThe=", argsThe);
-                var patternThe = argsThe[0];
-                var paths = argsThe.Skip(1).ToArray();
+                var fixedMatchs = fixedTextFrom(true);
                 Func<string, MatchCollecton> matchFunc;
-                switch (patternThe)
+                switch (fixedMatchs.Length, argsThe.Length)
                 {
-                    case "!":
-                        matchFunc = Helper.MakeMatchingByFixedText("!");
-                        break;
-                    case string it when it.StartsWith("!"):
-                        matchFunc = Helper.MakeMatchingByFixedText(patternThe[1..]);
-                        break;
+                    case (0, 0):
+                        Console.WriteLine("No Regex is found.");
+                        throw new MissingValueException("");
+                    case (0, _):
+                        var patternThe = argsThe[0];
+                        switch (patternThe)
+                        {
+                            case "!":
+                                matchFunc = Helper.MakeMatchingByFixedText("!");
+                                break;
+                            case string it when it.StartsWith("!"):
+                                matchFunc = Helper.MakeMatchingByFixedText(patternThe[1..]);
+                                break;
+                            default:
+                                matchFunc = Helper.MakeMatchingByRegex(patternThe);
+                                break;
+                        }
+                        return new(argsThe.Skip(1).ToArray(), matchFunc);
                     default:
-                        matchFunc = Helper.MakeMatchingByRegex(patternThe);
-                        break;
+                        var aa = fixedMatchs
+                        .Select((it) => Helper.MakeMatchingByFixedText(it))
+                        .ToArray();
+                        matchFunc = (it) =>
+                        {
+                            return aa.Select((it2) => it2(it))
+                            .FirstOrDefault((it2) => it2.Found)
+                            ?? MatchCollecton.Empty;
+                        };
+                        return new(argsThe, matchFunc);
                 }
-                return new(paths, matchFunc);
             },
             parse: (regexFrom) =>
             {
@@ -447,6 +520,8 @@ class Program
                 .Where((it) => it.Length > 0)
                 .Distinct()
                 .Select((it) => Helper.MakeMatchingByRegex(it))
+                .Union(fixedTextFrom(true)
+                    .Select((it) => Helper.MakeMatchingByFixedText(it)))
                 .ToArray();
 
                 if (allWilds.Length == 0)
@@ -464,7 +539,11 @@ class Program
                     return matchesFound ?? MatchCollecton.Empty;
                 }
 
-                return (argsThe) => new(argsThe, (it) => funcMatch(it));
+                return (argsThe) =>
+                {
+
+                    return new(argsThe, (it) => funcMatch(it));
+                };
             });
 
         (var initColor, flagedArgs) = ParseStrings<bool, bool>(flagedArgs,
