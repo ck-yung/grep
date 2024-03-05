@@ -467,9 +467,9 @@ class Program
                 return (argsThe) => new(argsThe, (it) => funcMatch(it));
             });
 
-        (var initColor, flagedArgs) = Parse<bool, bool>(flagedArgs,
-            name: OptColor, init: (_) => ColorCfg.Init("Red"),
-            parse: (flag) => (_) => ColorCfg.Init(flag),
+        (var initColor, flagedArgs) = ParseStrings<bool, bool>(flagedArgs,
+            name: OptColor, init: (_) => ColorCfg.Init(["Red"]),
+            parse: (flags) => (_) => ColorCfg.Init(flags),
             whenMissingValue: ColorCfg.Help);
         if (Console.IsOutputRedirected)
         {

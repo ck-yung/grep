@@ -123,4 +123,31 @@ static class Options
         }
         return (init, qryNotFound);
     }
+
+    public static (Func<T, R>, IEnumerable<FlagedArg>) ParseStrings<T, R>(
+        IEnumerable<FlagedArg> args, string name,
+        Func<T, R> init, Func<IEnumerable<string>, Func<T, R>> parse,
+        Func<string>? whenMissingValue = null)
+    {
+        string DefaultMissingValue() => $"Missing value to {name}";
+
+        var qryFlaged = SelectWithFlag(args, name,
+            whenMissingValue ?? DefaultMissingValue)
+            .GroupBy((it) => it.Flag)
+            .ToDictionary((grp) => grp.Key,
+            elementSelector: (grp) => grp.AsEnumerable());
+
+        IEnumerable<FlagedArg> qryNotFound = [];
+        if (qryFlaged.TryGetValue(false, out var tmpNotFound))
+        {
+            qryNotFound = tmpNotFound;
+        }
+
+        if (qryFlaged.TryGetValue(true, out var qryFound))
+        {
+            var aa = qryFound.Select((it) => it.Arg);
+            return (parse(aa), qryNotFound);
+        }
+        return (init, qryNotFound);
+    }
 }

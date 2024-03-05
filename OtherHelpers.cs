@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace grep;
 
@@ -80,21 +81,36 @@ static class ColorCfg
         return rtn;
     }
 
-    public static bool Init(string color)
+    public static bool Init(IEnumerable<string> color)
     {
-        if (0 == string.Compare("off", color, ignoreCase: true))
+        var colors = color
+            .Select((it) => it.Trim())
+            .Where((it) => it.Length > 0)
+            .Distinct().Order().ToArray();
+
+        OldForeground = Console.ForegroundColor;
+        OldBackground = Console.BackgroundColor;
+        HighlightForeground = ConsoleColor.Red;
+        HighlightBackground = Console.BackgroundColor;
+
+        if (true != colors.Any()) return false;
+
+        const string offText = "off";
+        const string colorText = "color";
+        const string inverseText = "inverse";
+
+        if (colors.Contains(offText))
         {
-            Disable();
-            return true;
+            return Disable();
         }
 
-        if (0 == string.Compare("color", color, ignoreCase: true))
+        if (colors.Contains(colorText) || colors.Contains("--color"))
         {
             Help();
             throw new MissingValueException("");
         }
 
-        if (0 == string.Compare("inverse", color, ignoreCase: true))
+        if (colors.Contains(inverseText))
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -104,49 +120,73 @@ static class ColorCfg
             else
             {
                 HighlightForeground = ConsoleColor.Red;
-                HighlightBackground = Console.BackgroundColor;
             }
             return true;
         }
 
-        OldForeground = Console.ForegroundColor;
-        OldBackground = Console.BackgroundColor;
-        if (color.StartsWith("!"))
+        (bool, ConsoleColor) ParseColor(string arg)
         {
-            if (TryParseToForeColor(color[1..], out var tmp))
-            {
-                HighlightForeground = Console.ForegroundColor;
-                HighlightBackground = tmp;
-            }
-            else
-            {
-                throw new ArgumentException($"""
-                '{color[1..]}' is NOT color name. Please run below to show color:
+            var errorMessage = (string name) => $"""
+                '{name}' is NOT color name. Please run below to show color:
                   grep --color
-                """);
+                """;
+
+            if (arg.StartsWith("!"))
+            {
+                arg = arg[1..];
+                if (TryParseToForeColor(arg, out var tmp))
+                {
+                    return (false, tmp);
+                }
+                throw new ArgumentException(errorMessage(arg));
             }
+
+            if (TryParseToForeColor(arg, out var tmp2))
+            {
+                return (true, tmp2);
+            }
+            throw new ArgumentException(errorMessage(arg));
         }
-        else
+
+        var errorMsg = """
+            Syntax: grep --color  FOREGROUND-COLOR
+            Syntax: grep --color !BACKGROUND-COLOR
+            """;
+
+        switch (colors)
         {
-            if (TryParseToForeColor(color, out var tmp))
-            {
-                HighlightForeground = tmp;
-            }
-            else
-            {
-                throw new ArgumentException($"""
-                '{color}' is NOT color name. Please run below to show color:
-                  grep --color
-                """);
-            }
+            case [string color1]:
+                (var isForeground1, var colorThe1) = ParseColor(color1);
+                if (isForeground1)
+                {
+                    HighlightForeground = colorThe1;
+                }
+                else
+                {
+                    HighlightForeground = OldForeground;
+                    HighlightBackground = colorThe1;
+                }
+                break;
+            case [string color2, string color3]:
+                (var isForeground2, var colorThe2) = ParseColor(color2);
+                (var isForeground3, var colorThe3) = ParseColor(color3);
+                if (isForeground2 == isForeground3)
+                    throw new ArgumentException(errorMsg);
+                if (isForeground2 == true) throw new ArgumentException("Unknown error2");
+                HighlightBackground = colorThe2;
+                HighlightForeground = colorThe3;
+                break;
+            default:
+                throw new ArgumentException(errorMsg);
         }
         return true;
     }
 
-    public static void Disable()
+    public static bool Disable()
     {
         Swith = () => { };
         Reset = () => { };
+        return false;
     }
 
     public static Action Swith { get; private set; } = () =>
