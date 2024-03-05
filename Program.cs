@@ -31,35 +31,25 @@ class Program
         }
     }
 
-    static bool LogDebugFlag { get; set; } = false;
-
-    static void LogDebug(string format, params object[] args)
-    {
-        if (LogDebugFlag)
-        {
-            var msg = String.Format(format, args);
-            Console.WriteLine($"dbg: {msg}");
-        }
-    }
-
-    static void LogDebug(string format, string[] args)
-    {
-        if (LogDebugFlag)
-        {
-            var msg = String.Format(format, string.Join(";", args));
-            Console.WriteLine($"dbg: {msg}");
-        }
-    }
-
     static bool PrintSyntax(bool isDetailed = false)
     {
         if (false == isDetailed)
             Console.WriteLine($"{nameof(grep)} -?");
 
         Console.WriteLine($"""
-            {nameof(grep)} [OPTIONS] REGEX [FILE [FILE ..]]
-            {nameof(grep)} [OPTIONS] --file REGEX-FILE [FILE [FILE ..]]
+            {nameof(grep)} [OPTIONS] PATTERN [FILE [FILE ..]]
             """);
+
+        if (false == isDetailed)
+            Console.WriteLine($"""
+
+                {nameof(grep)} does not support FILE in wild card.
+                PATTERN is a regular expression if it is NOT leading by a '!' char.
+
+                For example,   "dir2 -sd | grep !lost+found"
+                is same as     "dir2 -sd | grep lost\+found"
+                """);
+
         if (isDetailed)
         {
             Console.WriteLine($"""
@@ -77,6 +67,7 @@ class Program
               --max-count       UNLIMIT  NUMBER
               --files-from               FILES-FROM
               --file                     REGEX-FILE
+              --fixed-pattern-file       PATTERN-FILE
 
             Short-Cut
               -i       --case-sensitive off
@@ -90,10 +81,10 @@ class Program
               -m       --max-count
               -T       --files-from
               -f       --file
+              -F       --fixed-pattern-file
 
             Read redir console input if FILES-FROM or REGEX-FILE is -
             Read redir console input if no FILE is given.
-            FILE does not support wild card.
             """);
         }
         return false;
@@ -190,7 +181,7 @@ class Program
             {
                 if (flag == "on")
                 {
-                    LogDebugFlag = true;
+                    Log.DebugFlag = true;
                 }
                 return (_) => false;
             });
@@ -208,21 +199,27 @@ class Program
 
         (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
             name: OptMaxCount, init: Always<bool>.True,
-            parse: (numThe) =>
+            parse: (numText) =>
             {
-                if (int.TryParse(numThe, out var maxThe))
+                if (0 == string.Compare("unlimit", numText,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return Always<bool>.True;
+                }
+
+                if (int.TryParse(numText, out var maxThe))
                 {
                     if (maxThe < 1)
                     {
                         throw new ArgumentException(
-                            $"{maxThe} to {OptMaxCount} is an invalid number!");
+                            $"The number to {OptMaxCount} should be greater than ZERO but {maxThe} is NOT!");
                     }
                     Counter.SetLimit(maxThe);
                 }
                 else
                 {
                     throw new ArgumentException(
-                        $"'{numThe}' to {OptMaxCount} is NOT an number!");
+                        $"'{numText}' to {OptMaxCount} is NOT an number!");
                 }
                 return Always<bool>.True;
             });
@@ -293,21 +290,22 @@ class Program
                 .Distinct();
             });
 
-        (var toWord, flagedArgs) = Parse<string, string>(flagedArgs,
-            name: OptWord, init: (it) => it,
+        (var _, flagedArgs) = Parse<bool, bool>(flagedArgs,
+            name: OptWord, init: Always<bool>.True,
             parse: (flag) =>
             {
-                if (flag == "on") return (it) => @"\s" + it + @"\s";
-                return (it) => it;
+                if (0 == string.Compare("on", flag, ignoreCase:true))
+                    Helper.RegexByWordPattern();
+                return Always<bool>.True;
             });
 
-        (var makeRegex, flagedArgs) = Parse<string, Regex>(flagedArgs,
-            name: OptCaseSensitive, init: (it) => new Regex(it),
+        (var _, flagedArgs) = Parse<bool, bool>(flagedArgs,
+            name: OptCaseSensitive, init: Always<bool>.True,
             parse: (flag) =>
             {
-                if (flag == "off") return (it) =>
-                new Regex(it, RegexOptions.IgnoreCase);
-                return (it) => new Regex(it);
+                if (0 == string.Compare("off", flag, ignoreCase: true))
+                    Helper.WouldRegex(ignoreCase:true);
+                return Always<bool>.True;
             });
 
         (var _, flagedArgs) = Parse<bool, bool>(flagedArgs,
@@ -338,8 +336,8 @@ class Program
                 return (it) => DefaultPostMatch(it);
             });
 
-        (var checkMatches, flagedArgs) = Parse<MatchCollection, bool>(flagedArgs,
-            name: OptInvertMatch, init: (matches) => matches.Any(),
+        (var checkMatches, flagedArgs) = Parse<MatchCollecton, bool>(flagedArgs,
+            name: OptInvertMatch, init: (matches) => matches.Found,
             parse: (flag) =>
             {
                 if (flag == "on")
@@ -347,14 +345,13 @@ class Program
                     DefaultPostMatch = (it) =>
                     {
                         Console.WriteLine(it.Path + ":");
-                        //PrintLineNumber(it.Index);
                         var rtn = Counter.Print(it.Index);
                         Console.WriteLine(it.Line);
                         return rtn;
                     };
-                    return (matches) => true != matches.Any();
+                    return (matches) => true != matches.Found;
                 }
-                return (matches) => matches.Any();
+                return (matches) => matches.Found;
             });
 
         (var _, flagedArgs) = Parse<bool, bool>(flagedArgs,
@@ -388,7 +385,7 @@ class Program
                 return Always<bool>.True;
             });
 
-        (var generateRegex, flagedArgs) = Parse<string[], WildFileResult>(
+        (var generateMatchFunction, flagedArgs) = Parse<string[], WildFileResult>(
             flagedArgs, name: OptWildFile,
             init: (argsThe) =>
             {
@@ -397,12 +394,11 @@ class Program
                     Console.WriteLine("No Regex is found.");
                     throw new MissingValueException("");
                 }
-                LogDebug("< argsThe='{0}'", argsThe);
-                var regEx = makeRegex(toWord(argsThe[0]));
-                LogDebug("Regex('{0}') => '{1}'", argsThe[0], regEx);
+                Log.Debug("< argsThe=", argsThe);
+                var matchFunc = Helper.MakeMatchingByRegex(argsThe[0]);
                 argsThe = argsThe.Skip(1).ToArray();
-                LogDebug("> argsThe='{0}'", argsThe);
-                return new(argsThe, (it) => regEx.Matches(it));
+                Log.Debug("> argsThe=", argsThe);
+                return new(argsThe, (it) => matchFunc(it));
             },
             parse: (regexFrom) =>
             {
@@ -438,7 +434,7 @@ class Program
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0)
                 .Distinct()
-                .Select((it) => makeRegex(toWord(it)))
+                .Select((it) => Helper.MakeMatchingByRegex(it))
                 .ToArray();
 
                 if (allWilds.Length == 0)
@@ -447,17 +443,16 @@ class Program
                         $"Regex file '{regexFrom}' to {OptWildFile} is blank!");
                 }
 
-                var fakeWild = new Regex("a");
-                var falseMatches = fakeWild.Matches("z");
-                Func<string, MatchCollection> funcMatch = (it) =>
+                Func<string, MatchCollecton> funcMatch = (it) =>
                 {
                     var matchesFound = allWilds
-                    .Select((it2) => it2.Matches(it))
-                    .FirstOrDefault((it2) => it2.Any());
-                    return matchesFound ?? falseMatches;
+                    .Select((it2) => it2(it))
+                    .FirstOrDefault((it2) => it2.Found);
+
+                    return matchesFound ?? MatchCollecton.Empty;
                 };
 
-                return (argsThe) => new(argsThe, funcMatch);
+                return (argsThe) => new(argsThe, (it) => funcMatch(it));
             });
 
         (var initColor, flagedArgs) = Parse<bool, bool>(flagedArgs,
@@ -473,13 +468,13 @@ class Program
             initColor(true);
         }
 
-        (var argsRest, var matchFunc) = generateRegex(
+        (var argsRest, var matchFunc) = generateMatchFunction(
             flagedArgs.Select((it) => it.Arg).ToArray());
 
         var cntFileProcessed = 0;
         foreach (var filename in filesFrom(argsRest))
         {
-            LogDebug("File:'{0}'", filename);
+            Log.Debug("File:'{0}'", filename);
             (var inpFs, var close, var printFilename) = OpenTextFile(filename);
             int cntLine = 0;
             int cntFound = 0;
@@ -488,7 +483,7 @@ class Program
             while (null != (lineRead = inpFs.ReadLine()))
             {
                 cntLine += 1;
-                LogDebug("{0}:'{1}'", cntLine, lineRead);
+                Log.Debug("{0}:'{1}'", cntLine, lineRead);
                 var matches = matchFunc(lineRead);
                 if (true != checkMatches(matches)) continue;
                 cntFound += 1;
@@ -524,7 +519,7 @@ class Program
 
     static Action<string, int> PrintFoundCount { get; set; } = (_, _)  => { };
     record PostMatchParam(string Path, int Index, string Line,
-        MatchCollection Matches, Action PrintFilename);
+        MatchCollecton Matches, Action PrintFilename);
 
     static Func<PostMatchParam, bool> DefaultPostMatch { get; set; } = (param) =>
     {
@@ -532,7 +527,7 @@ class Program
         var matches, var printFilename) = param;
         var foundQueue = new List<(int, int)>();
         var lastIndex = 0;
-        foreach (Match match in matches)
+        foreach (var match in matches.Matches)
         {
             foundQueue.Add((match.Index, match.Length));
             lastIndex = match.Index + match.Length;

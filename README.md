@@ -3,36 +3,39 @@
 
 ## Syntax:
 ```
-grep [OPTIONS] REGEX   [FILE [FILE ..]]
-
-grep [OPTIONS] --file REGEX-FILE   [FILE [FILE ..]]
+grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 ```
 
 ### Examples
 ```
 grep Syn.*x README.md
 
+cat *cs | grep using.*Linq
+
 dir2 -sb *cs | grep syn.*x -niT -
 
-cat *cs | grep using.*Linq
+dir2 -sd | grep !lost+found
+
 ```
 
-* Remark: ```FILE``` does not support wild card.
+* ```grep``` does not support ```FILE``` in wild card format.
+* ```PATTERN``` is a regular expression if it is NOT leading by a ```!``` char.
 
 ## Options
 ```
-  NAME              DEFAULT  ALTERATIVE
-  --color           RED      color
-  --case-sensitive  on       off
-  --word            off      on
-  --line-number     off      on
-  --count           off      on
-  --file-match      off      on
-  --invert-match    off      on
-  --show-filename   on       off
-  --max-count       UNLIMIT  NUMBER
-  --files-from               FILES-FROM
-  --file                     REGEX-FILE
+  NAME                  DEFAULT  ALTERATIVE
+  --color               RED      color
+  --case-sensitive      on       off
+  --word                off      on
+  --line-number         off      on
+  --count               off      on
+  --file-match          off      on
+  --invert-match        off      on
+  --show-filename       on       off
+  --max-count           UNLIMIT  NUMBER
+  --files-from                   FILES-FROM
+  --file                         REGEX-FILE
+  --fixed-pattern-file           FIXED-PATTERN-FILE
 ```
 ## Short-Cut
 ```
@@ -46,6 +49,7 @@ cat *cs | grep using.*Linq
   -m       --max-count
   -T       --files-from
   -f       --file
+  -F       --fixed-pattern-file
 ```
 
 * Read redir console input if ```FILES-FROM``` or ```REG-FILE``` is -
