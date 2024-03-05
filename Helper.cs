@@ -11,21 +11,28 @@ internal record MatchCollecton(bool Found, List<Match> Matches)
 
 internal static class Helper
 {
-    static Func<string, string> ToPattern = (it) => it;
-    public static Func<string, REGEX.Regex> MakeRegex { get; private set; } =
-        (pattern) => new REGEX.Regex(ToPattern(pattern));
+    static Func<string, string[]> ToPattern = (it) => [it];
+    public static Func<string, REGEX.Regex[]> MakeRegex { get; private set; } =
+        (pattern) => ToPattern(pattern)
+        .Select((it) => new REGEX.Regex(it))
+        .ToArray();
 
     public static void RegexByWordPattern()
     {
-        ToPattern = (it) => @"\s" + it + @"\s";
+        ToPattern = (it) => [
+            "^" + it + @"\s",
+            @"\s" + it + @"\s",
+            @"\s" + it + "$",
+        ];
     }
 
     public static void WouldRegex(bool ignoreCase)
     {
         if (ignoreCase)
         {
-            MakeRegex = (pattern) =>
-            new REGEX.Regex(ToPattern(pattern), REGEX.RegexOptions.IgnoreCase);
+            MakeRegex = (pattern) => ToPattern(pattern)
+            .Select((it) => new REGEX.Regex(it, REGEX.RegexOptions.IgnoreCase))
+            .ToArray();
         }
     }
 
@@ -44,14 +51,20 @@ internal static class Helper
         return (text) => Matches(fixedText, text);
     }
 
-    public static MatchCollecton Matches(REGEX.Regex regex, string text)
+    public static MatchCollecton Matches(REGEX.Regex[] regex, string text)
     {
-        var result = regex.Matches(text);
-        if (false == result.Any()) return MatchCollecton.Empty;
+        var result = regex.Select((it) => it.Matches(text))
+            .Where((it) => it.Any())
+            .ToArray();
+        if (result.Length == 0) return MatchCollecton.Empty;
         return new(true, result
-            .Select((REGEX.Match it) => new Match(it.Index, it.Length))
+            .Select((coll) => coll.Select(
+                (REGEX.Match it) => new Match(it.Index, it.Length)))
+            .SelectMany((it) => (it))
+            .OrderBy((it) => it.Index)
             .ToList());
     }
+
     public static Func<string, MatchCollecton> MakeMatchingByRegex(
         string pattern)
     {
