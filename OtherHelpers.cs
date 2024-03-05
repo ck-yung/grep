@@ -56,7 +56,7 @@ internal static class Counter
 record WildFileResult(string[] Args,
     Func<string, MatchCollecton> Match);
 
-static class ForeColor
+static class ColorCfg
 {
     static bool State = false;
     static ConsoleColor OldForeground { get; set; }
@@ -111,17 +111,34 @@ static class ForeColor
 
         OldForeground = Console.ForegroundColor;
         OldBackground = Console.BackgroundColor;
-        if (TryParseToForeColor(color, out var tmp))
+        if (color.StartsWith("!"))
         {
-            HighlightForeground = tmp;
-            HighlightBackground = Console.BackgroundColor;
+            if (TryParseToForeColor(color[1..], out var tmp))
+            {
+                HighlightForeground = Console.ForegroundColor;
+                HighlightBackground = tmp;
+            }
+            else
+            {
+                throw new ArgumentException($"""
+                '{color[1..]}' is NOT color name. Please run below to show color:
+                  grep --color
+                """);
+            }
         }
         else
         {
-            throw new ArgumentException($"""
+            if (TryParseToForeColor(color, out var tmp))
+            {
+                HighlightForeground = tmp;
+            }
+            else
+            {
+                throw new ArgumentException($"""
                 '{color}' is NOT color name. Please run below to show color:
                   grep --color
                 """);
+            }
         }
         return true;
     }

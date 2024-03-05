@@ -175,7 +175,7 @@ class Program
             ["-h"] = [OptShowFilename, "off"],
         }.ToImmutableDictionary());
 
-        (var _, flagedArgs) = Parse<string, bool>(flagedArgs,
+        (_, flagedArgs) = Parse<string, bool>(flagedArgs,
             name: "--debug", init: (_) => false,
             parse: (flag) =>
             {
@@ -290,7 +290,7 @@ class Program
                 .Distinct();
             });
 
-        (var _, flagedArgs) = Parse<bool, bool>(flagedArgs,
+        (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
             name: OptWord, init: Always<bool>.True,
             parse: (flag) =>
             {
@@ -299,7 +299,7 @@ class Program
                 return Always<bool>.True;
             });
 
-        (var _, flagedArgs) = Parse<bool, bool>(flagedArgs,
+        (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
             name: OptCaseSensitive, init: Always<bool>.True,
             parse: (flag) =>
             {
@@ -308,7 +308,7 @@ class Program
                 return Always<bool>.True;
             });
 
-        (var _, flagedArgs) = Parse<bool, bool>(flagedArgs,
+        (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
             name: OptLineNumber, init: Always<bool>.True,
             parse: (flag) =>
             {
@@ -354,7 +354,7 @@ class Program
                 return (matches) => matches.Found;
             });
 
-        (var _, flagedArgs) = Parse<bool, bool>(flagedArgs,
+        (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
             name: OptFileMatch, init: (_) => true,
             parse: (flag) =>
             {
@@ -395,10 +395,22 @@ class Program
                     throw new MissingValueException("");
                 }
                 Log.Debug("< argsThe=", argsThe);
-                var matchFunc = Helper.MakeMatchingByRegex(argsThe[0]);
-                argsThe = argsThe.Skip(1).ToArray();
-                Log.Debug("> argsThe=", argsThe);
-                return new(argsThe, (it) => matchFunc(it));
+                var patternThe = argsThe[0];
+                var paths = argsThe.Skip(1).ToArray();
+                Func<string, MatchCollecton> matchFunc;
+                switch (patternThe)
+                {
+                    case "!":
+                        matchFunc = Helper.MakeMatchingByFixedText("!");
+                        break;
+                    case string it when it.StartsWith("!"):
+                        matchFunc = Helper.MakeMatchingByFixedText(patternThe[1..]);
+                        break;
+                    default:
+                        matchFunc = Helper.MakeMatchingByRegex(patternThe);
+                        break;
+                }
+                return new(paths, matchFunc);
             },
             parse: (regexFrom) =>
             {
@@ -443,25 +455,25 @@ class Program
                         $"Regex file '{regexFrom}' to {OptWildFile} is blank!");
                 }
 
-                Func<string, MatchCollecton> funcMatch = (it) =>
+                MatchCollecton funcMatch(string it)
                 {
                     var matchesFound = allWilds
                     .Select((it2) => it2(it))
                     .FirstOrDefault((it2) => it2.Found);
 
                     return matchesFound ?? MatchCollecton.Empty;
-                };
+                }
 
                 return (argsThe) => new(argsThe, (it) => funcMatch(it));
             });
 
         (var initColor, flagedArgs) = Parse<bool, bool>(flagedArgs,
-            name: OptColor, init: (_) => ForeColor.Init("Red"),
-            parse: (flag) => (_) => ForeColor.Init(flag),
-            whenMissingValue: ForeColor.Help);
+            name: OptColor, init: (_) => ColorCfg.Init("Red"),
+            parse: (flag) => (_) => ColorCfg.Init(flag),
+            whenMissingValue: ColorCfg.Help);
         if (Console.IsOutputRedirected)
         {
-            ForeColor.Disable();
+            ColorCfg.Disable();
         }
         else
         {
@@ -537,7 +549,7 @@ class Program
         var ndxLast = 0;
         foreach ((var ndx, var len) in foundQueue)
         {
-            ForeColor.Swith();
+            ColorCfg.Swith();
             switch (ndxLast, ndx)
             {
                 case (0, 0): break;
@@ -545,7 +557,7 @@ class Program
                     Console.Write(lineRead[ndxLast..ndx]);
                     break;
             }
-            ForeColor.Swith();
+            ColorCfg.Swith();
             Console.Write(lineRead[ndx..(ndx + len)]);
             ndxLast = ndx + len;
         }
@@ -554,7 +566,7 @@ class Program
         {
             Console.Write(lineRead[ndxLast..]);
         }
-        ForeColor.Reset();
+        ColorCfg.Reset();
         Console.WriteLine();
         return rtn;
     };

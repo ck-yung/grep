@@ -1,6 +1,8 @@
-﻿using REGEX = System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
+using REGEX = System.Text.RegularExpressions;
 
 namespace grep;
+
 internal record Match(int Index, int Length);
 
 internal record MatchCollecton(bool Found, List<Match> Matches)
@@ -38,11 +40,20 @@ internal static class Helper
 
     public static MatchCollecton Matches(string fixedText, string text)
     {
-        if (text.Contains(fixedText))
+        if (string.IsNullOrEmpty(fixedText)) return MatchCollecton.Empty;
+        var fixedLength = fixedText.Length;
+        var flag = false;
+        var offset = 0;
+        List<Match> matches = new();
+        while (text[offset ..].Contains(fixedText))
         {
-            return new(true, [new(text.IndexOf(fixedText), fixedText.Length)]);
+            flag = true;
+            var index = text[offset ..].IndexOf(fixedText);
+            matches.Add(new(offset+index, fixedLength));
+            offset += index;
+            offset += fixedLength;
         }
-        return MatchCollecton.Empty;
+        return new(flag, matches);
     }
 
     public static Func<string, MatchCollecton> MakeMatchingByFixedText(
