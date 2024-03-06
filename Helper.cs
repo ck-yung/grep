@@ -95,7 +95,7 @@ internal static class Helper
     }
 }
 
-public static class Log
+internal static class Log
 {
     static Action<string> DebugWithString = (_) => { };
     static bool DebugFlagValue { get; set; }
@@ -142,4 +142,87 @@ public static class Log
         }
         DebugWithString(msg);
     }
+
+    static Ignore VerboseImpl(string msg)
+    {
+        Console.WriteLine(msg);
+        return Ignore.Void;
+    }
+
+    public static Func<string, Ignore> Verbose { get; private set; }
+        = (msg) => VerboseImpl(msg);
+
+    public static void SwitchVerbose(bool enable)
+    {
+        if (enable)
+        {
+            Verbose = (msg) => VerboseImpl(msg);
+        }
+        else
+        {
+            Verbose = Ignore<string>.Maker;
+        }
+    }
+}
+
+internal static class ConsolePause
+{
+    public static void Disable()
+    {
+        IncreaseCounter = () => { };
+    }
+
+    public static void Auto()
+    {
+        if (Console.IsOutputRedirected || Console.IsInputRedirected)
+        {
+            Disable();
+            return;
+        }
+        Limit = Console.WindowHeight - 1;
+        Log.Verbose($"ConsolePause.Auto> Limit={Limit}");
+        if (Limit < 1)
+        {
+            IncreaseCounter = () => { };
+        }
+    }
+
+    public static bool SetPauseCounter(int limit)
+    {
+        if (Console.IsOutputRedirected || Console.IsInputRedirected)
+        {
+            Disable();
+            return true;
+        }
+        if (1 > limit) return false;
+        Limit = limit;
+        return true;
+    }
+
+    public static void Line()
+    {
+        IncreaseCounter();
+    }
+
+    static int Limit { get; set; } = int.MaxValue;
+    static int Counter { get; set; } = 0;
+    static Action IncreaseCounter { get; set; } = () =>
+    {
+        Counter += 1;
+        if (Counter >= Limit)
+        {
+            Console.Write("Press any key (q to quit) ");
+            var inp = Console.ReadKey();
+            Console.Write("\r");
+            // sole.Write("Press any key (q to quit) AB");
+            Console.Write("                             ");
+            Console.Write("\r");
+            if (inp.KeyChar == 'q' || inp.KeyChar == 'Q')
+            {
+                Console.ResetColor();
+                Environment.Exit(0);
+            }
+            Counter = 0;
+        }
+    };
 }

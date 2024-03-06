@@ -63,6 +63,7 @@ class Program
                   -v       --invert-match     on
                   -q       --quiet            on
                   -h       --show-filename    off
+                  -p       --pause            off
 
                 Short-cut  Option             Required
                   -m       --max-count        NUMBER
@@ -112,14 +113,7 @@ class Program
     const string OptMaxCount = "--max-count";
     const string OptShowFilename = "--show-filename";
     const string OptFixedTextFrom = "--fixed-text-file";
-
-    static Ignore LogVerboseImpl(string msg)
-    {
-        Console.WriteLine(msg);
-        return Ignore.Void;
-    }
-    static Func<string, Ignore> LogVerbose { get; set; }
-        = (msg) => LogVerboseImpl(msg);
+    const string OptPause = "--pause";
 
     static Ignore PrintFilenameImpl(string filename)
     {
@@ -133,7 +127,7 @@ class Program
     {
         if (string.IsNullOrEmpty(path)) return false;
         if (File.Exists(path)) return true;
-        LogVerbose($"File '{path}' is NOT found.");
+        Log.Verbose($"File '{path}' is NOT found.");
         return false;
     }
 
@@ -175,21 +169,16 @@ class Program
             ["-v"] = [OptInvertMatch, TextOn],
             ["-q"] = [OptQuiet, TextOn],
             ["-h"] = [OptShowFilename, TextOff],
+            ["-p"] = [OptPause, TextOff],
         }.ToImmutableDictionary());
 
         flagedArgs = ParseSwitch(flagedArgs, name: "--debug", when: TextOn,
             assert: false, parse: () => Log.DebugFlag = true);
 
-        (LogVerbose, flagedArgs) = Parse<string, Ignore>(flagedArgs,
-            name: OptQuiet, init: (msg) => LogVerboseImpl(msg),
-            parse: (flag) =>
+        flagedArgs = ParseSwitch(flagedArgs, name: OptQuiet,
+            when: TextOn, parse: () =>
             {
-                if (CompareText(flag, TextOn))
-                {
-                    return Ignore<string>.Maker;
-                }
-                AssertOption(OptQuiet, flag);
-                return (msg) => LogVerboseImpl(msg);
+                Log.SwitchVerbose(enable: false);
             });
 
         (_, flagedArgs) = Parse<Ignore, Ignore>(flagedArgs,
@@ -324,6 +313,38 @@ class Program
                 return (matches) => matches.Found;
             });
 
+        ConsolePause.Auto();
+        (_, flagedArgs) = Parse<Ignore, Ignore>(flagedArgs, name: OptPause,
+            init: Ignore.Maker,
+            parse: (argThe) =>
+            {
+                switch (argThe)
+                {
+                    case TextOff:
+                        ConsolePause.Disable();
+                        break;
+                    case TextOn:
+                        ConsolePause.Auto();
+                        break;
+                    default:
+                        if (int.TryParse(argThe, out var iTmp))
+                        {
+                            if (true != ConsolePause.SetPauseCounter(iTmp))
+                            {
+                                throw new ArgumentException(
+                                    $"{iTmp} is an invalid number to {OptPause}");
+                            }
+                        }
+                        else
+                        {
+                            throw new ArgumentException(
+                                $"{argThe} to {OptPause} is NOT 'on','off', or a number.");
+                        }
+                        break;
+                }
+                return Ignore.Maker;
+            });
+
         flagedArgs = ParseSwitch(flagedArgs, name: OptFileMatch, when: TextOn,
             parse: () =>
             {
@@ -344,6 +365,7 @@ class Program
                         else
                         {
                             Console.WriteLine(path);
+                            ConsolePause.Line();
                         }
                     }
                     flagFound = false;
@@ -545,7 +567,7 @@ class Program
         }
         if (1 > cntFileProcessed)
         {
-            LogVerbose("No file is processed.");
+            Log.Verbose("No file is processed.");
         }
         return true;
     }
@@ -602,6 +624,7 @@ class Program
         }
         ColorCfg.Reset();
         Console.WriteLine();
+        ConsolePause.Line();
         return rtn;
     };
 }
