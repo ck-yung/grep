@@ -8,6 +8,19 @@ class MissingValueException(string Message) : Exception(Message)
 {
 }
 
+class Ignore
+{
+    public static Ignore Void { get; private set; } = new();
+    public static Func<Ignore> Empty = () => Void;
+    public static Func<Ignore, Ignore> Maker = (_) => Void;
+    private Ignore() { }
+}
+
+class Ignore<T>
+{
+    public static Func<T, Ignore> Maker = (_) => Ignore.Void;
+}
+
 static class Options
 {
     public static IEnumerable<FlagedArg> ToFlagedArgs(
@@ -149,5 +162,35 @@ static class Options
             return (parse(aa), qryNotFound);
         }
         return (init, qryNotFound);
+    }
+
+    public const string TextOn = "on";
+    public const string TextOff = "off";
+    public static bool CompareText(string text1, string text2)
+    {
+        return 0 == string.Compare(text1, text2, ignoreCase: true);
+    }
+    public static bool AssertOption(string optName, string value)
+    {
+        if (false == CompareText(value, TextOn) &&
+            false == CompareText(value, TextOff))
+        {
+            throw new ArgumentException(
+                $"Value '{value}' option {optName} is NOT '{TextOn}' or '{TextOff}'!");
+        }
+        return true;
+    }
+
+    public static IEnumerable<FlagedArg> ParseSwitch(IEnumerable<FlagedArg> args,
+        string name, string when, Action parse, bool assert = true)
+    {
+        (_, var rtn) = Parse<Ignore, Ignore>(args, name,Ignore.Maker,
+            (flag) =>
+            {
+                if (CompareText(flag, when)) parse();
+                if (assert) AssertOption(name, flag);
+                return Ignore.Maker;
+            });
+        return rtn;
     }
 }

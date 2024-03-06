@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Linq;
 using System.Reflection;
 
 namespace grep;
@@ -41,51 +40,43 @@ class Program
             """);
 
         if (false == isDetailed)
-            Console.WriteLine($"""
+        {
+            Console.WriteLine("""
 
-                {nameof(grep)} does not support FILE in wild card.
-                PATTERN is a regular expression if it is NOT leading by a '!' char.
+                * grep does not support FILE in wild card.
+                * PATTERN is a regular expression if it is NOT leading by a '!' char.
+                * Read redir console input if no FILE is given.
 
                 For example,   "dir2 -sd | grep !lost+found"
                 is same as     "dir2 -sd | grep lost\+found"
                 """);
-
-        if (isDetailed)
+        }
+        else
         {
-            Console.WriteLine($"""
+            Console.WriteLine("""
+                Short-cut  Option             With
+                  -i       --case-sensitive   off
+                  -w       --word             on
+                  -n       --line-number      on
+                  -c       --count            on
+                  -l       --file-match       on
+                  -v       --invert-match     on
+                  -q       --quiet            on
+                  -h       --show-filename    off
 
-            OPTIONS:            DEFAULT  ALTERATIVE
-              --color           RED      COLOR
-              --case-sensitive  on       off
-              --word            off      on
-              --line-number     off      on
-              --count           off      on
-              --file-match      off      on
-              --invert-match    off      on
-              --quiet           off      on
-              --show-filename   on       off
-              --max-count       UNLIMIT  NUMBER
-              --files-from               FILES-FROM
-              --file                     REGEX-FILE
-              --fixed-text-file          PATTERN-FILE
+                Short-cut  Option             Required
+                  -m       --max-count        NUMBER
+                  -T       --files-from       FILES-FROM
+                  -f       --file             REGEX-FILE
+                  -F       --fixed-text-file  FIXED-TEXT-FILE
 
-            Short-Cut
-              -i       --case-sensitive off
-              -w       --word on
-              -n       --line-number on
-              -c       --count on
-              -l       --file-match on
-              -v       --invert-match on
-              -q       --quiet on
-              -h       --show-filename off
-              -m       --max-count
-              -T       --files-from
-              -f       --file
-              -F       --fixed-text-file
+                Read redir console input if FILES-FROM is -
+                Read redir console input if REGEX-FILE or FIXED-TEXT-FILE is -
 
-            Read redir console input if FILES-FROM or REGEX-FILE is -
-            Read redir console input if no FILE is given.
-            """);
+                For example,
+                  grep -inm 3 class -T cs-files.txt
+                  dir2 -sb "*cs" | grep -inm 3 class -T -
+                """);
         }
         return false;
     }
@@ -122,20 +113,20 @@ class Program
     const string OptShowFilename = "--show-filename";
     const string OptFixedTextFrom = "--fixed-text-file";
 
-    static bool LogVerboseImpl(string msg)
+    static Ignore LogVerboseImpl(string msg)
     {
         Console.WriteLine(msg);
-        return true;
+        return Ignore.Void;
     }
-    static Func<string, bool> LogVerbose { get; set; }
+    static Func<string, Ignore> LogVerbose { get; set; }
         = (msg) => LogVerboseImpl(msg);
 
-    static bool PrintFilenameImpl(string filename)
+    static Ignore PrintFilenameImpl(string filename)
     {
         Console.Write(filename+":");
-        return true;
+        return Ignore.Void;
     }
-    static Func<string, bool> PrintFilename { get; set; }
+    static Func<string, Ignore> PrintFilename { get; set; }
         = (path) => PrintFilenameImpl(path);
 
     static bool CheckPathExists(string path)
@@ -146,7 +137,7 @@ class Program
         return false;
     }
 
-    static IEnumerable<string> PathsFromConsole()
+    static IEnumerable<string> ReadAllLinesFromConsole()
     {
         string? lineThe;
         while (null != (lineThe = Console.ReadLine()))
@@ -176,46 +167,39 @@ class Program
             ["-F"] = OptFixedTextFrom,
         }.ToImmutableDictionary(), new Dictionary<string, string[]>()
         {
-            ["-i"] = [OptCaseSensitive, "off"],
-            ["-w"] = [OptWord, "on"],
-            ["-n"] = [OptLineNumber, "on"],
-            ["-c"] = [OptCountOnly, "on"],
-            ["-l"] = [OptFileMatch, "on"],
-            ["-v"] = [OptInvertMatch, "on"],
-            ["-q"] = [OptQuiet, "on"],
-            ["-h"] = [OptShowFilename, "off"],
+            ["-i"] = [OptCaseSensitive, TextOff],
+            ["-w"] = [OptWord, TextOn],
+            ["-n"] = [OptLineNumber, TextOn],
+            ["-c"] = [OptCountOnly, TextOn],
+            ["-l"] = [OptFileMatch, TextOn],
+            ["-v"] = [OptInvertMatch, TextOn],
+            ["-q"] = [OptQuiet, TextOn],
+            ["-h"] = [OptShowFilename, TextOff],
         }.ToImmutableDictionary());
 
-        (_, flagedArgs) = Parse<string, bool>(flagedArgs,
-            name: "--debug", init: (_) => false,
-            parse: (flag) =>
-            {
-                if (flag == "on")
-                {
-                    Log.DebugFlag = true;
-                }
-                return (_) => false;
-            });
+        flagedArgs = ParseSwitch(flagedArgs, name: "--debug", when: TextOn,
+            assert: false, parse: () => Log.DebugFlag = true);
 
-        (LogVerbose, flagedArgs) = Parse<string, bool>(flagedArgs,
+        (LogVerbose, flagedArgs) = Parse<string, Ignore>(flagedArgs,
             name: OptQuiet, init: (msg) => LogVerboseImpl(msg),
             parse: (flag) =>
             {
-                if (flag == "on")
+                if (CompareText(flag, TextOn))
                 {
-                    return Never<string>.Holds;
+                    return Ignore<string>.Maker;
                 }
+                AssertOption(OptQuiet, flag);
                 return (msg) => LogVerboseImpl(msg);
             });
 
-        (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
-            name: OptMaxCount, init: Always<bool>.True,
+        (_, flagedArgs) = Parse<Ignore, Ignore>(flagedArgs,
+            name: OptMaxCount, init: Ignore.Maker,
             parse: (numText) =>
             {
                 if (0 == string.Compare("unlimit", numText,
                     StringComparison.OrdinalIgnoreCase))
                 {
-                    return Always<bool>.True;
+                    return Ignore.Maker;
                 }
 
                 if (int.TryParse(numText, out var maxThe))
@@ -232,17 +216,18 @@ class Program
                     throw new ArgumentException(
                         $"'{numText}' to {OptMaxCount} is NOT an number!");
                 }
-                return Always<bool>.True;
+                return Ignore.Maker;
             });
 
-        (PrintFilename, flagedArgs) = Parse<string, bool>(flagedArgs,
+        (PrintFilename, flagedArgs) = Parse<string, Ignore>(flagedArgs,
             name: OptShowFilename, init: (path) => PrintFilenameImpl(path),
             parse: (flag) =>
             {
-                if (0 == string.Compare("off", flag, ignoreCase: true))
+                if (CompareText(flag, TextOff))
                 {
-                    return Never<string>.Holds;
+                    return Ignore<string>.Maker;
                 }
+                AssertOption(OptQuiet, flag);
                 return (path) => PrintFilenameImpl(path);
             });
 
@@ -265,9 +250,9 @@ class Program
                     if (true != Console.IsInputRedirected)
                     {
                         throw new ArgumentException(
-                            "Console input is NOT redirected!");
+                            $"{OptFilesFrom}: console input is NOT redirected!");
                     }
-                    return (paths) => PathsFromConsole()
+                    return (paths) => ReadAllLinesFromConsole()
                     .Union(paths)
                     .Select((it) => it.Trim())
                     .Where((it) => CheckPathExists(it))
@@ -294,41 +279,20 @@ class Program
                 .Distinct();
             });
 
-        (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
-            name: OptWord, init: Always<bool>.True,
-            parse: (flag) =>
-            {
-                if (0 == string.Compare("on", flag, ignoreCase:true))
-                    Helper.RegexByWordPattern();
-                return Always<bool>.True;
-            });
+        flagedArgs = ParseSwitch(flagedArgs, name: OptWord,
+            when: TextOn, parse: () => Helper.RegexByWordPattern());
 
-        (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
-            name: OptCaseSensitive, init: Always<bool>.True,
-            parse: (flag) =>
-            {
-                if (0 == string.Compare("off", flag, ignoreCase: true))
-                    Helper.WouldRegex(ignoreCase:true);
-                return Always<bool>.True;
-            });
+        flagedArgs = ParseSwitch(flagedArgs, name: OptCaseSensitive,
+            when: TextOff, parse: () => Helper.WouldRegex(ignoreCase: true));
 
-        (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
-            name: OptLineNumber, init: Always<bool>.True,
-            parse: (flag) =>
-            {
-                if (flag == "on")
-                {
-                    Counter.EnablePrint(flag: true);
-                    return (_) => true;
-                };
-                return Always<bool>.True;
-            });
+        flagedArgs = ParseSwitch(flagedArgs, name: OptLineNumber,
+            when: TextOn, parse: () => Counter.EnablePrint(flag: true));
 
         (var postMatch, flagedArgs) = Parse<PostMatchParam, bool>(flagedArgs,
             name: OptCountOnly, init: (it) => DefaultPostMatch(it),
             parse: (flag) =>
             {
-                if (flag == "on")
+                if (CompareText(flag, TextOn))
                 {
                     PrintFoundCount = (path, count) =>
                     {
@@ -337,6 +301,7 @@ class Program
                     };
                     return (_) => true;
                 };
+                AssertOption(OptCountOnly, flag);
                 return (it) => DefaultPostMatch(it);
             });
 
@@ -344,7 +309,7 @@ class Program
             name: OptInvertMatch, init: (matches) => matches.Found,
             parse: (flag) =>
             {
-                if (flag == "on")
+                if (CompareText(flag, TextOn))
                 {
                     DefaultPostMatch = (it) =>
                     {
@@ -355,46 +320,42 @@ class Program
                     };
                     return (matches) => true != matches.Found;
                 }
+                AssertOption(OptInvertMatch, flag);
                 return (matches) => matches.Found;
             });
 
-        (_, flagedArgs) = Parse<bool, bool>(flagedArgs,
-            name: OptFileMatch, init: (_) => true,
-            parse: (flag) =>
+        flagedArgs = ParseSwitch(flagedArgs, name: OptFileMatch, when: TextOn,
+            parse: () =>
             {
-                if (flag == "on")
+                var flagFound = false;
+                postMatch = (_) =>
                 {
-                    var flagFound = false;
-                    postMatch = (_) =>
-                    {
-                        flagFound = true;
-                        return false;
-                    };
-                    PrintFoundCount = (path, count) =>
-                    {
-                        if (flagFound)
-                        {
-                            if (string.IsNullOrEmpty(path))
-                            {
-                                Console.WriteLine("The input is matched to the regex.");
-                            }
-                            else
-                            {
-                                Console.WriteLine(path);
-                            }
-                        }
-                        flagFound = false;
-                    };
+                    flagFound = true;
+                    return false;
                 };
-                return Always<bool>.True;
+                PrintFoundCount = (path, count) =>
+                {
+                    if (flagFound)
+                    {
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            Console.WriteLine("The input is matched to the regex.");
+                        }
+                        else
+                        {
+                            Console.WriteLine(path);
+                        }
+                    }
+                    flagFound = false;
+                };
             });
 
-        (var fixedTextFrom, flagedArgs) = Parse<bool, string[]>(
+        (var fixedTextFrom, flagedArgs) = Parse<Ignore, string[]>(
             flagedArgs, name: OptFixedTextFrom,
             init: (_) => [],
             parse: (path) =>
             {
-                IEnumerable<string> GetLinesFromFile()
+                IEnumerable<string> GetLines()
                 {
                     if ("-" == path)
                     {
@@ -403,13 +364,10 @@ class Program
                             throw new ArgumentException(
                                 $"Console input to {OptFixedTextFrom} is NOT redirected!");
                         }
-                        return PathsFromConsole()
-                        .Select((it) => it.Trim())
-                        .Where((it) => it.Length > 0)
-                        .Distinct();
+                        return ReadAllLinesFromConsole();
                     }
 
-                    IEnumerable<string> GetLinesFromFile2()
+                    IEnumerable<string> GetLinesFromTheFile()
                     {
                         if (true != File.Exists(path))
                             throw new ArgumentException(
@@ -426,36 +384,35 @@ class Program
                         }
                         return FilesFromFile();
                     }
-                    return GetLinesFromFile2();
+                    return GetLinesFromTheFile();
                 }
 
-                var aa = GetLinesFromFile()
-                .Select((it) => it.Trim())
-                .Where((it) => it.Length > 0)
+                var lines = GetLines()
+                .Where((it) => false == string.IsNullOrWhiteSpace(it.Trim()))
                 .Distinct()
                 .ToArray();
 
-                if (aa.Length == 0)
+                if (lines.Length == 0)
                 {
                     if (path == "-") throw new ArgumentException(
-                        $"Console input to {nameof(grep)} is nothing.");
+                        $"Nothing is found in console input to {OptFixedTextFrom} of {nameof(grep)}.");
                     throw new ArgumentException(
-                        $"File '{path}' to {OptFixedTextFrom} contains nothing.");
+                        $"Nothing is found in file '{path}' to {OptFixedTextFrom}.");
                 }
 
-                return (_) => aa;
+                return (_) => lines;
             });
 
         (var generateMatchFunction, flagedArgs) = Parse<string[], WildFileResult>(
             flagedArgs, name: OptWildFile,
             init: (argsThe) =>
             {
-                var fixedMatchs = fixedTextFrom(true);
+                var fixedMatchs = fixedTextFrom(Ignore.Void);
                 Func<string, MatchCollecton> matchFunc;
                 switch (fixedMatchs.Length, argsThe.Length)
                 {
                     case (0, 0):
-                        Console.WriteLine("No Regex is found.");
+                        Console.WriteLine("No Regex is given.");
                         throw new MissingValueException("");
                     case (0, _):
                         var patternThe = argsThe[0];
@@ -473,15 +430,13 @@ class Program
                         }
                         return new(argsThe.Skip(1).ToArray(), matchFunc);
                     default:
-                        var aa = fixedMatchs
+                        var matchsFunc = fixedMatchs
                         .Select((it) => Helper.MakeMatchingByFixedText(it))
                         .ToArray();
-                        matchFunc = (it) =>
-                        {
-                            return aa.Select((it2) => it2(it))
-                            .FirstOrDefault((it2) => it2.Found)
-                            ?? MatchCollecton.Empty;
-                        };
+                        matchFunc = (textThe) => matchsFunc
+                        .Select((funcThe) => funcThe(textThe))
+                        .FirstOrDefault((resultThe) => resultThe.Found)
+                        ?? MatchCollecton.Empty;
                         return new(argsThe, matchFunc);
                 }
             },
@@ -520,7 +475,7 @@ class Program
                 .Where((it) => it.Length > 0)
                 .Distinct()
                 .Select((it) => Helper.MakeMatchingByRegex(it))
-                .Union(fixedTextFrom(true)
+                .Union(fixedTextFrom(Ignore.Void)
                     .Select((it) => Helper.MakeMatchingByFixedText(it)))
                 .ToArray();
 
@@ -546,7 +501,7 @@ class Program
                 };
             });
 
-        (var initColor, flagedArgs) = ParseStrings<bool, bool>(flagedArgs,
+        (var initColor, flagedArgs) = ParseStrings<Ignore, Ignore>(flagedArgs,
             name: OptColor, init: (_) => ColorCfg.Init(["Red"]),
             parse: (flags) => (_) => ColorCfg.Init(flags),
             whenMissingValue: ColorCfg.Help);
@@ -556,7 +511,7 @@ class Program
         }
         else
         {
-            initColor(true);
+            initColor(Ignore.Void);
         }
 
         (var argsRest, var matchFunc) = generateMatchFunction(

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using REGEX = System.Text.RegularExpressions;
+﻿using REGEX = System.Text.RegularExpressions;
 
 namespace grep;
 

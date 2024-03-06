@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace grep;
 
@@ -81,7 +80,7 @@ static class ColorCfg
         return rtn;
     }
 
-    public static bool Init(IEnumerable<string> color)
+    public static Ignore Init(IEnumerable<string> color)
     {
         var colors = color
             .Select((it) => it.Trim())
@@ -93,7 +92,7 @@ static class ColorCfg
         HighlightForeground = ConsoleColor.Red;
         HighlightBackground = Console.BackgroundColor;
 
-        if (true != colors.Any()) return false;
+        if (true != colors.Any()) return Ignore.Void;
 
         const string offText = "off";
         const string colorText = "color";
@@ -121,7 +120,7 @@ static class ColorCfg
             {
                 HighlightForeground = ConsoleColor.Red;
             }
-            return true;
+            return Ignore.Void;
         }
 
         (bool, ConsoleColor) ParseColor(string arg)
@@ -179,14 +178,14 @@ static class ColorCfg
             default:
                 throw new ArgumentException(errorMsg);
         }
-        return true;
+        return Ignore.Void;
     }
 
-    public static bool Disable()
+    public static Ignore Disable()
     {
         Swith = () => { };
         Reset = () => { };
-        return false;
+        return Ignore.Void;
     }
 
     public static Action Swith { get; private set; } = () =>
