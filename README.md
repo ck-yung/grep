@@ -24,7 +24,8 @@ dir2 -sd | grep !lost+found
 ## Options
 ```
   NAME                  DEFAULT  ALTERATIVE
-  --color               RED      color
+  --color               RED      COLOR
+                                 !COLOR
   --case-sensitive      on       off
   --word                off      on
   --line-number         off      on
@@ -32,10 +33,11 @@ dir2 -sd | grep !lost+found
   --file-match          off      on
   --invert-match        off      on
   --show-filename       on       off
+  --pause               on       off
   --max-count           UNLIMIT  NUMBER
   --files-from                   FILES-FROM
   --file                         REGEX-FILE
-  --fixed-text-file              FIXED-PATTERN-FILE
+  --fixed-text-file              FIXED-TEXT-FILE
 ```
 ## Short-Cut
 ```
@@ -46,15 +48,18 @@ dir2 -sd | grep !lost+found
   -l       --file-match on
   -v       --invert-match on
   -h       --show-filename off
+  -p       --pause off
   -m       --max-count
   -T       --files-from
   -f       --file
   -F       --fixed-text-file
 ```
 
-* Read redir console input if ```FILES-FROM``` or ```REG-FILE``` is -
-
 * Read redir console input if no ```FILE``` is given.
+
+* Read redir console input if ```FILES-FROM``` is -
+
+* Read redir console input if ```REGEX-FILE``` or  ```FIXED-TEXT-FILE```is -
 
 ## Demo
 

@@ -70,6 +70,7 @@ class Program
                   -T       --files-from       FILES-FROM
                   -f       --file             REGEX-FILE
                   -F       --fixed-text-file  FIXED-TEXT-FILE
+                           --color            COLOR   or   !COLOR
 
                 Read redir console input if FILES-FROM is -
                 Read redir console input if REGEX-FILE or FIXED-TEXT-FILE is -
@@ -115,12 +116,12 @@ class Program
     const string OptFixedTextFrom = "--fixed-text-file";
     const string OptPause = "--pause";
 
-    static Ignore PrintFilenameImpl(string filename)
+    static int PrintFilenameImpl(string filename)
     {
         Console.Write(filename+":");
-        return Ignore.Void;
+        return 1 + filename.Length;
     }
-    static Func<string, Ignore> PrintFilename { get; set; }
+    static Func<string, int> PrintFilename { get; set; }
         = (path) => PrintFilenameImpl(path);
 
     static bool CheckPathExists(string path)
@@ -208,13 +209,13 @@ class Program
                 return Ignore.Maker;
             });
 
-        (PrintFilename, flagedArgs) = Parse<string, Ignore>(flagedArgs,
+        (PrintFilename, flagedArgs) = Parse<string, int>(flagedArgs,
             name: OptShowFilename, init: (path) => PrintFilenameImpl(path),
             parse: (flag) =>
             {
                 if (CompareText(flag, TextOff))
                 {
-                    return Ignore<string>.Maker;
+                    return (_) => 0;
                 }
                 AssertOption(OptQuiet, flag);
                 return (path) => PrintFilenameImpl(path);
@@ -329,7 +330,7 @@ class Program
                     default:
                         if (int.TryParse(argThe, out var iTmp))
                         {
-                            if (true != ConsolePause.SetPauseCounter(iTmp))
+                            if (true != ConsolePause.Assign(limit: iTmp))
                             {
                                 throw new ArgumentException(
                                     $"{iTmp} is an invalid number to {OptPause}");
@@ -365,7 +366,7 @@ class Program
                         else
                         {
                             Console.WriteLine(path);
-                            ConsolePause.Line();
+                            ConsolePause.Printed(path.Length);
                         }
                     }
                     flagFound = false;
@@ -438,18 +439,13 @@ class Program
                         throw new MissingValueException("");
                     case (0, _):
                         var patternThe = argsThe[0];
-                        switch (patternThe)
+                        matchFunc = patternThe switch
                         {
-                            case "!":
-                                matchFunc = Helper.MakeMatchingByFixedText("!");
-                                break;
-                            case string it when it.StartsWith("!"):
-                                matchFunc = Helper.MakeMatchingByFixedText(patternThe[1..]);
-                                break;
-                            default:
-                                matchFunc = Helper.MakeMatchingByRegex(patternThe);
-                                break;
-                        }
+                            "!" => Helper.MakeMatchingByFixedText("!"),
+                            string it when it.StartsWith('!') =>
+                                Helper.MakeMatchingByFixedText(patternThe[1..]),
+                            _ => Helper.MakeMatchingByRegex(patternThe),
+                        };
                         return new(argsThe.Skip(1).ToArray(), matchFunc);
                     default:
                         var matchsFunc = fixedMatchs
@@ -572,14 +568,14 @@ class Program
         return true;
     }
 
-    static (StreamReader, Action<StreamReader>, Action PrintFilename)
+    static (StreamReader, Action<StreamReader>, Func<int> PrintFilename)
         OpenTextFile(string filename)
     {
         if (string.IsNullOrEmpty(filename))
         {
             return (new StreamReader(
                 Console.OpenStandardInput()),
-                (_) => { }, () => { });
+                (_) => { }, () => 0);
         }
         return (File.OpenText(filename), (it) => it.Close(),
             () => PrintFilename(filename));
@@ -587,7 +583,7 @@ class Program
 
     static Action<string, int> PrintFoundCount { get; set; } = (_, _)  => { };
     record PostMatchParam(string Path, int Index, string Line,
-        MatchCollecton Matches, Action PrintFilename);
+        MatchCollecton Matches, Func<int> PrintFilename);
 
     static Func<PostMatchParam, bool> DefaultPostMatch { get; set; } = (param) =>
     {
@@ -624,7 +620,7 @@ class Program
         }
         ColorCfg.Reset();
         Console.WriteLine();
-        ConsolePause.Line();
+        ConsolePause.Printed(0);
         return rtn;
     };
 }

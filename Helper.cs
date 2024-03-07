@@ -7,7 +7,7 @@ internal record Match(int Index, int Length);
 internal record MatchCollecton(bool Found, List<Match> Matches)
 {
     static public readonly MatchCollecton Empty
-        = new(false, new List<Match>());
+        = new(false, []);
 }
 
 internal static class Helper
@@ -55,7 +55,7 @@ internal static class Helper
         var fixedLength = fixedText.Length;
         var flag = false;
         var offset = 0;
-        List<Match> matches = new();
+        List<Match> matches = [];
         while (TextContains(text[offset ..], fixedText))
         {
             flag = true;
@@ -76,7 +76,7 @@ internal static class Helper
     public static MatchCollecton Matches(REGEX.Regex[] regex, string text)
     {
         var result = regex.Select((it) => it.Matches(text))
-            .Where((it) => it.Any())
+            .Where((it) => it.Count != 0)
             .ToArray();
         if (result.Length == 0) return MatchCollecton.Empty;
         return new(true, result
@@ -169,7 +169,7 @@ internal static class ConsolePause
 {
     public static void Disable()
     {
-        IncreaseCounter = () => { };
+        IncreaseCounter = (_) => { };
     }
 
     public static void Auto()
@@ -180,14 +180,13 @@ internal static class ConsolePause
             return;
         }
         Limit = Console.WindowHeight - 1;
-        Log.Verbose($"ConsolePause.Auto> Limit={Limit}");
         if (Limit < 1)
         {
-            IncreaseCounter = () => { };
+            IncreaseCounter = (_) => { };
         }
     }
 
-    public static bool SetPauseCounter(int limit)
+    public static bool Assign(int limit)
     {
         if (Console.IsOutputRedirected || Console.IsInputRedirected)
         {
@@ -199,14 +198,14 @@ internal static class ConsolePause
         return true;
     }
 
-    public static void Line()
+    public static void Printed(int length)
     {
-        IncreaseCounter();
+        IncreaseCounter(length);
     }
 
     static int Limit { get; set; } = int.MaxValue;
     static int Counter { get; set; } = 0;
-    static Action IncreaseCounter { get; set; } = () =>
+    static Action<int> IncreaseCounter { get; set; } = (_) =>
     {
         Counter += 1;
         if (Counter >= Limit)

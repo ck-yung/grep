@@ -92,7 +92,7 @@ static class ColorCfg
         HighlightForeground = ConsoleColor.Red;
         HighlightBackground = Console.BackgroundColor;
 
-        if (true != colors.Any()) return Ignore.Void;
+        if (colors.Length == 0) return Ignore.Void;
 
         const string offText = "off";
         const string colorText = "color";
@@ -123,14 +123,14 @@ static class ColorCfg
             return Ignore.Void;
         }
 
-        (bool, ConsoleColor) ParseColor(string arg)
+        static (bool, ConsoleColor) ParseColor(string arg)
         {
-            var errorMessage = (string name) => $"""
+            static string errorMessage(string name) => $"""
                 '{name}' is NOT color name. Please run below to show color:
                   grep --color
                 """;
 
-            if (arg.StartsWith("!"))
+            if (arg.StartsWith('!'))
             {
                 arg = arg[1..];
                 if (TryParseToForeColor(arg, out var tmp))
@@ -206,24 +206,29 @@ static class ColorCfg
         if (Console.IsOutputRedirected)
             return "No help of COLOR could be provided while console output is redir.";
 
-        Action<bool, ConsoleColor> switchBackgroundColor = (isBlack, arg) =>
+        void switchBackgroundColor(bool isBlack, ConsoleColor arg)
         {
             Console.ForegroundColor = arg;
-            switch (isBlack, arg)
+            Console.BackgroundColor = (isBlack, arg) switch
             {
-                case (_, ConsoleColor.Black):
-                    Console.BackgroundColor = ConsoleColor.Gray;
-                    break;
-                case (_, ConsoleColor.Gray):
-                    Console.BackgroundColor = ConsoleColor.Black;
-                    break;
-                case (true, _):
-                    Console.BackgroundColor = ConsoleColor.Black;
-                    break;
-                default:
-                    Console.BackgroundColor = ConsoleColor.Gray;
-                    break;
-            }
+                (_, ConsoleColor.Green) => ConsoleColor.DarkGray,
+                (_, ConsoleColor.DarkGray) => ConsoleColor.Green,
+                (true, _) => ConsoleColor.DarkGray,
+                _ => ConsoleColor.Green,
+            };
+            Console.Write(isBlack ? " Good " : " Demo ");
+        };
+
+        void switchForegroundColor(bool isBlack, ConsoleColor arg)
+        {
+            Console.BackgroundColor = arg;
+            Console.ForegroundColor = (isBlack, arg) switch
+            {
+                (_, ConsoleColor.Green) => ConsoleColor.DarkGray,
+                (_, ConsoleColor.DarkGray) => ConsoleColor.Green,
+                (true, _) => ConsoleColor.DarkGray,
+                _ => ConsoleColor.Green,
+            };
             Console.Write(isBlack ? " Good " : " Demo ");
         };
 
@@ -241,6 +246,10 @@ static class ColorCfg
             Console.Write($"\t{cr2,-12}");
             switchBackgroundColor(true, cr2);
             switchBackgroundColor(false, cr2);
+            Console.ResetColor();
+            Console.Write("  ");
+            switchForegroundColor(true, cr2);
+            switchForegroundColor(false, cr2);
             Console.ResetColor();
             Console.WriteLine();
         }
