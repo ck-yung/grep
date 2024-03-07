@@ -14,18 +14,24 @@ internal class Never<T>
 
 internal static class Counter
 {
-    static Action<int> PrintAction = (_) => { };
+    /// <param>Line Number</param>
+    /// <returns>Counter of char is printed.</returns>
+    static Func<int, int> PrintAction = (_) => 0;
 
     public static void EnablePrint(bool flag)
     {
         if (flag)
         {
-            PrintAction =
-                (number) => Console.Write($"{number}:");
+            PrintAction = (number) =>
+            {
+                var tmp = number.ToString() + ":";
+                Console.Write(tmp);
+                return tmp.Length;
+            };
         }
         else
         {
-            PrintAction = (_) => { };
+            PrintAction = (_) => 0;
         }
     }
 
@@ -45,13 +51,15 @@ internal static class Counter
     }
 
     /// <returns>False if no more printing is allowed</returns>
-    public static bool Print(int lineNumber)
+    public static PrintLineNumberResult Print(int lineNumber)
     {
-        PrintAction(lineNumber);
+        var cntCharPrinted = PrintAction(lineNumber);
         Index += 1;
-        return CheckByMax(Index);
+        return new(CheckByMax(Index), cntCharPrinted);
     }
 }
+
+record PrintLineNumberResult(bool IsContinuous, int CounterOfCharPrinted);
 
 record WildFileResult(string[] Args,
     Func<string, MatchCollecton> Match);
@@ -103,7 +111,7 @@ static class ColorCfg
             return Disable();
         }
 
-        if (colors.Contains(colorText) || colors.Contains("--color"))
+        if (colors.Contains(colorText) || colors.Contains("~color"))
         {
             Help();
             throw new MissingValueException("");
@@ -130,7 +138,7 @@ static class ColorCfg
                   grep --color
                 """;
 
-            if (arg.StartsWith('!'))
+            if (arg.StartsWith('~'))
             {
                 arg = arg[1..];
                 if (TryParseToForeColor(arg, out var tmp))
@@ -149,7 +157,7 @@ static class ColorCfg
 
         var errorMsg = """
             Syntax: grep --color  FOREGROUND-COLOR
-            Syntax: grep --color !BACKGROUND-COLOR
+            Syntax: grep --color ~BACKGROUND-COLOR
             """;
 
         switch (colors)
@@ -211,25 +219,23 @@ static class ColorCfg
             Console.ForegroundColor = arg;
             Console.BackgroundColor = (isBlack, arg) switch
             {
-                (_, ConsoleColor.Green) => ConsoleColor.DarkGray,
-                (_, ConsoleColor.DarkGray) => ConsoleColor.Green,
+                (_, ConsoleColor.Gray) => ConsoleColor.DarkGray,
+                (_, ConsoleColor.DarkGray) => ConsoleColor.Gray,
                 (true, _) => ConsoleColor.DarkGray,
-                _ => ConsoleColor.Green,
+                _ => ConsoleColor.Gray,
             };
             Console.Write(isBlack ? " Good " : " Demo ");
         };
 
-        void switchForegroundColor(bool isBlack, ConsoleColor arg)
+        void switchForegroundColor(ConsoleColor arg)
         {
             Console.BackgroundColor = arg;
-            Console.ForegroundColor = (isBlack, arg) switch
+            Console.ForegroundColor = (arg) switch
             {
-                (_, ConsoleColor.Green) => ConsoleColor.DarkGray,
-                (_, ConsoleColor.DarkGray) => ConsoleColor.Green,
-                (true, _) => ConsoleColor.DarkGray,
-                _ => ConsoleColor.Green,
+                (ConsoleColor.DarkGray) => ConsoleColor.Blue,
+                _ => ConsoleColor.DarkGray,
             };
-            Console.Write(isBlack ? " Good " : " Demo ");
+            Console.Write(" Background ");
         };
 
         Console.WriteLine($"Value to '--color' :");
@@ -248,8 +254,7 @@ static class ColorCfg
             switchBackgroundColor(false, cr2);
             Console.ResetColor();
             Console.Write("  ");
-            switchForegroundColor(true, cr2);
-            switchForegroundColor(false, cr2);
+            switchForegroundColor(cr2);
             Console.ResetColor();
             Console.WriteLine();
         }

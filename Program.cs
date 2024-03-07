@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace grep;
 
@@ -44,11 +45,13 @@ class Program
             Console.WriteLine("""
 
                 * grep does not support FILE in wild card.
-                * PATTERN is a regular expression if it is NOT leading by a '!' char.
+                * PATTERN is a regular expression if it is NOT leading by a '~' char.
                 * Read redir console input if no FILE is given.
 
-                For example,   "dir2 -sd | grep !lost+found"
-                is same as     "dir2 -sd | grep lost\+found"
+                For example,
+                  dir2 -sd | grep ~c++
+                is same as
+                  dir2 -sd | grep c\+\+
                 """);
         }
         else
@@ -70,14 +73,14 @@ class Program
                   -T       --files-from       FILES-FROM
                   -f       --file             REGEX-FILE
                   -F       --fixed-text-file  FIXED-TEXT-FILE
-                           --color            COLOR   or   !COLOR
+                           --color            COLOR   or   ~COLOR
 
                 Read redir console input if FILES-FROM is -
                 Read redir console input if REGEX-FILE or FIXED-TEXT-FILE is -
 
                 For example,
                   grep -inm 3 class -T cs-files.txt
-                  dir2 -sb "*cs" | grep -inm 3 class -T -
+                  dir2 -sb *cs | grep -inm 3 class -T -
                 """);
         }
         return false;
@@ -148,8 +151,8 @@ class Program
 
         var qry = from arg in args
                   join help in new string[] { "--help", "-?" }
-                  on arg equals help into helpQuery
-                  from found in helpQuery select found;
+                  on arg equals help into helpFound
+                  from found in helpFound select found;
         if (qry.Any()) return PrintSyntax(isDetailed: true);
 
         if (args.Length < 1) return PrintSyntax();
@@ -303,10 +306,15 @@ class Program
                 {
                     DefaultPostMatch = (it) =>
                     {
+                        // TODO: Check with PrintFilename
                         Console.WriteLine(it.Path + ":");
+
                         var rtn = Counter.Print(it.Index);
                         Console.WriteLine(it.Line);
-                        return rtn;
+                        // TODO: also return
+                        // rtn.CounterOfCharPrinted +
+                        // it.Path + 1 + it.Line
+                        return rtn.IsContinuous;
                     };
                     return (matches) => true != matches.Found;
                 }
@@ -441,8 +449,8 @@ class Program
                         var patternThe = argsThe[0];
                         matchFunc = patternThe switch
                         {
-                            "!" => Helper.MakeMatchingByFixedText("!"),
-                            string it when it.StartsWith('!') =>
+                            "~" => Helper.MakeMatchingByFixedText("~"),
+                            string it when it.StartsWith('~') =>
                                 Helper.MakeMatchingByFixedText(patternThe[1..]),
                             _ => Helper.MakeMatchingByRegex(patternThe),
                         };
@@ -596,8 +604,9 @@ class Program
             foundQueue.Add((match.Index, match.Length));
             lastIndex = match.Index + match.Length;
         }
-        printFilename();
+        var CounterOfCharPrinted = printFilename();
         var rtn = Counter.Print(lineNbr);
+        CounterOfCharPrinted += rtn.CounterOfCharPrinted;
         var ndxLast = 0;
         foreach ((var ndx, var len) in foundQueue)
         {
@@ -619,8 +628,10 @@ class Program
             Console.Write(lineRead[ndxLast..]);
         }
         ColorCfg.Reset();
+        CounterOfCharPrinted += lineRead.Length;
         Console.WriteLine();
-        ConsolePause.Printed(0);
-        return rtn;
+        ConsolePause.Printed(CounterOfCharPrinted);
+
+        return rtn.IsContinuous;
     };
 }
