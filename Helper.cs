@@ -1,97 +1,201 @@
-﻿using REGEX = System.Text.RegularExpressions;
+﻿using System.Collections.Immutable;
+using System.Reflection;
+using REGEX = System.Text.RegularExpressions;
 
 namespace grep;
 
+class Ignore
+{
+    public static Ignore Void { get; private set; } = new();
+    public static Func<Ignore> Empty = () => Void;
+    public static Func<Ignore, Ignore> Maker = (_) => Void;
+    private Ignore() { }
+}
+
+class Ignore<T>
+{
+    public static Func<T, Ignore> Maker = (_) => Ignore.Void;
+}
+
+internal class MissingValueException: Exception
+{
+    public MissingValueException(string message) : base(message)
+    { }
+
+}
+
 internal record Match(int Index, int Length);
 
-internal record MatchCollecton(bool Found, List<Match> Matches)
-{
-    static public readonly MatchCollecton Empty
-        = new(false, []);
-}
+internal record FlagedArg(bool Flag, string Arg);
 
 internal static class Helper
 {
-    static Func<string, string[]> ToPattern = (it) => [it];
-    public static Func<string, REGEX.Regex[]> MakeRegex { get; private set; } =
-        (pattern) => ToPattern(pattern)
-        .Select((it) => new REGEX.Regex(it))
-        .ToArray();
+    public const string TextOff = "off";
+    public const string TextOn = "on";
 
-    public static Func<string, string, bool> TextContains { get; private set; } =
-        (text, finding) => text.Contains(finding);
+    public static IEnumerable<FlagedArg> ToFlagedArgs(
+        this IEnumerable<string> args,
+        ImmutableDictionary<string, string> mapShortcuts,
+        ImmutableDictionary<string, string[]> mapExpandingShortcuts)
+    {
+        var itrThe = args.GetEnumerator();
+        IEnumerable<string> SeparateCombiningShortcut()
+        {
+            while (itrThe.MoveNext())
+            {
+                var current = itrThe.Current;
+                if (current.StartsWith("--"))
+                {
+                    yield return current;
+                }
+                else if (current.StartsWith("-") && current.Length > 2)
+                {
+                    foreach (var charThe in current.Skip(1))
+                    {
+                        yield return "-" + charThe;
+                    }
+                }
+                else
+                {
+                    yield return current;
+                }
+            }
+        }
 
-    public static Func<string, string, int> TextIndexOf { get; private set; } =
-        (text, finding) => text.IndexOf(finding);
+        foreach (var arg in SeparateCombiningShortcut())
+        {
+            if (arg.Length == 2 && arg[0] == '-')
+            {
+                if (mapShortcuts.TryGetValue(arg, out var found))
+                {
+                    yield return new(false, found);
+                }
+                else if (mapExpandingShortcuts.TryGetValue(arg, out var expands))
+                {
+                    foreach (var expand in expands)
+                    {
+                        yield return new(false, expand);
+                    }
+                }
+                else
+                {
+                    yield return new(false, arg);
+                }
+            }
+            else
+            {
+                yield return new(false, arg);
+            }
+        }
+    }
+
+    static IEnumerable<string> ReadAllLinesFromConsole()
+    {
+        string? lineThe;
+        while (null != (lineThe = Console.ReadLine()))
+        {
+            yield return lineThe;
+        }
+    }
+
+    static IEnumerable<string> ReadAllLinesFromFile(string path, string option)
+    {
+        if (true != File.Exists(path))
+        {
+            throw new ArgumentException(
+                $"File '{path}' to {option} is NOT found.");
+        }
+
+        var inpFs = File.OpenText(path);
+        string? lineThe;
+        while (null != (lineThe = inpFs.ReadLine()))
+        {
+            yield return lineThe;
+        }
+        inpFs.Close();
+    }
+
+    public static bool PrintSyntax(bool isDetailed = false)
+    {
+        if (false == isDetailed)
+            Console.WriteLine($"{nameof(grep)} -?");
+
+        Console.WriteLine($"""
+            {nameof(grep)} [OPTIONS] PATTERN [FILE [FILE ..]]
+            """);
+
+        if (false == isDetailed)
+        {
+            Console.WriteLine("""
+
+                Read redir console input if no FILE is given.
+                grep does not support FILE in wild card.
+                
+                PATTERN is a regular expression if it is NOT leading by a '~' char.
+                For example,
+                  dir2 -sd | grep ~c++
+                is same as
+                  dir2 -sd | grep c\+\+
+                """);
+        }
+        else
+        {
+            Console.WriteLine("""
+                Short-cut  Option             With
+                  -c       --count            on
+                  -h       --show-filename    off
+                  -i       --case-sensitive   off
+                  -l       --file-match       on
+                  -n       --line-number      on
+                  -p       --pause            off
+                  -q       --quiet            on
+                  -v       --invert-match     on
+                  -w       --word             on
+                
+                Short-cut  Option             Required
+                           --color            COLOR
+                           --color           ~COLOR
+                  -f       --file             REGEX-FILE
+                  -F       --fixed-text-file  FIXED-TEXT-FILE
+                  -m       --max-count        NUMBER
+                  -T       --files-from       FILES-FROM
+                                
+                Read redir console input if FILES-FROM is -
+                Read redir console input if REGEX-FILE or FIXED-TEXT-FILE is -
+
+                For example,
+                  grep -inm 3 class -T cs-files.txt
+                  dir2 -sb *cs | grep -inm 3 class -T -
+                """);
+        }
+        return false;
+    }
+
+    public static bool PrintVersion()
+    {
+        var asm = Assembly.GetExecutingAssembly();
+        var asmName = asm?.GetName();
+        var nameThe = asmName?.Name ?? "?1";
+        var version = asmName?.Version?.ToString() ?? "?2";
+        var aa = asm?.GetCustomAttributes(
+            typeof(AssemblyCopyrightAttribute),
+            inherit: false);
+        var copyright = "?3";
+        if ((aa != null) && (aa.Length > 0))
+        {
+            copyright = ((AssemblyCopyrightAttribute)aa[0]).Copyright;
+        }
+        Console.WriteLine($"{nameThe}/C# v{version} {copyright}");
+        return false;
+    }
 
     public static void RegexByWordPattern()
     {
-        ToPattern = (it) => [
-            "^" + it + @"\s",
-            @"\s" + it + @"\s",
-            @"\s" + it + "$",
-        ];
-    }
-
-    public static void WouldRegex(bool ignoreCase)
-    {
-        if (ignoreCase)
-        {
-            MakeRegex = (pattern) => ToPattern(pattern)
-            .Select((it) => new REGEX.Regex(it, REGEX.RegexOptions.IgnoreCase))
-            .ToArray();
-
-            TextContains = (text, finding) =>
-            text.Contains(finding, StringComparison.InvariantCultureIgnoreCase);
-
-            TextIndexOf = (text, finding) =>
-            text.IndexOf(finding, StringComparison.InvariantCultureIgnoreCase);
-        }
-    }
-
-    public static MatchCollecton Matches(string fixedText, string text)
-    {
-        if (string.IsNullOrEmpty(fixedText)) return MatchCollecton.Empty;
-        var fixedLength = fixedText.Length;
-        var flag = false;
-        var offset = 0;
-        List<Match> matches = [];
-        while (TextContains(text[offset ..], fixedText))
-        {
-            flag = true;
-            var index = TextIndexOf(text[offset ..], fixedText);
-            matches.Add(new(offset+index, fixedLength));
-            offset += index;
-            offset += fixedLength;
-        }
-        return new(flag, matches);
-    }
-
-    public static Func<string, MatchCollecton> MakeMatchingByFixedText(
-        string fixedText)
-    {
-        return (text) => Matches(fixedText, text);
-    }
-
-    public static MatchCollecton Matches(REGEX.Regex[] regex, string text)
-    {
-        var result = regex.Select((it) => it.Matches(text))
-            .Where((it) => it.Count != 0)
-            .ToArray();
-        if (result.Length == 0) return MatchCollecton.Empty;
-        return new(true, result
-            .Select((coll) => coll.Select(
-                (REGEX.Match it) => new Match(it.Index, it.Length)))
-            .SelectMany((it) => (it))
-            .OrderBy((it) => it.Index)
-            .ToList());
-    }
-
-    public static Func<string, MatchCollecton> MakeMatchingByRegex(
-        string pattern)
-    {
-        var regex = MakeRegex(pattern);
-        return (text) => Matches(regex, text);
+        //ToPattern = (it) => [
+        //    "^" + it + @"\s",
+        //    @"\s" + it + @"\s",
+        //    @"\s" + it + "$",
+        //];
     }
 }
 
@@ -198,6 +302,7 @@ internal static class ConsolePause
         return true;
     }
 
+    /// <param name="length">Counter of char which has been printed.</param>
     public static void Printed(int length)
     {
         IncreaseCounter(length);
@@ -205,7 +310,9 @@ internal static class ConsolePause
 
     static int Limit { get; set; } = int.MaxValue;
     static int Counter { get; set; } = 0;
-    static Action<int> IncreaseCounter { get; set; } = (_) =>
+
+    // TODO: 'length' handling
+    static Action<int> IncreaseCounter { get; set; } = (length) =>
     {
         Counter += 1;
         if (Counter >= Limit)
