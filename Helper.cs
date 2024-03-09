@@ -27,7 +27,7 @@ internal record Match(int Index, int Length);
 
 internal record FlagedArg(bool Flag, string Arg);
 
-internal static class Helper
+internal static partial class Helper
 {
     public const string TextOff = "off";
     public const string TextOn = "on";
@@ -209,6 +209,20 @@ internal static class Helper
     public static RegX.Regex ToRegex(this string arg)
     {
         return new RegX.Regex(arg, RegX.RegexOptions.IgnoreCase);
+    }
+
+    public static string[] FromWildCard(this string arg)
+    {
+        if (File.Exists(arg)) return [arg];
+        var aa = Directory.GetFiles(".", searchPattern: arg);
+        if (aa.Length > 0)
+        {
+            return aa
+                .Select((it) => it.StartsWith("." + Path.DirectorySeparatorChar)
+                ? it[2..] : it)
+                .ToArray();
+        }
+        throw new ArgumentException($"File '{arg}' is NOT found.");
     }
 }
 

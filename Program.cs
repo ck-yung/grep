@@ -104,7 +104,9 @@ class Program
         }
         else
         {
-            foreach (var path in paths)
+            foreach (var path in paths
+                .Select((it) => it.FromWildCard())
+                .SelectMany((it) => it))
             {
                 var cnt = ReadAllLinesFromFile(path)
                     .Select((line) => new { line, matches = patternThe.Matches(line) })
@@ -116,7 +118,7 @@ class Program
                         return it;
                     })
                     .Count();
-                Console.WriteLine($"{path}:{cnt}");
+                if (cnt>0) Console.WriteLine($"{path}:{cnt}");
             }
         }
         return true;
