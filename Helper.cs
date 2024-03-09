@@ -21,7 +21,6 @@ internal class MissingValueException: Exception
 {
     public MissingValueException(string message) : base(message)
     { }
-
 }
 
 internal record Match(int Index, int Length);
@@ -35,8 +34,7 @@ internal static class Helper
 
     public static IEnumerable<FlagedArg> ToFlagedArgs(
         this IEnumerable<string> args,
-        ImmutableDictionary<string, string> mapShortcuts,
-        ImmutableDictionary<string, string[]> mapExpandingShortcuts)
+        ImmutableDictionary<string, string[]> mapShortcuts)
     {
         var itrThe = args.GetEnumerator();
         IEnumerable<string> SeparateCombiningShortcut()
@@ -66,11 +64,7 @@ internal static class Helper
         {
             if (arg.Length == 2 && arg[0] == '-')
             {
-                if (mapShortcuts.TryGetValue(arg, out var found))
-                {
-                    yield return new(false, found);
-                }
-                else if (mapExpandingShortcuts.TryGetValue(arg, out var expands))
+                if (mapShortcuts.TryGetValue(arg, out var expands))
                 {
                     foreach (var expand in expands)
                     {
@@ -89,7 +83,7 @@ internal static class Helper
         }
     }
 
-    static IEnumerable<string> ReadAllLinesFromConsole()
+    public static IEnumerable<string> ReadAllLinesFromConsole()
     {
         string? lineThe;
         while (null != (lineThe = Console.ReadLine()))
@@ -98,10 +92,16 @@ internal static class Helper
         }
     }
 
-    static IEnumerable<string> ReadAllLinesFromFile(string path, string option)
+    public static IEnumerable<string> ReadAllLinesFromFile(
+        string path, string? option = null)
     {
         if (true != File.Exists(path))
         {
+            if (string.IsNullOrEmpty(option))
+            {
+                throw new ArgumentException(
+                    $"File '{path}' is NOT found.");
+            }
             throw new ArgumentException(
                 $"File '{path}' to {option} is NOT found.");
         }
@@ -121,7 +121,8 @@ internal static class Helper
             Console.WriteLine($"{nameof(grep)} -?");
 
         Console.WriteLine($"""
-            {nameof(grep)} [OPTIONS] PATTERN [FILE [FILE ..]]
+            {nameof(grep)} [OPTIONS] PATTERN        [FILE [FILE ..]]
+            {nameof(grep)} [OPTIONS] -f REGEX-FILE  [FILE [FILE ..]]
             """);
 
         if (false == isDetailed)
@@ -155,13 +156,12 @@ internal static class Helper
                 Short-cut  Option             Required
                            --color            COLOR
                            --color           ~COLOR
-                  -f       --file             REGEX-FILE
-                  -F       --fixed-text-file  FIXED-TEXT-FILE
+                  -f       --regex-file       FILE
+                  -F       --fixed-text-file  FILE
                   -m       --max-count        NUMBER
-                  -T       --files-from       FILES-FROM
-                                
-                Read redir console input if FILES-FROM is -
-                Read redir console input if REGEX-FILE or FIXED-TEXT-FILE is -
+                  -T       --files-from       FILE
+
+                Read redir console input if FILE is -
 
                 For example,
                   grep -inm 3 class -T cs-files.txt
@@ -196,6 +196,44 @@ internal static class Helper
         //    @"\s" + it + @"\s",
         //    @"\s" + it + "$",
         //];
+    }
+
+    public static REGEX.Regex ToRegex(this string arg)
+    {
+        return new REGEX.Regex(arg, REGEX.RegexOptions.IgnoreCase);
+    }
+}
+
+class Pattern
+{
+    REGEX.Regex regex;
+
+    public Pattern(string pattern)
+    {
+        regex = pattern.ToRegex();
+    }
+
+    public Match[] Matches(string line)
+    {
+        return regex.Matches(line)
+            .OfType<REGEX.Match>()
+            .Where((it) => it.Success)
+            .Select((it) => new Match(it.Index, it.Length))
+            .ToArray();
+    }
+
+    public void Scan(string path, IEnumerable<string> lines)
+    {
+        foreach (var line in lines)
+        {
+            var matches = regex.Matches(line);
+            if (matches.Count > 0)
+            {
+                Console.Write($"{path}:");
+                Console.Write(line);
+                Console.WriteLine();
+            }
+        }
     }
 }
 
@@ -247,25 +285,24 @@ internal static class Log
         DebugWithString(msg);
     }
 
-    static Ignore VerboseImpl(string msg)
+    static bool VerboseFlag_ = true;
+    static public bool VerboseFlag
     {
-        Console.WriteLine(msg);
-        return Ignore.Void;
+        get => VerboseFlag_;
+        set
+        {
+            VerboseFlag_ = value;
+        }
     }
 
-    public static Func<string, Ignore> Verbose { get; private set; }
-        = (msg) => VerboseImpl(msg);
-
-    public static void SwitchVerbose(bool enable)
+    public static Ignore Verbose(string format, params object[] args)
     {
-        if (enable)
+        if (VerboseFlag_)
         {
-            Verbose = (msg) => VerboseImpl(msg);
+            string msg = String.Format(format, args);
+            Console.WriteLine(msg);
         }
-        else
-        {
-            Verbose = Ignore<string>.Maker;
-        }
+        return Ignore.Void;
     }
 }
 

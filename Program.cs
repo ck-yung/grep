@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
-using System.Reflection;
-using System.Runtime.InteropServices;
+using System.IO;
+using REGEX = System.Text.RegularExpressions;
 
 namespace grep;
 
@@ -31,20 +31,20 @@ class Program
         }
     }
 
-    const string OptFilesFrom = "--files-from";
-    const string OptCaseSensitive = "--case-sensitive";
-    const string OptWord = "--word";
-    const string OptLineNumber = "--line-number";
-    const string OptCountOnly = "--count";
-    const string OptFileMatch = "--file-match";
-    const string OptInvertMatch = "--invert-match";
-    const string OptColor = "--color";
-    const string OptWildFile = "--file";
-    const string OptQuiet = "--quiet";
-    const string OptMaxCount = "--max-count";
-    const string OptShowFilename = "--show-filename";
-    const string OptFixedTextFrom = "--fixed-text-file";
-    const string OptPause = "--pause";
+    const string OptColor = "--color"; // ---------------------- TODO
+    const string OptFilesFrom = "--files-from"; // ------------- TODO
+    const string OptCaseSensitive = "--case-sensitive"; // ----- TODO
+    const string OptWord = "--word"; // ------------------------ TODO
+    const string OptLineNumber = "--line-number"; // ----------- TODO
+    const string OptCountOnly = "--count"; // ------------------ TODO
+    const string OptFileMatch = "--file-match"; // ------------- TODO
+    const string OptInvertMatch = "--invert-match"; // --------- TODO
+    const string OptRegexFile = "--regex-file"; // ------------- TODO
+    const string OptQuiet = "--quiet"; // ---------------------- TODO
+    const string OptMaxCount = "--max-count"; // --------------- TODO
+    const string OptShowFilename = "--show-filename"; // ------- TODO
+    const string OptFixedTextFrom = "--fixed-text-file"; // ---- TODO
+    const string OptPause = "--pause"; // ---------------------- TODO
 
     static bool RunMain(string[] args)
     {
@@ -57,28 +57,62 @@ class Program
                   from found in helpFound select found;
         if (qry.Any()) return PrintSyntax(isDetailed: true);
 
-        if (args.Length < 1) return PrintSyntax();
+        var flagedArgs = args.ToFlagedArgs(new Dictionary<string, string[]>()
+        {
+            ["-f"] = [OptRegexFile],
+            ["-F"] = [OptFixedTextFrom],
+            ["-m"] = [OptMaxCount],
+            ["-T"] = [OptFilesFrom],
 
-        var flagedArgs = args.ToFlagedArgs(new Dictionary<string, string>()
-        {
-            ["-T"] = OptFilesFrom,
-            ["-f"] = OptWildFile,
-            ["-m"] = OptMaxCount,
-            ["-F"] = OptFixedTextFrom,
-        }.ToImmutableDictionary(), new Dictionary<string, string[]>()
-        {
-            ["-i"] = [OptCaseSensitive, TextOff],
-            ["-w"] = [OptWord, TextOn],
-            ["-n"] = [OptLineNumber, TextOn],
             ["-c"] = [OptCountOnly, TextOn],
-            ["-l"] = [OptFileMatch, TextOn],
-            ["-v"] = [OptInvertMatch, TextOn],
-            ["-q"] = [OptQuiet, TextOn],
             ["-h"] = [OptShowFilename, TextOff],
+            ["-i"] = [OptCaseSensitive, TextOff],
+            ["-l"] = [OptFileMatch, TextOn],
+            ["-n"] = [OptLineNumber, TextOn],
             ["-p"] = [OptPause, TextOff],
+            ["-q"] = [OptQuiet, TextOn],
+            ["-v"] = [OptInvertMatch, TextOn],
+            ["-w"] = [OptWord, TextOn],
         }.ToImmutableDictionary());
 
-        Log.Verbose("Do nothing.");
+        (var patternText, var paths) = GetRegexPaths(args);
+
+        if (string.IsNullOrEmpty(patternText))
+        {
+            PrintSyntax();
+            return false;
+        }
+
+        var patternThe = new Pattern(patternText);
+        if (paths.Length == 0)
+        {
+            if (true != Console.IsInputRedirected)
+            {
+                PrintSyntax();
+                return false;
+            }
+            patternThe.Scan("", Helper.ReadAllLinesFromConsole());
+        }
+        else
+        {
+            foreach (var path in paths)
+            {
+                patternThe.Scan(path, Helper.ReadAllLinesFromFile(path));
+            }
+        }
         return true;
+    }
+
+    static (string, string[]) GetRegexPaths(string[] paths)
+    {
+        switch (paths.Length)
+        {
+            case 0:
+                return ("", []);
+            case 1:
+                return (paths[0], []);
+            default:
+                return (paths[0], paths.Skip(1).ToArray());
+        }
     }
 }
