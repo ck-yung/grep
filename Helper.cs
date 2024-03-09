@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Reflection;
-using REGEX = System.Text.RegularExpressions;
+using RegX = System.Text.RegularExpressions;
 
 namespace grep;
 
@@ -95,24 +95,32 @@ internal static class Helper
     public static IEnumerable<string> ReadAllLinesFromFile(
         string path, string? option = null)
     {
-        if (true != File.Exists(path))
+        if ("-" == path)
         {
-            if (string.IsNullOrEmpty(option))
+            foreach (var line in ReadAllLinesFromConsole())
+                yield return line;
+        }
+        else
+        {
+            if (true != File.Exists(path))
             {
+                if (string.IsNullOrEmpty(option))
+                {
+                    throw new ArgumentException(
+                        $"File '{path}' is NOT found.");
+                }
                 throw new ArgumentException(
-                    $"File '{path}' is NOT found.");
+                    $"File '{path}' to {option} is NOT found.");
             }
-            throw new ArgumentException(
-                $"File '{path}' to {option} is NOT found.");
-        }
 
-        var inpFs = File.OpenText(path);
-        string? lineThe;
-        while (null != (lineThe = inpFs.ReadLine()))
-        {
-            yield return lineThe;
+            var inpFs = File.OpenText(path);
+            string? lineThe;
+            while (null != (lineThe = inpFs.ReadLine()))
+            {
+                yield return lineThe;
+            }
+            inpFs.Close();
         }
-        inpFs.Close();
     }
 
     public static bool PrintSyntax(bool isDetailed = false)
@@ -132,9 +140,9 @@ internal static class Helper
                 Read redir console input if no FILE is given.
                 grep does not support FILE in wild card.
                 
-                PATTERN is a regular expression if it is NOT leading by a '~' char.
+                PATTERN is a regular expression if it is NOT leading by a '^' char.
                 For example,
-                  dir2 -sd | grep ~c++
+                  dir2 -sd | grep ^c++
                 is same as
                   dir2 -sd | grep c\+\+
                 """);
@@ -155,7 +163,7 @@ internal static class Helper
                 
                 Short-cut  Option             Required
                            --color            COLOR
-                           --color           ~COLOR
+                           --color           ^COLOR
                   -f       --regex-file       FILE
                   -F       --fixed-text-file  FILE
                   -m       --max-count        NUMBER
@@ -198,41 +206,34 @@ internal static class Helper
         //];
     }
 
-    public static REGEX.Regex ToRegex(this string arg)
+    public static RegX.Regex ToRegex(this string arg)
     {
-        return new REGEX.Regex(arg, REGEX.RegexOptions.IgnoreCase);
+        return new RegX.Regex(arg, RegX.RegexOptions.IgnoreCase);
     }
 }
 
 class Pattern
 {
-    REGEX.Regex regex;
+    public readonly Func<string, Match[]> Matches;
 
     public Pattern(string pattern)
     {
-        regex = pattern.ToRegex();
-    }
+        if (string.IsNullOrWhiteSpace(pattern))
+            throw new ArgumentNullException(nameof(Pattern));
 
-    public Match[] Matches(string line)
-    {
-        return regex.Matches(line)
-            .OfType<REGEX.Match>()
+        if (pattern.StartsWith('^'))
+        {
+            var tmp2 = (pattern.Length > 1) ? pattern[1..] : "^";
+            Matches = (it) => it.Contains(tmp2) ? [new(0, 0)] : [];
+        }
+        else
+        {
+            Matches = (it) => new RegX.Regex(pattern)
+            .Matches(it)
+            .OfType<RegX.Match>()
             .Where((it) => it.Success)
             .Select((it) => new Match(it.Index, it.Length))
             .ToArray();
-    }
-
-    public void Scan(string path, IEnumerable<string> lines)
-    {
-        foreach (var line in lines)
-        {
-            var matches = regex.Matches(line);
-            if (matches.Count > 0)
-            {
-                Console.Write($"{path}:");
-                Console.Write(line);
-                Console.WriteLine();
-            }
         }
     }
 }
@@ -251,11 +252,13 @@ internal static class Log
             {
                 if (System.Diagnostics.Debugger.IsAttached)
                 {
-                    DebugWithString = (msg) => System.Diagnostics.Debug.WriteLine($"dbg: {msg}");
+                    DebugWithString = (msg) =>
+                    System.Diagnostics.Debug.WriteLine($"dbg: {msg}");
                 }
                 else
                 {
-                    DebugWithString = (msg) => Console.WriteLine($"dbg: {msg}");
+                    DebugWithString = (msg) =>
+                    Console.WriteLine($"dbg: {msg}");
                 }
             }
         }

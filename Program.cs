@@ -1,6 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.IO;
-using REGEX = System.Text.RegularExpressions;
 
 namespace grep;
 
@@ -91,13 +89,34 @@ class Program
                 PrintSyntax();
                 return false;
             }
-            patternThe.Scan("", Helper.ReadAllLinesFromConsole());
+
+            var cnt = ReadAllLinesFromConsole()
+                .Select((line) => new { line, matches = patternThe.Matches(line) })
+                .Where((it) => it.matches.Length > 0)
+                .Select((it, index) =>
+                {
+                    Console.Write($"{index+1}:");
+                    Console.WriteLine(it.line);
+                    return it;
+                })
+                .Count();
+            Console.WriteLine($":{cnt}");
         }
         else
         {
             foreach (var path in paths)
             {
-                patternThe.Scan(path, Helper.ReadAllLinesFromFile(path));
+                var cnt = ReadAllLinesFromFile(path)
+                    .Select((line) => new { line, matches = patternThe.Matches(line) })
+                    .Where((it) => it.matches.Length > 0)
+                    .Select((it, index) =>
+                    {
+                        Console.Write($"{index+1}:");
+                        Console.WriteLine(it.line);
+                        return it;
+                    })
+                    .Count();
+                Console.WriteLine($"{path}:{cnt}");
             }
         }
         return true;
