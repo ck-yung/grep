@@ -140,9 +140,9 @@ internal static partial class Helper
                 Read redir console input if no FILE is given.
                 grep does not support FILE in wild card.
                 
-                PATTERN is a regular expression if it is NOT leading by a '^' char.
+                PATTERN is a regular expression if it is NOT leading by a '~' char.
                 For example,
-                  dir2 -sd | grep ^c++
+                  dir2 -sd | grep ~c++
                 is same as
                   dir2 -sd | grep c\+\+
                 """);
@@ -214,14 +214,22 @@ internal static partial class Helper
     public static string[] FromWildCard(this string arg)
     {
         if (File.Exists(arg)) return [arg];
-        var aa = Directory.GetFiles(".", searchPattern: arg);
-        if (aa.Length > 0)
+        if (arg.Contains(':')) throw new ArgumentException(
+            $"FILE can NOT contain ':' but '{arg}' is found.");
+        if (arg.StartsWith(@"\\")) throw new ArgumentException(
+            $"FILE can NOT leading by '\\\\' but '{arg}' is found.");
+        try
         {
-            return aa
-                .Select((it) => it.StartsWith("." + Path.DirectorySeparatorChar)
-                ? it[2..] : it)
-                .ToArray();
+            var aa = Directory.GetFiles(".", searchPattern: arg);
+            if (aa.Length > 0)
+            {
+                return aa
+                    .Select((it) => it.StartsWith("." + Path.DirectorySeparatorChar)
+                    ? it[2..] : it)
+                    .ToArray();
+            }
         }
+        catch { }
         throw new ArgumentException($"File '{arg}' is NOT found.");
     }
 }
@@ -235,9 +243,9 @@ class Pattern
         if (string.IsNullOrWhiteSpace(pattern))
             throw new ArgumentNullException(nameof(Pattern));
 
-        if (pattern.StartsWith('^'))
+        if (pattern.StartsWith('~'))
         {
-            var tmp2 = (pattern.Length > 1) ? pattern[1..] : "^";
+            var tmp2 = (pattern.Length > 1) ? pattern[1..] : "~";
             Matches = (it) => it.Contains(tmp2) ? [new(0, 0)] : [];
         }
         else

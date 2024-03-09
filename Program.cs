@@ -100,7 +100,7 @@ class Program
                     return it;
                 })
                 .Count();
-            Console.WriteLine($":{cnt}");
+            Log.Verbose($":{cnt}");
         }
         else
         {
@@ -118,7 +118,7 @@ class Program
                         return it;
                     })
                     .Count();
-                if (cnt>0) Console.WriteLine($"{path}:{cnt}");
+                if (cnt>0) Log.Verbose($"{path}:{cnt}");
             }
         }
         return true;
