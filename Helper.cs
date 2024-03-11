@@ -233,11 +233,13 @@ class Pattern
         if (pattern.StartsWith('~'))
         {
             var tmp2 = (pattern.Length > 1) ? pattern[1..] : "~";
-            Matches = (it) => it.Contains(tmp2) ? [new(0, 0)] : [];
+            Matches = (it)
+                => Options.TextContains(it, tmp2)
+                ? [new(0, 0)] : [];
         }
         else
         {
-            Matches = (it) => new RegX.Regex(pattern)
+            Matches = (it) => Options.ToRegex.Invoke(pattern)
             .Matches(it)
             .OfType<RegX.Match>()
             .Where((it) => it.Success)

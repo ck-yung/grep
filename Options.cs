@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using RegX = System.Text.RegularExpressions;
 
 namespace grep;
 
@@ -105,7 +106,29 @@ internal static class Options
         return [new(true, type, arg)];
     }
 
+    static public Func<string, string, bool> TextContains
+    { get; private set; } = (line, text) => line.Contains(text);
+
+    static public readonly IInvoke<string, RegX.Regex> ToRegex
+        = new MyOptions.SwitchInvoker<string, RegX.Regex>(
+            OptCaseSensitive, init: (it) => new RegX.Regex(it),
+            alterFor: false, alterWhen: (flag) =>
+            {
+                if (flag)
+                {
+                    TextContains = (line, text) => line.Contains(text);
+                }
+                else
+                {
+                    TextContains = (line, text) => line.Contains(text,
+                        StringComparison.InvariantCultureIgnoreCase);
+                }
+            },
+            alter: (it) => new RegX.Regex(it,
+                RegX.RegexOptions.IgnoreCase));
+
     static readonly IParse[] Parsers = [
+        (IParse)ToRegex,
         (IParse)Show.Filename,
         (IParse)Show.LineNumber,
         (IParse)Show.FoundCount,
