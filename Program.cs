@@ -52,6 +52,8 @@ class Program
         var cntFilesMatch = paths
             .Select((it) => it.FromWildCard())
             .SelectMany((it) => it)
+            .Union(Options.FilesFrom.Invoke(Ignore.Void))
+            .Distinct()
             .Where((path) =>
             {
                 var cnt = ReadAllLinesFromFile(path, option: "FILE")

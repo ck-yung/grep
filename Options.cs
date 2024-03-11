@@ -11,7 +11,7 @@ internal static class Options
     public const string TextOn = "on";
 
     public const string OptColor = "--color"; // ---------------------- TODO
-    public const string OptFilesFrom = "--files-from"; // ------------- TODO
+    public const string OptFilesFrom = "--files-from";
     public const string OptCaseSensitive = "--case-sensitive";
     public const string OptWord = "--word"; // ------------------------ TODO
     public const string OptLineNumber = "--line-number";
@@ -218,6 +218,25 @@ internal static class Options
                 opt.SetImplementation((args) => (matchFunc, args));
             });
 
+    static public readonly IInvoke<Ignore, IEnumerable<string>> FilesFrom
+        = new ParseInvoker<Ignore, IEnumerable<string>>(
+            OptFilesFrom, init: (_) => [],
+            resolve: (opt, argsThe) =>
+            {
+                var files = argsThe.Distinct().Take(2).ToArray();
+                if (files.Length > 1)
+                {
+                    throw new ArgumentException(
+                        $"Too many files ('{files[0]}','{files[1]}') to {opt.Name} are found!");
+                }
+
+                opt.SetImplementation((_) => ((files[0] == "-")
+                ? Helper.ReadAllLinesFromConsole()
+                : Helper.ReadAllLinesFromFile(files[0], opt.Name))
+                .Select((it) => it.Trim())
+                .Where((it) => it.Length > 0));
+            });
+
     static readonly IParse[] Parsers = [
         (IParse)ToRegex,
         (IParse)Show.Filename,
@@ -229,6 +248,7 @@ internal static class Options
         (IParse)MatchRegex,
         (IParse)ToPattern,
         (IParse)PatternsFrom,
+        (IParse)FilesFrom,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args)
