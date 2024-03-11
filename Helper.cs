@@ -296,26 +296,6 @@ internal static class Log
         }
         DebugWithString(msg);
     }
-
-    static bool VerboseFlag_ = true;
-    static public bool VerboseFlag
-    {
-        get => VerboseFlag_;
-        set
-        {
-            VerboseFlag_ = value;
-        }
-    }
-
-    public static Ignore Verbose(string format, params object[] args)
-    {
-        if (VerboseFlag_)
-        {
-            string msg = String.Format(format, args);
-            Console.WriteLine(msg);
-        }
-        return Ignore.Void;
-    }
 }
 
 internal static class ConsolePause

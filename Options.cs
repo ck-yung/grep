@@ -13,7 +13,7 @@ internal static class Options
     public const string OptWord = "--word"; // ------------------------ TODO
     public const string OptLineNumber = "--line-number";
     public const string OptCountOnly = "--count-only";
-    public const string OptFileMatch = "--file-match"; // ------------- TODO
+    public const string OptFileMatch = "--file-match";
     public const string OptInvertMatch = "--invert-match"; // --------- TODO
     public const string OptRegexFile = "--regex-file"; // ------------- TODO
     public const string OptQuiet = "--quiet"; // ---------------------- TODO
@@ -99,7 +99,8 @@ internal static class Options
         }
     }
 
-    public static FlagedArg[] ToFlagedArgs(this string arg, ArgType type)
+    public static FlagedArg[] ToFlagedArgs(this string arg,
+        ArgType type = ArgType.CommandLine)
     {
         return [new(true, type, arg)];
     }
@@ -110,6 +111,7 @@ internal static class Options
         (IParse)Show.FoundCount,
         (IParse)Show.LogVerbose,
         (IParse)Show.MyTake,
+        (IParse)Show.FilenameOnly,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args)

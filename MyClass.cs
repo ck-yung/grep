@@ -2,9 +2,30 @@
 
 namespace grep;
 using static grep.Options;
+
+internal class Else<R, L>
+{
+    public bool IsRight { get; init; }
+    public Func<R> Right { get; init; }
+    public Func<L> Left { get; init; }
+    public Else(R right)
+    {
+        IsRight = true;
+        Right = () => right;
+        Left = () => throw new NullReferenceException(nameof(Left));
+    }
+    public Else(L left)
+    {
+        IsRight = false;
+        Left = () => left;
+        Right = () => throw new NullReferenceException(nameof(Right));
+    }
+}
+
 static public partial class MyOptions
 {
 
+    // TODO: Check if needed
     /// <summary>
     /// Implicit boolean, default false
     /// </summary>
@@ -180,21 +201,28 @@ static public partial class MyOptions
                     throw new ArgumentException(
                         $"Too many values ('{argsThe[0]}','{argsThe[1]}') are found to '{name}'!");
 
-                switch (alterFor,
-                TextOn.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase),
-                TextOff.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
+                bool isEnabledFlag;
+                if (TextOn.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
                 {
-                    case (true, true, false):
-                        ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
-                        break;
-                    case (false, false, true):
-                        ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
-                        break;
-                    case (_, false, false):
-                        throw new ArgumentException(
-                            $"Value '{argsThe[0]}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!");
-                    default:
-                        break;
+                    isEnabledFlag = true;
+                }
+                else if (TextOff.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
+                {
+                    isEnabledFlag = false;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        $"Value '{argsThe[0]}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!");
+                }
+
+                if (alterFor == isEnabledFlag)
+                {
+                    ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
+                }
+                else
+                {
+                    ((SwitchInvoker<T, R>)opt).SetImplementation(init);
                 }
             })
         {

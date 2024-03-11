@@ -1,11 +1,12 @@
 ﻿using static grep.MyOptions;
+using static grep.Options;
 
 namespace grep;
 
 internal static class Show
 {
     static public readonly IInvoke<string, Ignore> Filename =
-        new SwitchInvoker<string, Ignore>(Options.OptShowFilename,
+        new SwitchInvoker<string, Ignore>(OptShowFilename,
             init: (filename) =>
             {
                 Console.Write($"{filename}:");
@@ -19,7 +20,7 @@ internal static class Show
     /// false, if break for scanning the file
     /// </summary>
     static public readonly IInvoke<int, bool> LineNumber =
-        new SwitchInvoker<int, bool>(Options.OptLineNumber,
+        new SwitchInvoker<int, bool>(OptLineNumber,
             init: Always<int>.True,
             alterFor: true, alter: (lineNumber) =>
             {
@@ -31,16 +32,14 @@ internal static class Show
         (line) => Console.WriteLine(line);
 
     static public readonly IInvoke<(string, int), Ignore> FoundCount =
-        new SwitchInvoker<(string, int), Ignore>(Options.OptCountOnly,
+        new SwitchInvoker<(string, int), Ignore>(OptCountOnly,
             init: Ignore<(string, int)>.Maker,
             alterFor: true, alterWhen: (flag) =>
             {
                 if (true == flag)
                 {
-                    ((IParse)Filename).Parse(Options.TextOff
-                        .ToFlagedArgs(ArgType.CommandLine));
-                    ((IParse)LineNumber).Parse(Options.TextOff
-                        .ToFlagedArgs(ArgType.CommandLine));
+                    ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
+                    ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                     PrintMatchedLine = (_) => { };
                 }
             },
@@ -51,7 +50,7 @@ internal static class Show
             });
 
     static public readonly IInvoke<string, Ignore> LogVerbose =
-        new SwitchInvoker<string, Ignore>(Options.OptQuiet,
+        new SwitchInvoker<string, Ignore>(OptQuiet,
             init: (msg) =>
             {
                 Console.WriteLine(msg);
@@ -90,4 +89,24 @@ internal static class Show
                         $"Value to {opt.Name} SHOULD be a number but '{args[0]}' is found!");
                 }
             });
+
+    static public readonly IInvoke<Ignore, Ignore> FilenameOnly =
+    new SwitchInvoker<Ignore, Ignore>(OptFileMatch,
+        init: Ignore.Maker, alter: Ignore.Maker,
+        alterFor: true, alterWhen: (flag) =>
+        {
+            if (true == flag)
+            {
+                ((IParse)MyTake).Parse("1".ToFlagedArgs());
+                ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
+                ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
+                PrintMatchedLine = (_) => { };
+                ((SwitchInvoker<(string, int), Ignore>)FoundCount)
+                .SetImplementation((it) =>
+                {
+                    Console.WriteLine($"{it.Item1}");
+                    return Ignore.Void;
+                });
+            }
+        });
 }
