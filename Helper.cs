@@ -17,6 +17,12 @@ class Ignore<T>
     public static Func<T, Ignore> Maker = (_) => Ignore.Void;
 }
 
+class Always<T>
+{
+    public static Func<T, bool> True = (_) => true;
+    public static Func<T, bool> Never = (_) => false;
+}
+
 internal class MissingValueException: Exception
 {
     public MissingValueException(string message) : base(message)
@@ -120,7 +126,7 @@ internal static partial class Helper
         {
             Console.WriteLine("""
                 Short-cut  Option             With
-                  -c       --count            on
+                  -c       --count-only       on
                   -h       --show-filename    off
                   -i       --case-sensitive   off
                   -l       --file-match       on

@@ -11,8 +11,8 @@ internal static class Options
     public const string OptFilesFrom = "--files-from"; // ------------- TODO
     public const string OptCaseSensitive = "--case-sensitive"; // ----- TODO
     public const string OptWord = "--word"; // ------------------------ TODO
-    public const string OptLineNumber = "--line-number"; // ----------- TODO
-    public const string OptCountOnly = "--count"; // ------------------ TODO
+    public const string OptLineNumber = "--line-number";
+    public const string OptCountOnly = "--count-only";
     public const string OptFileMatch = "--file-match"; // ------------- TODO
     public const string OptInvertMatch = "--invert-match"; // --------- TODO
     public const string OptRegexFile = "--regex-file"; // ------------- TODO
@@ -92,8 +92,15 @@ internal static class Options
         }
     }
 
+    public static FlagedArg[] ToFlagedArgs(this string arg, ArgType type)
+    {
+        return [new(true, type, arg)];
+    }
+
     static readonly IParse[] Parsers = [
         (IParse)Show.Filename,
+        (IParse)Show.LineNumber,
+        (IParse)Show.FoundCount,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args)

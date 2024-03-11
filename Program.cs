@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.IO;
 
 namespace grep;
 
@@ -68,12 +69,12 @@ class Program
                 .Where((it) => it.matches.Length > 0)
                 .Select((it, index) =>
                 {
-                    Console.Write($"{index+1}:");
-                    Console.WriteLine(it.line);
+                    Show.LineNumber.Invoke(index);
+                    Show.PrintMatchedLine(it.line);
                     return it;
                 })
                 .Count();
-            Log.Verbose($":{cnt}");
+            Show.FoundCount.Invoke(("", cnt));
         }
         else
         {
@@ -87,12 +88,12 @@ class Program
                     .Select((it, index) =>
                     {
                         Show.Filename.Invoke(path);
-                        Console.Write($"{index+1}:");
-                        Console.WriteLine(it.line);
+                        Show.LineNumber.Invoke(index);
+                        Show.PrintMatchedLine(it.line);
                         return it;
                     })
                     .Count();
-                if (cnt>0) Log.Verbose($"{path}:{cnt}");
+                Show.FoundCount.Invoke((path, cnt));
             }
         }
         return true;

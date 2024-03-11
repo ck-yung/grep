@@ -201,6 +201,39 @@ static public partial class MyOptions
             imp = @init;
         }
 
+        public SwitchInovker(string name, Func<T, R> @init,
+            bool alterFor, Action<bool> alterWhen, Func<T, R> alter,
+            string help = "", string extraHelp = "") :
+            base(name, help, extraHelp: extraHelp, resolve: (opt, args) =>
+            {
+                var argsThe = args.Distinct().Take(2).ToArray();
+                if (argsThe.Length > 1)
+                    throw new ArgumentException(
+                        $"Too many values ('{argsThe[0]}','{argsThe[1]}') are found to '{name}'!");
+
+                switch (alterFor,
+                TextOn.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase),
+                TextOff.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
+                {
+                    case (true, true, false):
+                        alterWhen(true);
+                        ((SwitchInovker<T, R>)opt).SetImplementation(alter);
+                        break;
+                    case (false, false, true):
+                        alterWhen(false);
+                        ((SwitchInovker<T, R>)opt).SetImplementation(alter);
+                        break;
+                    case (_, false, false):
+                        throw new ArgumentException(
+                            $"Value '{argsThe[0]}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!");
+                    default:
+                        break;
+                }
+            })
+        {
+            imp = @init;
+        }
+
         public bool SetImplementation(Func<T, R> impNew)
         {
             if (impNew != null)

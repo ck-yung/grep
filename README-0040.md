@@ -29,7 +29,7 @@ dir2 -sd | grep !lost+found
   --case-sensitive      on       off
   --word                off      on
   --line-number         off      on
-  --count               off      on
+  --count-only          off      on
   --file-match          off      on
   --invert-match        off      on
   --show-filename       on       off
