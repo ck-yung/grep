@@ -25,61 +25,30 @@ internal class MissingValueException: Exception
 
 internal record Match(int Index, int Length);
 
-internal record FlagedArg(bool Flag, string Arg);
-
 internal static partial class Helper
 {
-    public const string TextOff = "off";
-    public const string TextOn = "on";
-
-    public static IEnumerable<FlagedArg> ToFlagedArgs(
-        this IEnumerable<string> args,
-        ImmutableDictionary<string, string[]> mapShortcuts)
+    static internal IEnumerable<FlagedArg> GetEnvirOpts(string name)
     {
-        var itrThe = args.GetEnumerator();
-        IEnumerable<string> SeparateCombiningShortcut()
-        {
-            while (itrThe.MoveNext())
-            {
-                var current = itrThe.Current;
-                if (current.StartsWith("--"))
-                {
-                    yield return current;
-                }
-                else if (current.StartsWith("-") && current.Length > 2)
-                {
-                    foreach (var charThe in current.Skip(1))
-                    {
-                        yield return "-" + charThe;
-                    }
-                }
-                else
-                {
-                    yield return current;
-                }
-            }
-        }
+        var envirOld = Environment.GetEnvironmentVariable(name);
+        if (string.IsNullOrEmpty(envirOld)) return [];
 
-        foreach (var arg in SeparateCombiningShortcut())
+        try
         {
-            if (arg.Length == 2 && arg[0] == '-')
-            {
-                if (mapShortcuts.TryGetValue(arg, out var expands))
+            var aa = envirOld.Split("--")
+                .Select((it) => it.Trim())
+                .Select((it) => it.Trim(';'))
+                .Where((it) => it.Length > 0)
+                .Select((it) => "--" + it);
+
+            return aa.ToFlagedArgs(ArgType.Environment,
+                new Dictionary<string, string[]>() // TODO
                 {
-                    foreach (var expand in expands)
-                    {
-                        yield return new(false, expand);
-                    }
-                }
-                else
-                {
-                    yield return new(false, arg);
-                }
-            }
-            else
-            {
-                yield return new(false, arg);
-            }
+                }.ToImmutableDictionary());
+        }
+        catch (Exception ee)
+        {
+            ConfigException.Add(ArgType.Environment, name, ee);
+            return [];
         }
     }
 
@@ -106,11 +75,11 @@ internal static partial class Helper
             {
                 if (string.IsNullOrEmpty(option))
                 {
-                    throw new ArgumentException(
-                        $"File '{path}' is NOT found.");
+                    Console.WriteLine($"File '{path}' is NOT found.");
+                    yield break;
                 }
-                throw new ArgumentException(
-                    $"File '{path}' to {option} is NOT found.");
+                Console.WriteLine($"File '{path}' to {option} is NOT found.");
+                yield break;
             }
 
             var inpFs = File.OpenText(path);
@@ -232,6 +201,8 @@ internal static partial class Helper
         catch { }
         throw new ArgumentException($"File '{arg}' is NOT found.");
     }
+
+    static private string Blank<T>(T _) { return ""; }
 }
 
 class Pattern

@@ -2,13 +2,22 @@
 
 namespace grep;
 
+public enum ArgType
+{
+    CommandLine,
+    Environment,
+};
+
+public record FlagedArg(bool Flag, ArgType Type, string Arg);
+
+
 public interface IParse
 {
     string Name { get; }
     string Help { get; }
     string ExtraHelp { get; }
-    public IEnumerable<(bool, ArgType, string)> Parse(
-        IEnumerable<(bool, ArgType, string)> args);
+    public IEnumerable<FlagedArg> Parse(
+        IEnumerable<FlagedArg> args);
 }
 
 public interface IInovke<T, R>
@@ -47,8 +56,6 @@ internal partial class Helper
             throw new ConfigException($"Too many values ({rtn[0]};{rtn[1]}) to '{opt.Name}'");
         }
 
-        //if (rtn[0] == ExtraHelp) throw new ShowSyntaxException(opt);
-
         return rtn[0];
     }
 }
@@ -65,7 +72,6 @@ internal partial class Helper
 //        }
 //    }
 //}
-
 
 internal class ConfigException : Exception
 {
@@ -96,7 +102,7 @@ internal class ConfigException : Exception
         //{
         //    shortcutFound = name;
         //}
-        //msg.Append($"Try 'dir2 {shortcutFound} +?'");
+        //msg.Append($"Try '{nameof(grep)} {shortcutFound} +?'");
         return new(msg.ToString());
     }
 }

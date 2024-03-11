@@ -29,21 +29,6 @@ class Program
         }
     }
 
-    const string OptColor = "--color"; // ---------------------- TODO
-    const string OptFilesFrom = "--files-from"; // ------------- TODO
-    const string OptCaseSensitive = "--case-sensitive"; // ----- TODO
-    const string OptWord = "--word"; // ------------------------ TODO
-    const string OptLineNumber = "--line-number"; // ----------- TODO
-    const string OptCountOnly = "--count"; // ------------------ TODO
-    const string OptFileMatch = "--file-match"; // ------------- TODO
-    const string OptInvertMatch = "--invert-match"; // --------- TODO
-    const string OptRegexFile = "--regex-file"; // ------------- TODO
-    const string OptQuiet = "--quiet"; // ---------------------- TODO
-    const string OptMaxCount = "--max-count"; // --------------- TODO
-    const string OptShowFilename = "--show-filename"; // ------- TODO
-    const string OptFixedTextFrom = "--fixed-text-file"; // ---- TODO
-    const string OptPause = "--pause"; // ---------------------- TODO
-
     static bool RunMain(string[] args)
     {
         if (args.Any((it) => it == "--version"))
@@ -55,23 +40,11 @@ class Program
                   from found in helpFound select found;
         if (qry.Any()) return PrintSyntax(isDetailed: true);
 
-        var flagedArgs = args.ToFlagedArgs(new Dictionary<string, string[]>()
-        {
-            ["-f"] = [OptRegexFile],
-            ["-F"] = [OptFixedTextFrom],
-            ["-m"] = [OptMaxCount],
-            ["-T"] = [OptFilesFrom],
-
-            ["-c"] = [OptCountOnly, TextOn],
-            ["-h"] = [OptShowFilename, TextOff],
-            ["-i"] = [OptCaseSensitive, TextOff],
-            ["-l"] = [OptFileMatch, TextOn],
-            ["-n"] = [OptLineNumber, TextOn],
-            ["-p"] = [OptPause, TextOff],
-            ["-q"] = [OptQuiet, TextOn],
-            ["-v"] = [OptInvertMatch, TextOn],
-            ["-w"] = [OptWord, TextOn],
-        }.ToImmutableDictionary());
+        args = args
+            .ToFlagedArgs(ArgType.CommandLine, Options.ExpandStrings)
+            .Resolve()
+            .Select((it) => it.Arg)
+            .ToArray();
 
         (var patternText, var paths) = GetRegexPaths(args);
 
@@ -113,6 +86,7 @@ class Program
                     .Where((it) => it.matches.Length > 0)
                     .Select((it, index) =>
                     {
+                        Show.Filename.Invoke(path);
                         Console.Write($"{index+1}:");
                         Console.WriteLine(it.line);
                         return it;
