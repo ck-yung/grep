@@ -31,9 +31,9 @@ internal static class Show
     static public Action<string> PrintMatchedLine { get; private set; } =
         (line) => Console.WriteLine(line);
 
-    static public readonly IInvoke<(string, int), Ignore> FoundCount =
-        new SwitchInvoker<(string, int), Ignore>(OptCountOnly,
-            init: Ignore<(string, int)>.Maker,
+    static public readonly IInvoke<(string, int), bool> FoundCount =
+        new SwitchInvoker<(string, int), bool>(OptCountOnly,
+            init: (it) => it.Item2 > 0,
             alterFor: true, alterPost: (flag) =>
             {
                 if (true == flag)
@@ -45,8 +45,12 @@ internal static class Show
             },
             alter: (it) =>
             {
-                Console.WriteLine($"{it.Item1}:{it.Item2}");
-                return Ignore.Void;
+                if (it.Item2 > 0)
+                {
+                    Console.WriteLine($"{it.Item1}:{it.Item2}");
+                    return true;
+                }
+                return false;
             });
 
     static public readonly IInvoke<string, Ignore> LogVerbose =
@@ -62,7 +66,7 @@ internal static class Show
         IEnumerable<MatchResult>, IEnumerable<MatchResult>>
         MyTake = new ParseInvoker<
             IEnumerable<MatchResult>, IEnumerable<MatchResult>>(
-            name: Options.OptMaxCount, init: Helper.Itself,
+            name: OptMaxCount, init: Helper.Itself,
             resolve: (opt, argsThe) =>
             {
                 var args = argsThe.Distinct().Take(2).ToArray();
@@ -101,11 +105,15 @@ internal static class Show
                 ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
                 ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                 PrintMatchedLine = (_) => { };
-                ((SwitchInvoker<(string, int), Ignore>)FoundCount)
+                ((SwitchInvoker<(string, int), bool>)FoundCount)
                 .SetImplementation((it) =>
                 {
-                    Console.WriteLine($"{it.Item1}");
-                    return Ignore.Void;
+                    if (it.Item2 > 0)
+                    {
+                        Console.WriteLine($"{it.Item1}");
+                        return true;
+                    }
+                    return false;
                 });
             }
         });

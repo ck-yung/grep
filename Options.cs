@@ -1,4 +1,6 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
+using static grep.MyOptions;
 using RegX = System.Text.RegularExpressions;
 
 namespace grep;
@@ -15,8 +17,8 @@ internal static class Options
     public const string OptLineNumber = "--line-number";
     public const string OptCountOnly = "--count-only";
     public const string OptFileMatch = "--file-match";
-    public const string OptInvertMatch = "--invert-match"; // --------- TODO
-    public const string OptRegexFile = "--regex-file"; // ------------- TODO
+    public const string OptInvertMatch = "--invert-match";
+    public const string OptRegexFile = "--regex-file";
     public const string OptQuiet = "--quiet";
     public const string OptMaxCount = "--max-count";
     public const string OptShowFilename = "--show-filename";
@@ -110,7 +112,7 @@ internal static class Options
     { get; private set; } = (line, text) => line.Contains(text);
 
     static public readonly IInvoke<string, RegX.Regex> ToRegex
-        = new MyOptions.SwitchInvoker<string, RegX.Regex>(
+        = new SwitchInvoker<string, RegX.Regex>(
             OptCaseSensitive, init: (it) => new RegX.Regex(it),
             alterFor: false, alterPost: (flag) =>
             {
@@ -132,7 +134,7 @@ internal static class Options
         MatchText { get; private set; } = Helper.Itself;
 
     static public readonly IInvoke<RegX.Regex, Func<string, Match[]>>
-        MatchRegex = new MyOptions.SwitchInvoker<RegX.Regex, Func<string, Match[]>>(
+        MatchRegex = new SwitchInvoker<RegX.Regex, Func<string, Match[]>>(
             OptInvertMatch, alterFor: true,
 
             init: (regex) =>
@@ -165,10 +167,56 @@ internal static class Options
     #endregion
 
     static public readonly IInvoke<string, Pattern> ToPattern =
-        new MyOptions.SwitchInvoker<string, Pattern>(
+        new SwitchInvoker<string, Pattern>(
             OptFixedTextPattern, alterFor: true,
             init: (it) => new Pattern( Options.ToRegex.Invoke(it)),
             alter: (it) => new Pattern(it));
+
+    static public readonly IInvoke<string[], (Func<string, Match[]>, IEnumerable<string>)>
+        PatternsFrom = new ParseInvoker<string[], (Func<string, Match[]>, IEnumerable<string>)>(
+            OptRegexFile,
+            init: (args) =>
+            {
+                Pattern pattern;
+                switch (args.Length)
+                {
+                    case 0:
+                        Helper.PrintSyntax();
+                        throw new MissingValueException("");
+                    case 1:
+                        pattern = ToPattern.Invoke(args[0]);
+                        return ((line) => pattern.Matches(line), []);
+                    default:
+                        pattern = ToPattern.Invoke(args[0]);
+                        return ((line) => pattern.Matches(line), args.Skip(1));
+                }
+            },
+            resolve: (opt, argsThe) =>
+            {
+                var files = argsThe.Distinct().Take(2).ToArray();
+                if (files.Length > 1)
+                {
+                    throw new ArgumentException(
+                        $"Too many files ('{files[0]}','{files[1]}') to {opt.Name} are found!");
+                }
+
+                var patternFuncs = ((files[0] == "-")
+                ? Helper.ReadAllLinesFromConsole()
+                : Helper.ReadAllLinesFromFile(files[0], opt.Name))
+                .Select((it) => it.Trim())
+                .Where((it) => it.Length > 0)
+                .Distinct()
+                .Select((it) => ToPattern.Invoke(it))
+                .Select((it) => it.Matches)
+                .ToArray();
+
+                Match[] matchFunc(string line) => patternFuncs
+                .Select((matches) => matches(line))
+                .FirstOrDefault((it) => it.Length > 0)
+                ?? [];
+
+                opt.SetImplementation((args) => (matchFunc, args));
+            });
 
     static readonly IParse[] Parsers = [
         (IParse)ToRegex,
@@ -180,6 +228,7 @@ internal static class Options
         (IParse)Show.FilenameOnly,
         (IParse)MatchRegex,
         (IParse)ToPattern,
+        (IParse)PatternsFrom,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args)

@@ -47,72 +47,42 @@ class Program
             .Select((it) => it.Arg)
             .ToArray();
 
-        (var patternText, var paths) = GetRegexPaths(args);
+        (var matches, var paths) = Options.PatternsFrom.Invoke(args);
 
-        if (string.IsNullOrEmpty(patternText))
-        {
-            PrintSyntax();
-            return false;
-        }
-
-        var patternThe = Options.ToPattern.Invoke(patternText);
-        if (paths.Length == 0)
-        {
-            if (true != Console.IsInputRedirected)
+        var cntFilesMatch = paths
+            .Select((it) => it.FromWildCard())
+            .SelectMany((it) => it)
+            .Where((path) =>
             {
-                PrintSyntax();
-                return false;
-            }
-
-            var cnt = ReadAllLinesFromConsole()
+                var cnt = ReadAllLinesFromFile(path, option: "FILE")
                 .Select((line, lineNumber) =>
-                new MatchResult(lineNumber, line, patternThe.Matches(line)))
+                new MatchResult(lineNumber, line, matches(line)))
                 .Where((it) => it.Matches.Length > 0)
                 .Invoke(Show.MyTake.Invoke)
-                .Select(it =>
+                .Select((it) =>
                 {
+                    Show.Filename.Invoke(path);
                     Show.LineNumber.Invoke(it.LineNumber);
                     Show.PrintMatchedLine(it.Line);
                     return it;
                 })
                 .Count();
-            Show.FoundCount.Invoke(("", cnt));
-        }
-        else
-        {
-            foreach (var path in paths
-                .Select((it) => it.FromWildCard())
-                .SelectMany((it) => it))
-            {
-                var cnt = ReadAllLinesFromFile(path, option: "FILE")
-                    .Select((line, lineNumber) =>
-                    new MatchResult(lineNumber, line, patternThe.Matches(line)))
-                    .Where((it) => it.Matches.Length > 0)
-                    .Invoke(Show.MyTake.Invoke)
-                    .Select((it) =>
-                    {
-                        Show.Filename.Invoke(path);
-                        Show.LineNumber.Invoke(it.LineNumber);
-                        Show.PrintMatchedLine(it.Line);
-                        return it;
-                    })
-                    .Count();
-                Show.FoundCount.Invoke((path, cnt));
-            }
-        }
-        return true;
-    }
+                return Show.FoundCount.Invoke((path, cnt));
+            })
+            .Count();
 
-    static (string, string[]) GetRegexPaths(string[] paths)
-    {
-        switch (paths.Length)
+        switch (cntFilesMatch)
         {
             case 0:
-                return ("", []);
+                Show.LogVerbose.Invoke($"No file is matched.");
+                break;
             case 1:
-                return (paths[0], []);
+                Show.LogVerbose.Invoke($"One files is matched.");
+                break;
             default:
-                return (paths[0], paths.Skip(1).ToArray());
+                Show.LogVerbose.Invoke($"{cntFilesMatch} files are matched.");
+                break;
         }
+        return true;
     }
 }
