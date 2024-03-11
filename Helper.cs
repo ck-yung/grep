@@ -353,7 +353,10 @@ class ConsolePause : IConsolePause
     /// <param name="length">Counter of char which has been printed.</param>
     public void Printed(int length)
     {
-        IncreaseCounter(length);
+        if (length> 0)
+        {
+            IncreaseCounter(length);
+        }
     }
 
     int Limit { get; set; } = int.MaxValue;

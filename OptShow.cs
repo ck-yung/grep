@@ -53,7 +53,7 @@ internal static class Show
             {
                 if (it.Item3 > 0)
                 {
-                    var msg = $"{it.Item1}:{it.Item2}";
+                    var msg = $"{it.Item2}:{it.Item3}";
                     Console.WriteLine(msg);
                     it.Item1.Printed(msg.Length);
                     return true;
@@ -113,12 +113,13 @@ internal static class Show
                     ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
                     ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                     PrintMatchedLine = (_) => 0;
-                    ((SwitchInvoker<(string, int), bool>)FoundCount)
-                    .SetImplementation((it) =>
+                    ((SwitchInvoker<(IConsolePause, string, int), bool>)
+                    FoundCount).SetImplementation((it) =>
                     {
-                        if (it.Item2 > 0)
+                        if (it.Item3 > 0)
                         {
-                            Console.WriteLine($"{it.Item1}");
+                            Console.WriteLine(it.Item2);
+                            it.Item1.Printed(it.Item2.Length);
                             return true;
                         }
                         return false;
