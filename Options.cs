@@ -256,4 +256,9 @@ internal static class Options
     {
         return Parsers.Aggregate(seed: args, func: (acc, it) => it.Parse(acc));
     }
+
+    static public IEnumerable<string> OptNames()
+    {
+        return Parsers.Select((it) => it.Name);
+    }
 }

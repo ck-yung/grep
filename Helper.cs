@@ -117,8 +117,8 @@ internal static partial class Helper
             Console.WriteLine($"{nameof(grep)} -?");
 
         Console.WriteLine($"""
-            {nameof(grep)} [OPTIONS] PATTERN        [FILE [FILE ..]]
-            {nameof(grep)} [OPTIONS] -f REGEX-FILE  [FILE [FILE ..]]
+            {nameof(grep)} [OPTIONS] PATTERN          [FILE [FILE ..]]
+            {nameof(grep)} [OPTIONS] -f PATTERN-FILE  [FILE [FILE ..]]
             """);
 
         if (false == isDetailed)
@@ -126,14 +126,24 @@ internal static partial class Helper
             Console.WriteLine("""
 
                 Read redir console input if no FILE is given.
-                grep does not support FILE in wild card.
-                
-                PATTERN is a regular expression if it is NOT leading by a '~' char.
-                For example,
-                  dir2 -sd | grep ~c++
-                is same as
-                  dir2 -sd | grep c\+\+
+                FILE in wild card is supported.
                 """);
+            var a2 = Environment.GetEnvironmentVariable(nameof(grep));
+            if (a2?.Contains("--debug") ?? false)
+            {
+                Console.WriteLine("");
+                var aa = Options.OptNames().ToList();
+                foreach ((var key, var strings) in Options.ExpandStrings)
+                {
+                    Console.Write($"{key,12} ");
+                    Console.Write(string.Join(" ", strings));
+                    if (false == aa.Contains(strings[0]))
+                    {
+                        Console.Write(" <-- TODO");
+                    }
+                    Console.WriteLine();
+                }
+            }
         }
         else
         {
