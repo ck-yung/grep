@@ -68,6 +68,7 @@ class Program
                 .Select((line, lineNumber) =>
                 new MatchResult(lineNumber, line, patternThe.Matches(line)))
                 .Where((it) => it.Matches.Length > 0)
+                .Invoke(Show.MyTake.Invoke)
                 .Select(it =>
                 {
                     Show.LineNumber.Invoke(it.LineNumber);
@@ -87,6 +88,7 @@ class Program
                     .Select((line, lineNumber) =>
                     new MatchResult(lineNumber, line, patternThe.Matches(line)))
                     .Where((it) => it.Matches.Length > 0)
+                    .Invoke(Show.MyTake.Invoke)
                     .Select((it) =>
                     {
                         Show.Filename.Invoke(path);

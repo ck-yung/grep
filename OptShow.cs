@@ -4,8 +4,8 @@ namespace grep;
 
 internal static class Show
 {
-    static public readonly IInovke<string, Ignore> Filename =
-        new SwitchInovker<string, Ignore>(Options.OptShowFilename,
+    static public readonly IInvoke<string, Ignore> Filename =
+        new SwitchInvoker<string, Ignore>(Options.OptShowFilename,
             init: (filename) =>
             {
                 Console.Write($"{filename}:");
@@ -18,8 +18,8 @@ internal static class Show
     /// true, if continue
     /// false, if break for scanning the file
     /// </summary>
-    static public readonly IInovke<int, bool> LineNumber =
-        new SwitchInovker<int, bool>(Options.OptLineNumber,
+    static public readonly IInvoke<int, bool> LineNumber =
+        new SwitchInvoker<int, bool>(Options.OptLineNumber,
             init: Always<int>.True,
             alterFor: true, alter: (lineNumber) =>
             {
@@ -30,8 +30,8 @@ internal static class Show
     static public Action<string> PrintMatchedLine { get; private set; } =
         (line) => Console.WriteLine(line);
 
-    static public readonly IInovke<(string, int), Ignore> FoundCount =
-        new SwitchInovker<(string, int), Ignore>(Options.OptCountOnly,
+    static public readonly IInvoke<(string, int), Ignore> FoundCount =
+        new SwitchInvoker<(string, int), Ignore>(Options.OptCountOnly,
             init: Ignore<(string, int)>.Maker,
             alterFor: true, alterWhen: (flag) =>
             {
@@ -50,12 +50,44 @@ internal static class Show
                 return Ignore.Void;
             });
 
-    static public readonly IInovke<string, Ignore> LogVerbose =
-        new SwitchInovker<string, Ignore>(Options.OptQuiet,
+    static public readonly IInvoke<string, Ignore> LogVerbose =
+        new SwitchInvoker<string, Ignore>(Options.OptQuiet,
             init: (msg) =>
             {
                 Console.WriteLine(msg);
                 return Ignore.Void;
             },
             alterFor: true, alter: Ignore<string>.Maker);
+
+    static public readonly IInvoke<
+        IEnumerable<MatchResult>, IEnumerable<MatchResult>>
+        MyTake = new ParseInvoker<
+            IEnumerable<MatchResult>, IEnumerable<MatchResult>>(
+            name: Options.OptMaxCount, init: Helper.Itself,
+            resolve: (opt, argsThe) =>
+            {
+                var args = argsThe.Distinct().Take(2).ToArray();
+                if (args.Length > 1)
+                {
+                    throw new ArgumentException(
+                        $"Too many values ({args[0]},{args[1]}) to {opt.Name}");
+                }
+                if (int.TryParse(args[0], out var takeCount))
+                {
+                    if (takeCount > 0)
+                    {
+                        opt.SetImplementation((seq) => seq.Take(takeCount));
+                    }
+                    else
+                    {
+                        throw new ArgumentException(
+                            $"Value to {opt.Name} SHOULD be greater than zero but {takeCount} is found!");
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        $"Value to {opt.Name} SHOULD be a number but '{args[0]}' is found!");
+                }
+            });
 }

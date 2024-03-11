@@ -17,7 +17,7 @@ internal static class Options
     public const string OptInvertMatch = "--invert-match"; // --------- TODO
     public const string OptRegexFile = "--regex-file"; // ------------- TODO
     public const string OptQuiet = "--quiet"; // ---------------------- TODO
-    public const string OptMaxCount = "--max-count"; // --------------- TODO
+    public const string OptMaxCount = "--max-count";
     public const string OptShowFilename = "--show-filename";
     public const string OptFixedTextFrom = "--fixed-text-file"; // ---- TODO
     public const string OptPause = "--pause"; // ---------------------- TODO
@@ -57,9 +57,16 @@ internal static class Options
                 }
                 else if (current.StartsWith("-") && current.Length > 2)
                 {
-                    foreach (var charThe in current.Skip(1))
+                    if ('0' <= current[1] && current[1] <= '9')
                     {
-                        yield return "-" + charThe;
+                        yield return current;
+                    }
+                    else
+                    {
+                        foreach (var charThe in current.Skip(1))
+                        {
+                            yield return "-" + charThe;
+                        }
                     }
                 }
                 else
@@ -102,6 +109,7 @@ internal static class Options
         (IParse)Show.LineNumber,
         (IParse)Show.FoundCount,
         (IParse)Show.LogVerbose,
+        (IParse)Show.MyTake,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args)

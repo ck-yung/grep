@@ -20,7 +20,7 @@ public interface IParse
         IEnumerable<FlagedArg> args);
 }
 
-public interface IInovke<T, R>
+public interface IInvoke<T, R>
 {
     R Invoke(T arg);
 }

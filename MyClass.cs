@@ -132,7 +132,7 @@ static public partial class MyOptions
         }
     }
 
-    internal class ParseInvoker<T, R> : Parser, IInovke<T, R>
+    internal class ParseInvoker<T, R> : Parser, IInvoke<T, R>
     {
         protected Func<T, R> imp { get; private set; }
         public ParseInvoker(string name, Func<T, R> @init,
@@ -162,7 +162,7 @@ static public partial class MyOptions
         }
     }
 
-    internal class SwitchInovker<T, R> : Parser, IInovke<T, R>
+    internal class SwitchInvoker<T, R> : Parser, IInvoke<T, R>
     {
         protected Func<T, R> imp { get; private set; }
         public R Invoke(T arg)
@@ -170,7 +170,7 @@ static public partial class MyOptions
             return imp(arg);
         }
 
-        public SwitchInovker(string name, Func<T, R> @init,
+        public SwitchInvoker(string name, Func<T, R> @init,
             bool alterFor, Func<T, R> alter, 
             string help = "", string extraHelp = "") :
             base(name, help, extraHelp: extraHelp, resolve: (opt, args) =>
@@ -185,10 +185,10 @@ static public partial class MyOptions
                 TextOff.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
                 {
                     case (true, true, false):
-                        ((SwitchInovker<T, R>)opt).SetImplementation(alter);
+                        ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
                         break;
                     case (false, false, true):
-                        ((SwitchInovker<T, R>)opt).SetImplementation(alter);
+                        ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
                         break;
                     case (_, false, false):
                         throw new ArgumentException(
@@ -201,7 +201,7 @@ static public partial class MyOptions
             imp = @init;
         }
 
-        public SwitchInovker(string name, Func<T, R> @init,
+        public SwitchInvoker(string name, Func<T, R> @init,
             bool alterFor, Action<bool> alterWhen, Func<T, R> alter,
             string help = "", string extraHelp = "") :
             base(name, help, extraHelp: extraHelp, resolve: (opt, args) =>
@@ -217,11 +217,11 @@ static public partial class MyOptions
                 {
                     case (true, true, false):
                         alterWhen(true);
-                        ((SwitchInovker<T, R>)opt).SetImplementation(alter);
+                        ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
                         break;
                     case (false, false, true):
                         alterWhen(false);
-                        ((SwitchInovker<T, R>)opt).SetImplementation(alter);
+                        ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
                         break;
                     case (_, false, false):
                         throw new ArgumentException(
