@@ -18,7 +18,7 @@ internal static class Options
     public const string OptCountOnly = "--count-only";
     public const string OptFileMatch = "--file-match";
     public const string OptInvertMatch = "--invert-match";
-    public const string OptRegexFile = "--regex-file";
+    public const string OptPatternFile = "--pattern-file";
     public const string OptQuiet = "--quiet";
     public const string OptMaxCount = "--max-count";
     public const string OptShowFilename = "--show-filename";
@@ -28,7 +28,7 @@ internal static class Options
     public static ImmutableDictionary<string, string[]> ExpandStrings =
         new Dictionary<string, string[]>()
         {
-            ["-f"] = [OptRegexFile],
+            ["-f"] = [OptPatternFile],
             ["-m"] = [OptMaxCount],
             ["-T"] = [OptFilesFrom],
 
@@ -174,7 +174,7 @@ internal static class Options
 
     static public readonly IInvoke<string[], (Func<string, Match[]>, IEnumerable<string>)>
         PatternsFrom = new ParseInvoker<string[], (Func<string, Match[]>, IEnumerable<string>)>(
-            OptRegexFile,
+            OptPatternFile,
             init: (args) =>
             {
                 Pattern pattern;
@@ -201,7 +201,7 @@ internal static class Options
                 }
 
                 var patternFuncs = ((files[0] == "-")
-                ? Helper.ReadAllLinesFromConsole()
+                ? Helper.ReadAllLinesFromConsole(opt.Name)
                 : Helper.ReadAllLinesFromFile(files[0], opt.Name))
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0)
@@ -231,7 +231,7 @@ internal static class Options
                 }
 
                 opt.SetImplementation((_) => ((files[0] == "-")
-                ? Helper.ReadAllLinesFromConsole()
+                ? Helper.ReadAllLinesFromConsole(opt.Name)
                 : Helper.ReadAllLinesFromFile(files[0], opt.Name))
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0));
@@ -249,6 +249,7 @@ internal static class Options
         (IParse)ToPattern,
         (IParse)PatternsFrom,
         (IParse)FilesFrom,
+        (IParse)Show.PauseMaker,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args)

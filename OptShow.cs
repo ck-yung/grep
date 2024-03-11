@@ -5,49 +5,57 @@ namespace grep;
 
 internal static class Show
 {
-    static public readonly IInvoke<string, Ignore> Filename =
-        new SwitchInvoker<string, Ignore>(OptShowFilename,
+    static public readonly IInvoke<string, int> Filename =
+        new SwitchInvoker<string, int>(OptShowFilename,
             init: (filename) =>
             {
-                Console.Write($"{filename}:");
-                return Ignore.Void;
+                var msg = $"{filename}:";
+                Console.Write(msg);
+                return msg.Length;
             },
-            alterFor: false, alter: Ignore<string>.Maker);
+            alterFor: false, alter: (_) => 0);
 
     /// <summary>
     /// Invoke(string) return
     /// true, if continue
     /// false, if break for scanning the file
     /// </summary>
-    static public readonly IInvoke<int, bool> LineNumber =
-        new SwitchInvoker<int, bool>(OptLineNumber,
-            init: Always<int>.True,
+    static public readonly IInvoke<int, int> LineNumber =
+        new SwitchInvoker<int, int>(OptLineNumber,
+            init: (_) => 0,
             alterFor: true, alter: (lineNumber) =>
             {
-                Console.Write($"{1 + lineNumber}:");
-                return true;
+                var msg = $"{1 + lineNumber}:";
+                Console.Write(msg);
+                return msg.Length;
             });
 
-    static public Action<string> PrintMatchedLine { get; private set; } =
-        (line) => Console.WriteLine(line);
+    static public Func<string, int> PrintMatchedLine { get; private set; } =
+        (line) =>
+        {
+            Console.WriteLine(line);
+            return line.Length;
+        };
 
-    static public readonly IInvoke<(string, int), bool> FoundCount =
-        new SwitchInvoker<(string, int), bool>(OptCountOnly,
-            init: (it) => it.Item2 > 0,
+    static public readonly IInvoke<(IConsolePause, string, int), bool> FoundCount =
+        new SwitchInvoker<(IConsolePause, string, int), bool>(OptCountOnly,
+            init: (it) => it.Item3 > 0,
             alterFor: true, alterPost: (flag) =>
             {
                 if (true == flag)
                 {
                     ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
                     ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
-                    PrintMatchedLine = (_) => { };
+                    PrintMatchedLine = (_) => 0;
                 }
             },
             alter: (it) =>
             {
-                if (it.Item2 > 0)
+                if (it.Item3 > 0)
                 {
-                    Console.WriteLine($"{it.Item1}:{it.Item2}");
+                    var msg = $"{it.Item1}:{it.Item2}";
+                    Console.WriteLine(msg);
+                    it.Item1.Printed(msg.Length);
                     return true;
                 }
                 return false;
@@ -95,26 +103,32 @@ internal static class Show
             });
 
     static public readonly IInvoke<Ignore, Ignore> FilenameOnly =
-    new SwitchInvoker<Ignore, Ignore>(OptFileMatch,
-        init: Ignore.Maker, alter: Ignore.Maker,
-        alterFor: true, alterPost: (flag) =>
-        {
-            if (true == flag)
+        new SwitchInvoker<Ignore, Ignore>(OptFileMatch,
+            init: Ignore.Maker, alter: Ignore.Maker,
+            alterFor: true, alterPost: (flag) =>
             {
-                ((IParse)MyTake).Parse("1".ToFlagedArgs());
-                ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
-                ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
-                PrintMatchedLine = (_) => { };
-                ((SwitchInvoker<(string, int), bool>)FoundCount)
-                .SetImplementation((it) =>
+                if (true == flag)
                 {
-                    if (it.Item2 > 0)
+                    ((IParse)MyTake).Parse("1".ToFlagedArgs());
+                    ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
+                    ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
+                    PrintMatchedLine = (_) => 0;
+                    ((SwitchInvoker<(string, int), bool>)FoundCount)
+                    .SetImplementation((it) =>
                     {
-                        Console.WriteLine($"{it.Item1}");
-                        return true;
-                    }
-                    return false;
-                });
-            }
-        });
+                        if (it.Item2 > 0)
+                        {
+                            Console.WriteLine($"{it.Item1}");
+                            return true;
+                        }
+                        return false;
+                    });
+                }
+            });
+
+    static public readonly IInvoke<Ignore, IConsolePause> PauseMaker =
+        new SwitchInvoker<Ignore, IConsolePause>(OptPause,
+            init: (_) => new ConsolePause(),
+            alterFor: false,
+            alter: (_) => new FakePause());
 }

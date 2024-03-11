@@ -49,12 +49,14 @@ class Program
 
         (var matches, var paths) = Options.PatternsFrom.Invoke(args);
 
-        var cntFilesMatch = paths
+        var pause = Show.PauseMaker.Invoke(Ignore.Void);
+
+        var mapMatched = paths
             .Select((it) => it.FromWildCard())
             .SelectMany((it) => it)
             .Union(Options.FilesFrom.Invoke(Ignore.Void))
             .Distinct()
-            .Where((path) =>
+            .Select((path) =>
             {
                 var cnt = ReadAllLinesFromFile(path, option: "FILE")
                 .Select((line, lineNumber) =>
@@ -63,27 +65,36 @@ class Program
                 .Invoke(Show.MyTake.Invoke)
                 .Select((it) =>
                 {
-                    Show.Filename.Invoke(path);
-                    Show.LineNumber.Invoke(it.LineNumber);
-                    Show.PrintMatchedLine(it.Line);
+                    var lenPrinted = Show.Filename.Invoke(path);
+                    lenPrinted += Show.LineNumber.Invoke(it.LineNumber);
+                    lenPrinted += Show.PrintMatchedLine(it.Line);
+                    pause.Printed(lenPrinted);
                     return it;
                 })
                 .Count();
-                return Show.FoundCount.Invoke((path, cnt));
+                return Show.FoundCount.Invoke((pause, path, cnt));
             })
-            .Count();
+            .GroupBy((it) => it)
+            .ToImmutableDictionary((grp) => grp.Key,
+            (grp) => grp.Count());
 
-        switch (cntFilesMatch)
+        if (mapMatched.TryGetValue(true, out var cntFilesMatch))
         {
-            case 0:
-                Show.LogVerbose.Invoke($"No file is matched.");
-                break;
-            case 1:
+            if (cntFilesMatch == 1)
                 Show.LogVerbose.Invoke($"One files is matched.");
-                break;
-            default:
+            else
                 Show.LogVerbose.Invoke($"{cntFilesMatch} files are matched.");
-                break;
+        }
+        else
+        {
+            if (mapMatched.ContainsKey(false))
+            {
+                Show.LogVerbose.Invoke($"No file is matched.");
+            }
+            else
+            {
+                PrintSyntax();
+            }
         }
         return true;
     }

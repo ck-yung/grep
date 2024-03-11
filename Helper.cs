@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Reflection;
 using RegX = System.Text.RegularExpressions;
 
@@ -71,8 +72,12 @@ internal static partial class Helper
         }
     }
 
-    public static IEnumerable<string> ReadAllLinesFromConsole()
+    public static IEnumerable<string> ReadAllLinesFromConsole(string option)
     {
+        if (true != Console.IsInputRedirected)
+        {
+            throw new ArgumentException($"Console input for {option} is NOT redir!");
+        }
         string? lineThe;
         while (null != (lineThe = Console.ReadLine()))
         {
@@ -81,22 +86,17 @@ internal static partial class Helper
     }
 
     public static IEnumerable<string> ReadAllLinesFromFile(
-        string path, string? option = null)
+        string path, string option)
     {
         if ("-" == path)
         {
-            foreach (var line in ReadAllLinesFromConsole())
+            foreach (var line in ReadAllLinesFromConsole(option))
                 yield return line;
         }
         else
         {
             if (true != File.Exists(path))
             {
-                if (string.IsNullOrEmpty(option))
-                {
-                    Show.LogVerbose.Invoke($"File '{path}' is NOT found.");
-                    yield break;
-                }
                 Show.LogVerbose.Invoke($"File '{path}' to {option} is NOT found.");
                 yield break;
             }
@@ -202,13 +202,12 @@ internal static partial class Helper
     public static string[] FromWildCard(this string arg)
     {
         if (File.Exists(arg)) return [arg];
-        if (arg.Contains(':')) throw new ArgumentException(
-            $"FILE can NOT contain ':' but '{arg}' is found.");
-        if (arg.StartsWith(@"\\")) throw new ArgumentException(
-            $"FILE can NOT leading by '\\\\' but '{arg}' is found.");
+        var a2 = Path.GetDirectoryName(arg);
+        var pathThe = string.IsNullOrEmpty(a2) ? "." : a2;
+        var wildThe = Path.GetFileName(arg) ?? ":";
         try
         {
-            var aa = Directory.GetFiles(".", searchPattern: arg);
+            var aa = Directory.GetFiles(pathThe, searchPattern: wildThe);
             if (aa.Length > 0)
             {
                 return aa
@@ -293,14 +292,38 @@ internal static class Log
     }
 }
 
-internal static class ConsolePause
+interface IConsolePause
 {
-    public static void Disable()
+    void Disable();
+    void Auto();
+    bool Assign(int limit);
+    void Printed(int length);
+    void IncreaseCounter(int length);
+}
+
+class FakePause: IConsolePause
+{
+    public void Disable() { }
+    public void Auto() { }
+    public bool Assign(int limit) { return false; }
+    public void Printed(int length) { }
+    public void IncreaseCounter(int length) { }
+}
+
+class ConsolePause : IConsolePause
+{
+    public ConsolePause()
     {
-        IncreaseCounter = (_) => { };
+        Auto();
     }
 
-    public static void Auto()
+    public void Disable()
+    {
+        Limit = 2;
+        Increase = FakeInc;
+    }
+
+    public void Auto()
     {
         if (Console.IsOutputRedirected || Console.IsInputRedirected)
         {
@@ -308,13 +331,14 @@ internal static class ConsolePause
             return;
         }
         Limit = Console.WindowHeight - 1;
-        if (Limit < 1)
+        if (Limit < 2)
         {
-            IncreaseCounter = (_) => { };
+            Limit = 2;
+            Increase = FakeInc;
         }
     }
 
-    public static bool Assign(int limit)
+    public bool Assign(int limit)
     {
         if (Console.IsOutputRedirected || Console.IsInputRedirected)
         {
@@ -327,21 +351,24 @@ internal static class ConsolePause
     }
 
     /// <param name="length">Counter of char which has been printed.</param>
-    public static void Printed(int length)
+    public void Printed(int length)
     {
         IncreaseCounter(length);
     }
 
-    static int Limit { get; set; } = int.MaxValue;
-    static int Counter { get; set; } = 0;
+    int Limit { get; set; } = int.MaxValue;
+    int Counter { get; set; } = 0;
+    static int RealInc(int arg) => arg + 1;
+    static int FakeInc(int _) => 1;
+    Func<int, int> Increase = (it) => RealInc(it);
 
     // TODO: 'length' handling
-    static Action<int> IncreaseCounter { get; set; } = (length) =>
+    public void IncreaseCounter(int length)
     {
-        Counter += 1;
+        Counter = Increase(Counter);
         if (Counter >= Limit)
         {
-            Console.Write("Press any key (q to quit) ");
+            Console.Write("Press any key (q to quit, c to cancel coming pause) ");
             var inp = Console.ReadKey();
             Console.Write("\r");
             // sole.Write("Press any key (q to quit) AB");
@@ -352,7 +379,12 @@ internal static class ConsolePause
                 Console.ResetColor();
                 Environment.Exit(0);
             }
+            Auto();
             Counter = 0;
+            if (inp.KeyChar == 'c' || inp.KeyChar == 'C')
+            {
+                Disable();
+            }
         }
-    };
+    }
 }
