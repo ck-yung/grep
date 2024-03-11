@@ -29,10 +29,19 @@ internal class MissingValueException: Exception
     { }
 }
 
-internal record Match(int Index, int Length);
+public record Match(int Index, int Length);
+public record MatchResult(int LineNumber, string Line, Match[] Matches);
 
 internal static partial class Helper
 {
+    static public IEnumerable<T> Invoke<T>(this IEnumerable<T> seq,
+        Func<IEnumerable<T>, IEnumerable<T>> func)
+    {
+        return func(seq);
+    }
+
+    static public T Itself<T>(T arg) => arg;
+
     static internal IEnumerable<FlagedArg> GetEnvirOpts(string name)
     {
         var envirOld = Environment.GetEnvironmentVariable(name);
@@ -81,10 +90,10 @@ internal static partial class Helper
             {
                 if (string.IsNullOrEmpty(option))
                 {
-                    Console.WriteLine($"File '{path}' is NOT found.");
+                    Show.LogVerbose.Invoke($"File '{path}' is NOT found.");
                     yield break;
                 }
-                Console.WriteLine($"File '{path}' to {option} is NOT found.");
+                Show.LogVerbose.Invoke($"File '{path}' to {option} is NOT found.");
                 yield break;
             }
 
@@ -205,7 +214,8 @@ internal static partial class Helper
             }
         }
         catch { }
-        throw new ArgumentException($"File '{arg}' is NOT found.");
+        Show.LogVerbose.Invoke($"File '{arg}' is NOT found!");
+        return [];
     }
 
     static private string Blank<T>(T _) { return ""; }

@@ -65,12 +65,13 @@ class Program
             }
 
             var cnt = ReadAllLinesFromConsole()
-                .Select((line) => new { line, matches = patternThe.Matches(line) })
-                .Where((it) => it.matches.Length > 0)
-                .Select((it, index) =>
+                .Select((line, lineNumber) =>
+                new MatchResult(lineNumber, line, patternThe.Matches(line)))
+                .Where((it) => it.Matches.Length > 0)
+                .Select(it =>
                 {
-                    Show.LineNumber.Invoke(index);
-                    Show.PrintMatchedLine(it.line);
+                    Show.LineNumber.Invoke(it.LineNumber);
+                    Show.PrintMatchedLine(it.Line);
                     return it;
                 })
                 .Count();
@@ -82,14 +83,15 @@ class Program
                 .Select((it) => it.FromWildCard())
                 .SelectMany((it) => it))
             {
-                var cnt = ReadAllLinesFromFile(path)
-                    .Select((line) => new { line, matches = patternThe.Matches(line) })
-                    .Where((it) => it.matches.Length > 0)
-                    .Select((it, index) =>
+                var cnt = ReadAllLinesFromFile(path, option: "FILE")
+                    .Select((line, lineNumber) =>
+                    new MatchResult(lineNumber, line, patternThe.Matches(line)))
+                    .Where((it) => it.Matches.Length > 0)
+                    .Select((it) =>
                     {
                         Show.Filename.Invoke(path);
-                        Show.LineNumber.Invoke(index);
-                        Show.PrintMatchedLine(it.line);
+                        Show.LineNumber.Invoke(it.LineNumber);
+                        Show.PrintMatchedLine(it.Line);
                         return it;
                     })
                     .Count();

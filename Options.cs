@@ -101,6 +101,7 @@ internal static class Options
         (IParse)Show.Filename,
         (IParse)Show.LineNumber,
         (IParse)Show.FoundCount,
+        (IParse)Show.LogVerbose,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args)

@@ -27,25 +27,35 @@ internal static class Show
                 return true;
             });
 
-    static public Action<string> PrintMatchedLine { get; private set; } = (line) =>
-    {
-        Console.WriteLine(line);
-    };
+    static public Action<string> PrintMatchedLine { get; private set; } =
+        (line) => Console.WriteLine(line);
 
     static public readonly IInovke<(string, int), Ignore> FoundCount =
         new SwitchInovker<(string, int), Ignore>(Options.OptCountOnly,
             init: Ignore<(string, int)>.Maker,
-            alterFor: true, alterWhen: (_) =>
+            alterFor: true, alterWhen: (flag) =>
             {
-                ((IParse)Filename).Parse(Options.TextOff
-                    .ToFlagedArgs(ArgType.CommandLine));
-                ((IParse)LineNumber).Parse(Options.TextOff
-                    .ToFlagedArgs(ArgType.CommandLine));
-                PrintMatchedLine = (_) => { };
+                if (true == flag)
+                {
+                    ((IParse)Filename).Parse(Options.TextOff
+                        .ToFlagedArgs(ArgType.CommandLine));
+                    ((IParse)LineNumber).Parse(Options.TextOff
+                        .ToFlagedArgs(ArgType.CommandLine));
+                    PrintMatchedLine = (_) => { };
+                }
             },
             alter: (it) =>
             {
                 Console.WriteLine($"{it.Item1}:{it.Item2}");
                 return Ignore.Void;
             });
+
+    static public readonly IInovke<string, Ignore> LogVerbose =
+        new SwitchInovker<string, Ignore>(Options.OptQuiet,
+            init: (msg) =>
+            {
+                Console.WriteLine(msg);
+                return Ignore.Void;
+            },
+            alterFor: true, alter: Ignore<string>.Maker);
 }
