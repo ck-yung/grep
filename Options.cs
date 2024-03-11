@@ -20,17 +20,17 @@ internal static class Options
     public const string OptQuiet = "--quiet";
     public const string OptMaxCount = "--max-count";
     public const string OptShowFilename = "--show-filename";
-    public const string OptFixedTextFrom = "--fixed-text-file"; // ---- TODO
+    public const string OptFixedTextPattern = "--fixed-strings";
     public const string OptPause = "--pause"; // ---------------------- TODO
 
     public static ImmutableDictionary<string, string[]> ExpandStrings =
         new Dictionary<string, string[]>()
         {
             ["-f"] = [OptRegexFile],
-            ["-F"] = [OptFixedTextFrom],
             ["-m"] = [OptMaxCount],
             ["-T"] = [OptFilesFrom],
 
+            ["-F"] = [OptFixedTextPattern, TextOn],
             ["-c"] = [OptCountOnly, TextOn],
             ["-h"] = [OptShowFilename, TextOff],
             ["-i"] = [OptCaseSensitive, TextOff],
@@ -164,6 +164,12 @@ internal static class Options
             });
     #endregion
 
+    static public readonly IInvoke<string, Pattern> ToPattern =
+        new MyOptions.SwitchInvoker<string, Pattern>(
+            OptFixedTextPattern, alterFor: true,
+            init: (it) => new Pattern( Options.ToRegex.Invoke(it)),
+            alter: (it) => new Pattern(it));
+
     static readonly IParse[] Parsers = [
         (IParse)ToRegex,
         (IParse)Show.Filename,
@@ -173,6 +179,7 @@ internal static class Options
         (IParse)Show.MyTake,
         (IParse)Show.FilenameOnly,
         (IParse)MatchRegex,
+        (IParse)ToPattern,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args)

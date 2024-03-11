@@ -55,7 +55,7 @@ class Program
             return false;
         }
 
-        var patternThe = new Pattern(patternText);
+        var patternThe = Options.ToPattern.Invoke(patternText);
         if (paths.Length == 0)
         {
             if (true != Console.IsInputRedirected)

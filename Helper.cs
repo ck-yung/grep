@@ -140,6 +140,7 @@ internal static partial class Helper
             Console.WriteLine("""
                 Short-cut  Option             With
                   -c       --count-only       on
+                  -F       --fixed-strings    on
                   -h       --show-filename    off
                   -i       --case-sensitive   off
                   -l       --file-match       on
@@ -151,9 +152,8 @@ internal static partial class Helper
                 
                 Short-cut  Option             Required
                            --color            COLOR
-                           --color           ^COLOR
+                           --color           ~COLOR
                   -f       --regex-file       FILE
-                  -F       --fixed-text-file  FILE
                   -m       --max-count        NUMBER
                   -T       --files-from       FILE
 
@@ -231,21 +231,14 @@ class Pattern
 
     public Pattern(string pattern)
     {
-        if (string.IsNullOrWhiteSpace(pattern))
-            throw new ArgumentNullException(nameof(Pattern));
+        var tmp3 = Options.MatchText(Options.TextContains);
+        Matches = (it) => tmp3(it, pattern) ? Match.ZeroOne : [];
+    }
 
-        if (pattern.StartsWith('~'))
-        {
-            var tmp2 = (pattern.Length > 1) ? pattern[1..] : "~";
-            var tmp3 = Options.MatchText(Options.TextContains);
-            Matches = (it) => tmp3(it, tmp2) ? Match.ZeroOne : [];
-        }
-        else
-        {
-            var tmp4 = Options.MatchRegex.Invoke(
-                Options.ToRegex.Invoke(pattern));
-            Matches = (it) => tmp4(it);
-        }
+    public Pattern(RegX.Regex regex)
+    {
+        var tmp5 = Options.MatchRegex.Invoke(regex);
+        Matches = (it) => tmp5(it);
     }
 }
 

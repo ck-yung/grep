@@ -34,10 +34,10 @@ dir2 -sd | grep !lost+found
   --invert-match        off      on
   --show-filename       on       off
   --pause               on       off
+  --fixed-strings       off      on
   --max-count           UNLIMIT  NUMBER
   --files-from                   FILES-FROM
   --file                         REGEX-FILE
-  --fixed-text-file              FIXED-TEXT-FILE
 ```
 ## Short-Cut
 ```
@@ -48,11 +48,11 @@ dir2 -sd | grep !lost+found
   -l       --file-match on
   -v       --invert-match on
   -h       --show-filename off
+  -F       --fixed-strings on
   -p       --pause off
   -m       --max-count
   -T       --files-from
   -f       --file
-  -F       --fixed-text-file
 ```
 
 * Read redir console input if no ```FILE``` is given.
