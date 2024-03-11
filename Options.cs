@@ -10,14 +10,14 @@ internal static class Options
 
     public const string OptColor = "--color"; // ---------------------- TODO
     public const string OptFilesFrom = "--files-from"; // ------------- TODO
-    public const string OptCaseSensitive = "--case-sensitive"; // ----- TODO
+    public const string OptCaseSensitive = "--case-sensitive";
     public const string OptWord = "--word"; // ------------------------ TODO
     public const string OptLineNumber = "--line-number";
     public const string OptCountOnly = "--count-only";
     public const string OptFileMatch = "--file-match";
     public const string OptInvertMatch = "--invert-match"; // --------- TODO
     public const string OptRegexFile = "--regex-file"; // ------------- TODO
-    public const string OptQuiet = "--quiet"; // ---------------------- TODO
+    public const string OptQuiet = "--quiet";
     public const string OptMaxCount = "--max-count";
     public const string OptShowFilename = "--show-filename";
     public const string OptFixedTextFrom = "--fixed-text-file"; // ---- TODO
@@ -112,7 +112,7 @@ internal static class Options
     static public readonly IInvoke<string, RegX.Regex> ToRegex
         = new MyOptions.SwitchInvoker<string, RegX.Regex>(
             OptCaseSensitive, init: (it) => new RegX.Regex(it),
-            alterFor: false, alterWhen: (flag) =>
+            alterFor: false, alterPost: (flag) =>
             {
                 if (flag)
                 {
@@ -127,6 +127,43 @@ internal static class Options
             alter: (it) => new RegX.Regex(it,
                 RegX.RegexOptions.IgnoreCase));
 
+    #region Matching Functions
+    static public Func<Func<string, string, bool>, Func<string, string, bool>>
+        MatchText { get; private set; } = Helper.Itself;
+
+    static public readonly IInvoke<RegX.Regex, Func<string, Match[]>>
+        MatchRegex = new MyOptions.SwitchInvoker<RegX.Regex, Func<string, Match[]>>(
+            OptInvertMatch, alterFor: true,
+
+            init: (regex) =>
+            (it) => regex.Matches(it)
+            .OfType<RegX.Match>()
+            .Where((it) => it.Success)
+            .Select((it) => new Match(it.Index, it.Length))
+            .ToArray(),
+
+            alterPost: (flag) =>
+            {
+                if (flag)
+                {
+                    MatchText = (func) =>
+                    (line, text) => true != func(line, text);
+                }
+                else
+                {
+                    MatchText = Helper.Itself;
+                }
+            },
+
+            alter: (regex) =>
+            {
+                bool b2(string it) => regex.Matches(it)
+                .OfType<RegX.Match>()
+                .Where((it) => it.Success).Any();
+                return (it) => b2(it) ? [] : Match.ZeroOne;
+            });
+    #endregion
+
     static readonly IParse[] Parsers = [
         (IParse)ToRegex,
         (IParse)Show.Filename,
@@ -135,6 +172,7 @@ internal static class Options
         (IParse)Show.LogVerbose,
         (IParse)Show.MyTake,
         (IParse)Show.FilenameOnly,
+        (IParse)MatchRegex,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args)

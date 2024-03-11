@@ -230,7 +230,7 @@ static public partial class MyOptions
         }
 
         public SwitchInvoker(string name, Func<T, R> @init,
-            bool alterFor, Action<bool> alterWhen, Func<T, R> alter,
+            bool alterFor, Func<T, R> alter, Action<bool> alterPost,
             string help = "", string extraHelp = "") :
             base(name, help, extraHelp: extraHelp, resolve: (opt, args) =>
             {
@@ -239,23 +239,30 @@ static public partial class MyOptions
                     throw new ArgumentException(
                         $"Too many values ('{argsThe[0]}','{argsThe[1]}') are found to '{name}'!");
 
-                switch (alterFor,
-                TextOn.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase),
-                TextOff.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
+                bool isEnabledFlag;
+                if (TextOn.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
                 {
-                    case (true, true, false):
-                        alterWhen(true);
-                        ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
-                        break;
-                    case (false, false, true):
-                        alterWhen(false);
-                        ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
-                        break;
-                    case (_, false, false):
-                        throw new ArgumentException(
-                            $"Value '{argsThe[0]}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!");
-                    default:
-                        break;
+                    isEnabledFlag = true;
+                }
+                else if (TextOff.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
+                {
+                    isEnabledFlag = false;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        $"Value '{argsThe[0]}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!");
+                }
+
+                if (alterFor == isEnabledFlag)
+                {
+                    ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
+                    alterPost(isEnabledFlag);
+                }
+                else
+                {
+                    ((SwitchInvoker<T, R>)opt).SetImplementation(init);
+                    alterPost(isEnabledFlag);
                 }
             })
         {

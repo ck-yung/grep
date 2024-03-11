@@ -34,7 +34,7 @@ internal static class Show
     static public readonly IInvoke<(string, int), Ignore> FoundCount =
         new SwitchInvoker<(string, int), Ignore>(OptCountOnly,
             init: Ignore<(string, int)>.Maker,
-            alterFor: true, alterWhen: (flag) =>
+            alterFor: true, alterPost: (flag) =>
             {
                 if (true == flag)
                 {
@@ -93,7 +93,7 @@ internal static class Show
     static public readonly IInvoke<Ignore, Ignore> FilenameOnly =
     new SwitchInvoker<Ignore, Ignore>(OptFileMatch,
         init: Ignore.Maker, alter: Ignore.Maker,
-        alterFor: true, alterWhen: (flag) =>
+        alterFor: true, alterPost: (flag) =>
         {
             if (true == flag)
             {

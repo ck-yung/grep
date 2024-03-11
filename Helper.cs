@@ -29,7 +29,11 @@ internal class MissingValueException: Exception
     { }
 }
 
-public record Match(int Index, int Length);
+public record Match(int Index, int Length)
+{
+    public static readonly Match[] ZeroOne = [new Match(0, 0)];
+}
+
 public record MatchResult(int LineNumber, string Line, Match[] Matches);
 
 internal static partial class Helper
@@ -233,18 +237,14 @@ class Pattern
         if (pattern.StartsWith('~'))
         {
             var tmp2 = (pattern.Length > 1) ? pattern[1..] : "~";
-            Matches = (it)
-                => Options.TextContains(it, tmp2)
-                ? [new(0, 0)] : [];
+            var tmp3 = Options.MatchText(Options.TextContains);
+            Matches = (it) => tmp3(it, tmp2) ? Match.ZeroOne : [];
         }
         else
         {
-            Matches = (it) => Options.ToRegex.Invoke(pattern)
-            .Matches(it)
-            .OfType<RegX.Match>()
-            .Where((it) => it.Success)
-            .Select((it) => new Match(it.Index, it.Length))
-            .ToArray();
+            var tmp4 = Options.MatchRegex.Invoke(
+                Options.ToRegex.Invoke(pattern));
+            Matches = (it) => tmp4(it);
         }
     }
 }
