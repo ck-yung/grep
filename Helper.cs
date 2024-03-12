@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Reflection;
 using RegX = System.Text.RegularExpressions;
 
@@ -22,12 +21,6 @@ class Always<T>
 {
     public static Func<T, bool> True = (_) => true;
     public static Func<T, bool> Never = (_) => false;
-}
-
-internal class MissingValueException: Exception
-{
-    public MissingValueException(string message) : base(message)
-    { }
 }
 
 public record Match(int Index, int Length)
@@ -72,12 +65,20 @@ internal static partial class Helper
         }
     }
 
+    static string? LastOptionReadConsole = null;
     public static IEnumerable<string> ReadAllLinesFromConsole(string option)
     {
         if (true != Console.IsInputRedirected)
         {
-            throw new ArgumentException($"Console input for {option} is NOT redir!");
+            throw new ConfigException(
+                $"Console input is NOT redir but {option} -");
         }
+        if (false == string.IsNullOrEmpty(LastOptionReadConsole))
+        {
+            throw new ConfigException(
+                $"Options '{option}' and '{LastOptionReadConsole}' both read console input!");
+        }
+        LastOptionReadConsole = option;
         string? lineThe;
         while (null != (lineThe = Console.ReadLine()))
         {
@@ -111,8 +112,15 @@ internal static partial class Helper
         }
     }
 
+    public static bool IsEnvirDebug()
+    {
+        return Environment.GetEnvironmentVariable(nameof(grep))
+            ?.Contains("--debug") ?? false;
+    }
+
     public static bool PrintSyntax(bool isDetailed = false)
     {
+        Console.WriteLine("Syntax:");
         if (false == isDetailed)
             Console.WriteLine($"{nameof(grep)} -?");
 
@@ -125,25 +133,8 @@ internal static partial class Helper
         {
             Console.WriteLine("""
 
-                Read redir console input if no FILE is given.
-                FILE in wild card is supported.
+                Read redir console input if no FILE is -
                 """);
-            var a2 = Environment.GetEnvironmentVariable(nameof(grep));
-            if (a2?.Contains("--debug") ?? false)
-            {
-                Console.WriteLine("");
-                var aa = Options.OptNames().ToList();
-                foreach ((var key, var strings) in Options.ExpandStrings)
-                {
-                    Console.Write($"{key,12} ");
-                    Console.Write(string.Join(" ", strings));
-                    if (false == aa.Contains(strings[0]))
-                    {
-                        Console.Write(" <-- TODO");
-                    }
-                    Console.WriteLine();
-                }
-            }
         }
         else
         {
@@ -170,8 +161,10 @@ internal static partial class Helper
                 Read redir console input if FILE is -
 
                 For example,
-                  grep -inm 3 class -T cs-files.txt
-                  dir2 -sb *cs | grep -inm 3 class -T -
+                  grep -nm 3 class *.cs
+                  grep -ic class -T cs-files.txt
+                  dir *.cs | grep -i Class -
+                  dir2 -sb *.cs --within 4hours | grep -n class -T -
                 """);
         }
         return false;
@@ -192,6 +185,23 @@ internal static partial class Helper
             copyright = ((AssemblyCopyrightAttribute)aa[0]).Copyright;
         }
         Console.WriteLine($"{nameThe}/C# v{version} {copyright}");
+
+        if (IsEnvirDebug())
+        {
+            Console.WriteLine("");
+            var bb = Options.OptNames().ToList();
+            foreach ((var key, var strings) in Options.ExpandStrings)
+            {
+                Console.Write($"{key,12} ");
+                Console.Write(string.Join(" ", strings));
+                if (false == bb.Contains(strings[0]))
+                {
+                    Console.Write(" <-- <-- <-- TODO");
+                }
+                Console.WriteLine();
+            }
+        }
+
         return false;
     }
 
@@ -212,6 +222,7 @@ internal static partial class Helper
     public static string[] FromWildCard(this string arg)
     {
         if (File.Exists(arg)) return [arg];
+        if ("-" == arg) return ["-"];
         var a2 = Path.GetDirectoryName(arg);
         var pathThe = string.IsNullOrEmpty(a2) ? "." : a2;
         var wildThe = Path.GetFileName(arg) ?? ":";
@@ -384,8 +395,8 @@ class ConsolePause : IConsolePause
             Console.Write("Press any key (q to quit, c to cancel coming pause) ");
             var inp = Console.ReadKey();
             Console.Write("\r");
-            // sole.Write("Press any key (q to quit) AB");
-            Console.Write("                             ");
+            //nsole.Write("Press any key (q to quit, c to cancel coming pause) 12");
+            Console.Write("                                                      ");
             Console.Write("\r");
             if (inp.KeyChar == 'q' || inp.KeyChar == 'Q')
             {

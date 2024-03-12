@@ -198,7 +198,7 @@ static public partial class MyOptions
             {
                 var argsThe = args.Distinct().Take(2).ToArray();
                 if (argsThe.Length > 1)
-                    throw new ArgumentException(
+                    throw new ConfigException(
                         $"Too many values ('{argsThe[0]}','{argsThe[1]}') are found to '{name}'!");
 
                 bool isEnabledFlag;
@@ -212,7 +212,7 @@ static public partial class MyOptions
                 }
                 else
                 {
-                    throw new ArgumentException(
+                    throw new ConfigException(
                         $"Value '{argsThe[0]}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!");
                 }
 
@@ -236,7 +236,7 @@ static public partial class MyOptions
             {
                 var argsThe = args.Distinct().Take(2).ToArray();
                 if (argsThe.Length > 1)
-                    throw new ArgumentException(
+                    throw new ConfigException(
                         $"Too many values ('{argsThe[0]}','{argsThe[1]}') are found to '{name}'!");
 
                 bool isEnabledFlag;
@@ -250,7 +250,7 @@ static public partial class MyOptions
                 }
                 else
                 {
-                    throw new ArgumentException(
+                    throw new ConfigException(
                         $"Value '{argsThe[0]}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!");
                 }
 

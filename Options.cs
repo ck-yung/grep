@@ -181,8 +181,7 @@ internal static class Options
                 switch (args.Length)
                 {
                     case 0:
-                        Helper.PrintSyntax();
-                        throw new MissingValueException("");
+                        throw new ConfigException("No pattern is found.");
                     case 1:
                         pattern = ToPattern.Invoke(args[0]);
                         return ((line) => pattern.Matches(line), []);
@@ -196,13 +195,11 @@ internal static class Options
                 var files = argsThe.Distinct().Take(2).ToArray();
                 if (files.Length > 1)
                 {
-                    throw new ArgumentException(
+                    throw new ConfigException(
                         $"Too many files ('{files[0]}','{files[1]}') to {opt.Name} are found!");
                 }
 
-                var patternFuncs = ((files[0] == "-")
-                ? Helper.ReadAllLinesFromConsole(opt.Name)
-                : Helper.ReadAllLinesFromFile(files[0], opt.Name))
+                var patternFuncs = ReadAllLinesFrom(files[0], opt.Name)
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0)
                 .Distinct()
@@ -218,6 +215,13 @@ internal static class Options
                 opt.SetImplementation((args) => (matchFunc, args));
             });
 
+    static public IEnumerable<string> ReadAllLinesFrom(string path, string option)
+    {
+        return (path == "-")
+            ? Helper.ReadAllLinesFromConsole(option)
+            : Helper.ReadAllLinesFromFile(path, option);
+    }
+
     static public readonly IInvoke<Ignore, IEnumerable<string>> FilesFrom
         = new ParseInvoker<Ignore, IEnumerable<string>>(
             OptFilesFrom, init: (_) => [],
@@ -226,13 +230,11 @@ internal static class Options
                 var files = argsThe.Distinct().Take(2).ToArray();
                 if (files.Length > 1)
                 {
-                    throw new ArgumentException(
+                    throw new ConfigException(
                         $"Too many files ('{files[0]}','{files[1]}') to {opt.Name} are found!");
                 }
 
-                opt.SetImplementation((_) => ((files[0] == "-")
-                ? Helper.ReadAllLinesFromConsole(opt.Name)
-                : Helper.ReadAllLinesFromFile(files[0], opt.Name))
+                opt.SetImplementation((_) => ReadAllLinesFrom(files[0], opt.Name)
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0));
             });

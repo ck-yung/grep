@@ -12,28 +12,29 @@ class Program
         try
         {
             RunMain(args);
-        }
-        catch (MissingValueException mve)
-        {
-            if (false == string.IsNullOrEmpty(mve.Message))
+
+            foreach (var ce2 in ConfigException.GetErrors())
             {
-                Console.WriteLine(mve.Message);
+                Console.WriteLine(ce2);
             }
         }
-        catch (ArgumentException ae)
+        catch (ConfigException ce)
         {
-            Console.WriteLine(ae.Message);
+            Console.WriteLine(ce.Message);
+            Console.WriteLine($"Syntax: {nameof(grep)} -?");
         }
         catch (Exception ee)
         {
-            Console.WriteLine(ee);
+            Console.WriteLine(IsEnvirDebug()
+                ? ee.ToString() : ee.Message);
         }
     }
 
     static bool RunMain(string[] args)
     {
-        if (args.Any((it) => it == "--version"))
-            return PrintVersion();
+        if (args.Length == 0) return PrintSyntax();
+
+        if (args.Any((it) => it == "--version")) return PrintVersion();
 
         var qry = from arg in args
                   join help in new string[] { "--help", "-?" }
@@ -51,16 +52,16 @@ class Program
 
         var pause = Show.PauseMaker.Invoke(Ignore.Void);
 
-        var mapMatched = paths
+        var filesMatched = paths
             .Select((it) => it.FromWildCard())
             .SelectMany((it) => it)
             .Union(Options.FilesFrom.Invoke(Ignore.Void))
             .Distinct()
             .Select((path) =>
             {
-                var cnt = ReadAllLinesFromFile(path, option: "FILE")
-                .Select((line, lineNumber) =>
-                new MatchResult(lineNumber, line, matches(line)))
+                var cnt = Options.ReadAllLinesFrom(path, option: "FILE")
+                .Select((line, lineNumber)
+                => new MatchResult(lineNumber, line, matches(line)))
                 .Where((it) => it.Matches.Length > 0)
                 .Invoke(Show.MyTake.Invoke)
                 .Select((it) =>
@@ -72,29 +73,27 @@ class Program
                     return it;
                 })
                 .Count();
-                return Show.FoundCount.Invoke((pause, path, cnt));
+                return Show.FoundCount.Invoke(
+                    new Show.CountFound(pause, path, cnt));
             })
             .GroupBy((it) => it)
             .ToImmutableDictionary((grp) => grp.Key,
             (grp) => grp.Count());
 
-        if (mapMatched.TryGetValue(true, out var cntFilesMatch))
+        switch (filesMatched.TryGetValue(true, out var cntFilesMatch),
+            filesMatched.Count == 0)
         {
-            if (cntFilesMatch == 1)
-                Show.LogVerbose.Invoke($"One files is matched.");
-            else
-                Show.LogVerbose.Invoke($"{cntFilesMatch} files are matched.");
-        }
-        else
-        {
-            if (mapMatched.ContainsKey(false))
-            {
+            case (true, _):
+                if (cntFilesMatch == 1)
+                    Show.LogVerbose.Invoke($"One files is matched.");
+                else
+                    Show.LogVerbose.Invoke($"{cntFilesMatch} files are matched.");
+                break;
+            case (false, true):
+                throw new ConfigException("No file is given");
+            default:
                 Show.LogVerbose.Invoke($"No file is matched.");
-            }
-            else
-            {
-                PrintSyntax();
-            }
+                break;
         }
         return true;
     }

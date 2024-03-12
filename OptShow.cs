@@ -37,9 +37,11 @@ internal static class Show
             return line.Length;
         };
 
-    static public readonly IInvoke<(IConsolePause, string, int), bool> FoundCount =
-        new SwitchInvoker<(IConsolePause, string, int), bool>(OptCountOnly,
-            init: (it) => it.Item3 > 0,
+    public record CountFound(IConsolePause Pause, string Filename, int Count);
+
+    static public readonly IInvoke<CountFound, bool> FoundCount =
+        new SwitchInvoker<CountFound, bool>(OptCountOnly,
+            init: (it) => it.Count > 0,
             alterFor: true, alterPost: (flag) =>
             {
                 if (true == flag)
@@ -51,11 +53,11 @@ internal static class Show
             },
             alter: (it) =>
             {
-                if (it.Item3 > 0)
+                if (it.Count > 0)
                 {
-                    var msg = $"{it.Item2}:{it.Item3}";
+                    var msg = $"{it.Filename}:{it.Count}";
                     Console.WriteLine(msg);
-                    it.Item1.Printed(msg.Length);
+                    it.Pause.Printed(msg.Length);
                     return true;
                 }
                 return false;
@@ -80,7 +82,7 @@ internal static class Show
                 var args = argsThe.Distinct().Take(2).ToArray();
                 if (args.Length > 1)
                 {
-                    throw new ArgumentException(
+                    throw new ConfigException(
                         $"Too many values ({args[0]},{args[1]}) to {opt.Name}");
                 }
                 if (int.TryParse(args[0], out var takeCount))
@@ -91,13 +93,13 @@ internal static class Show
                     }
                     else
                     {
-                        throw new ArgumentException(
+                        throw new ConfigException(
                             $"Value to {opt.Name} SHOULD be greater than zero but {takeCount} is found!");
                     }
                 }
                 else
                 {
-                    throw new ArgumentException(
+                    throw new ConfigException(
                         $"Value to {opt.Name} SHOULD be a number but '{args[0]}' is found!");
                 }
             });
