@@ -32,6 +32,10 @@ class Program
 
     static bool RunMain(string[] args)
     {
+        var envVars = GetEnvirOpts(CheckEnvirDebug(nameof(grep)));
+        var envUnknown = envVars.Resolve([])
+            .Select((it) => it.Arg).ToArray();
+
         if (args.Length == 0) return PrintSyntax();
 
         if (args.Any((it) => it == "--version")) return PrintVersion();
@@ -42,9 +46,9 @@ class Program
                   from found in helpFound select found;
         if (qry.Any()) return PrintSyntax(isDetailed: true);
 
-        args = args
-            .ToFlagedArgs(ArgType.CommandLine, Options.ExpandStrings)
-            .Resolve()
+        args = args.ToFlagedArgs(ArgType.CommandLine,
+            Options.SwitchShortCuts, Options.ValueShortCuts)
+            .Resolve(Options.ExtraParsers)
             .Select((it) => it.Arg)
             .ToArray();
 
@@ -63,7 +67,7 @@ class Program
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))
                 .Where((it) => it.Matches.Length > 0)
-                .Invoke(Show.MyTake.Invoke)
+                .Invoke(Show.MaxFound.Invoke)
                 .Select((it) =>
                 {
                     var lenPrinted = Show.Filename.Invoke(path);
@@ -94,6 +98,12 @@ class Program
             default:
                 Show.LogVerbose.Invoke($"No file is matched.");
                 break;
+        }
+
+        if (envUnknown.Length > 0)
+        {
+            Show.LogVerbose.Invoke(
+                $"Unknown envir: {string.Join(' ', envUnknown)}");
         }
         return true;
     }

@@ -40,27 +40,34 @@ internal static partial class Helper
 
     static public T Itself<T>(T arg) => arg;
 
-    static internal IEnumerable<FlagedArg> GetEnvirOpts(string name)
+    const string DebugFlagText = "--debug";
+    static internal string CheckEnvirDebug(string name)
     {
-        var envirOld = Environment.GetEnvironmentVariable(name);
-        if (string.IsNullOrEmpty(envirOld)) return [];
+        var envir = Environment.GetEnvironmentVariable(name);
+        if (string.IsNullOrEmpty(envir)) return String.Empty;
+        if (envir.Contains(DebugFlagText))
+        {
+            Log.DebugFlag = true;
+            return envir.Replace(DebugFlagText, "");
+        }
+        return envir;
+    }
+
+    static internal IEnumerable<FlagedArg> GetEnvirOpts(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return [];
 
         try
         {
-            var aa = envirOld.Split("--")
+            var aa = value.Split(' ',';','"')
                 .Select((it) => it.Trim())
-                .Select((it) => it.Trim(';'))
-                .Where((it) => it.Length > 0)
-                .Select((it) => "--" + it);
-
+                .Where((it) => it.Length > 0);
             return aa.ToFlagedArgs(ArgType.Environment,
-                new Dictionary<string, string[]>() // TODO
-                {
-                }.ToImmutableDictionary());
+                Options.SwitchShortCuts, []);
         }
         catch (Exception ee)
         {
-            ConfigException.Add(ArgType.Environment, name, ee);
+            ConfigException.Add(ArgType.Environment, value, ee);
             return [];
         }
     }
@@ -115,49 +122,72 @@ internal static partial class Helper
     public static bool IsEnvirDebug()
     {
         return Environment.GetEnvironmentVariable(nameof(grep))
-            ?.Contains("--debug") ?? false;
+            ?.Contains(DebugFlagText) ?? false;
     }
 
     public static bool PrintSyntax(bool isDetailed = false)
     {
         Console.WriteLine("Syntax:");
         if (false == isDetailed)
-            Console.WriteLine($"{nameof(grep)} -?");
+            Console.WriteLine($"  {nameof(grep)} -?");
 
         Console.WriteLine($"""
-            {nameof(grep)} [OPTIONS] PATTERN          [FILE [FILE ..]]
-            {nameof(grep)} [OPTIONS] -f PATTERN-FILE  [FILE [FILE ..]]
+              {nameof(grep)} [OPTIONS] PATTERN          [FILE [FILE ..]]
+              {nameof(grep)} [OPTIONS] -f PATTERN-FILE  [FILE [FILE ..]]
+
             """);
 
         if (false == isDetailed)
         {
             Console.WriteLine("""
-
                 Read redir console input if no FILE is -
                 """);
         }
         else
         {
-            Console.WriteLine("""
-                Short-cut  Option             With
-                  -c       --count-only       on
-                  -F       --fixed-strings    on
-                  -h       --show-filename    off
-                  -i       --case-sensitive   off
-                  -l       --file-match       on
-                  -n       --line-number      on
-                  -p       --pause            off
-                  -q       --quiet            on
-                  -v       --invert-match     on
-                  -w       --word             on
-                
-                Short-cut  Option             Required
-                           --color            COLOR
-                           --color           ~COLOR
-                  -f       --regex-file       FILE
-                  -m       --max-count        NUMBER
-                  -T       --files-from       FILE
+            var bb = Options.Parsers
+                .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(true, it)))
+                .Union(Options.ExtraParsers
+                .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))))
+                .ToImmutableDictionary((it) => it.Key, (it) => it.Value);
+            Console.WriteLine("Short-cut           Option  with            Envir");
+            foreach ((var key, var strings) in Options.SwitchShortCuts
+                .Union(Options.ValueShortCuts
+                .Select((it) => new KeyValuePair<string, string[]>(it.Key, [it.Value])))
+                .OrderBy((it) => it.Key))
+            {
+                Console.Write($"{key,4}   ");
+                Console.Write($"{strings[0],19}  ");
+                EnvrParser? found;
+                switch (strings.Length > 1, bb.TryGetValue(strings[0], out found))
+                {
+                    case (true, true):
+                        Console.Write($"{strings[1],-12} ");
+                        if (true != (found?.IsEnvir ?? false))
+                        {
+                            Console.Write("   Not");
+                        }
+                        break;
+                    case (false, true):
+                        var help = found?.Parser?.Help ?? "";
+                        Console.Write($"{help,-12} ");
+                        if (true != (found?.IsEnvir ?? false))
+                        {
+                            Console.Write("   Not");
+                        }
+                        break;
+                    default:
+                        var a2 = string.Join(' ', strings.Skip(1));
+                        Console.Write($"{a2}   <-- <-- TODO");
+                        break;
+                }
+                Console.WriteLine();
+            }
 
+            Console.WriteLine("""
+                 --color   COLOR
+                 --color  ~COLOR
+                
                 Read redir console input if FILE is -
 
                 For example,
@@ -169,6 +199,8 @@ internal static partial class Helper
         }
         return false;
     }
+
+    record EnvrParser(bool IsEnvir, IParse Parser);
 
     public static bool PrintVersion()
     {
@@ -185,22 +217,6 @@ internal static partial class Helper
             copyright = ((AssemblyCopyrightAttribute)aa[0]).Copyright;
         }
         Console.WriteLine($"{nameThe}/C# v{version} {copyright}");
-
-        if (IsEnvirDebug())
-        {
-            Console.WriteLine("");
-            var bb = Options.OptNames().ToList();
-            foreach ((var key, var strings) in Options.ExpandStrings)
-            {
-                Console.Write($"{key,12} ");
-                Console.Write(string.Join(" ", strings));
-                if (false == bb.Contains(strings[0]))
-                {
-                    Console.Write(" <-- <-- <-- TODO");
-                }
-                Console.WriteLine();
-            }
-        }
 
         return false;
     }

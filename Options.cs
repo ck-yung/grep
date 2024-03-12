@@ -23,30 +23,33 @@ internal static class Options
     public const string OptMaxCount = "--max-count";
     public const string OptShowFilename = "--show-filename";
     public const string OptFixedTextPattern = "--fixed-strings";
-    public const string OptPause = "--pause"; // ---------------------- TODO
+    public const string OptPause = "--pause";
 
-    public static ImmutableDictionary<string, string[]> ExpandStrings =
-        new Dictionary<string, string[]>()
-        {
-            ["-f"] = [OptPatternFile],
-            ["-m"] = [OptMaxCount],
-            ["-T"] = [OptFilesFrom],
+    public static readonly IEnumerable<KeyValuePair<string, string>> ValueShortCuts =
+        [
+            new("-f", OptPatternFile),
+            new("-m", OptMaxCount),
+            new("-T", OptFilesFrom),
+        ];
 
-            ["-F"] = [OptFixedTextPattern, TextOn],
-            ["-c"] = [OptCountOnly, TextOn],
-            ["-h"] = [OptShowFilename, TextOff],
-            ["-i"] = [OptCaseSensitive, TextOff],
-            ["-l"] = [OptFileMatch, TextOn],
-            ["-n"] = [OptLineNumber, TextOn],
-            ["-p"] = [OptPause, TextOff],
-            ["-q"] = [OptQuiet, TextOn],
-            ["-v"] = [OptInvertMatch, TextOn],
-            ["-w"] = [OptWord, TextOn],
-        }.ToImmutableDictionary();
+    public static readonly IEnumerable<KeyValuePair<string, string[]>> SwitchShortCuts =
+        [
+            new("-F", [OptFixedTextPattern, TextOn]),
+            new("-c", [OptCountOnly, TextOn]),
+            new("-h", [OptShowFilename, TextOff]),
+            new("-i", [OptCaseSensitive, TextOff]),
+            new("-l", [OptFileMatch, TextOn]),
+            new("-n", [OptLineNumber, TextOn]),
+            new("-p", [OptPause, TextOff]),
+            new("-q", [OptQuiet, TextOn]),
+            new("-v", [OptInvertMatch, TextOn]),
+            new("-w", [OptWord, TextOn]),
+        ];
 
     public static IEnumerable<FlagedArg> ToFlagedArgs(
         this IEnumerable<string> args, ArgType type,
-        ImmutableDictionary<string, string[]> mapShortcuts)
+        IEnumerable<KeyValuePair<string, string[]>> switchShortCuts,
+        IEnumerable<KeyValuePair<string, string>> valueShortCuts)
     {
         var itrThe = args.GetEnumerator();
         IEnumerable<string> SeparateCombiningShortcut()
@@ -78,6 +81,11 @@ internal static class Options
                 }
             }
         }
+
+        var mapShortcuts = switchShortCuts
+            .Union(valueShortCuts
+            .Select((it) => new KeyValuePair<string, string[]>(it.Key, [it.Value])))
+            .ToImmutableDictionary((it) => it.Key, (it) => it.Value);
 
         foreach (var arg in SeparateCombiningShortcut())
         {
@@ -169,12 +177,12 @@ internal static class Options
     static public readonly IInvoke<string, Pattern> ToPattern =
         new SwitchInvoker<string, Pattern>(
             OptFixedTextPattern, alterFor: true,
-            init: (it) => new Pattern( Options.ToRegex.Invoke(it)),
+            init: (it) => new Pattern( ToRegex.Invoke(it)),
             alter: (it) => new Pattern(it));
 
     static public readonly IInvoke<string[], (Func<string, Match[]>, IEnumerable<string>)>
         PatternsFrom = new ParseInvoker<string[], (Func<string, Match[]>, IEnumerable<string>)>(
-            OptPatternFile,
+            OptPatternFile, help: "PATTERN-FILE",
             init: (args) =>
             {
                 Pattern pattern;
@@ -224,7 +232,7 @@ internal static class Options
 
     static public readonly IInvoke<Ignore, IEnumerable<string>> FilesFrom
         = new ParseInvoker<Ignore, IEnumerable<string>>(
-            OptFilesFrom, init: (_) => [],
+            OptFilesFrom, help: "FILES-FROM", init: (_) => [],
             resolve: (opt, argsThe) =>
             {
                 var files = argsThe.Distinct().Take(2).ToArray();
@@ -239,28 +247,29 @@ internal static class Options
                 .Where((it) => it.Length > 0));
             });
 
-    static readonly IParse[] Parsers = [
+    public static readonly IParse[] Parsers = [
         (IParse)ToRegex,
         (IParse)Show.Filename,
         (IParse)Show.LineNumber,
-        (IParse)Show.FoundCount,
         (IParse)Show.LogVerbose,
-        (IParse)Show.MyTake,
-        (IParse)Show.FilenameOnly,
         (IParse)MatchRegex,
         (IParse)ToPattern,
-        (IParse)PatternsFrom,
-        (IParse)FilesFrom,
         (IParse)Show.PauseMaker,
     ];
 
-    static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args)
-    {
-        return Parsers.Aggregate(seed: args, func: (acc, it) => it.Parse(acc));
-    }
+    public static readonly IParse[] ExtraParsers = [
+        (IParse)Show.MaxFound,
+        (IParse)PatternsFrom,
+        (IParse)FilesFrom,
+        (IParse)Show.FilenameOnly,
+        (IParse)Show.FoundCount,
+        ];
 
-    static public IEnumerable<string> OptNames()
+    static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args,
+        IEnumerable<IParse> extraParsers)
     {
-        return Parsers.Select((it) => it.Name);
+        return Parsers
+            .Union(extraParsers)
+            .Aggregate(seed: args, func: (acc, it) => it.Parse(acc));
     }
 }

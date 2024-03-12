@@ -74,9 +74,9 @@ internal static class Show
 
     static public readonly IInvoke<
         IEnumerable<MatchResult>, IEnumerable<MatchResult>>
-        MyTake = new ParseInvoker<
+        MaxFound = new ParseInvoker<
             IEnumerable<MatchResult>, IEnumerable<MatchResult>>(
-            name: OptMaxCount, init: Helper.Itself,
+            name: OptMaxCount, help: "NUMBER", init: Helper.Itself,
             resolve: (opt, argsThe) =>
             {
                 var args = argsThe.Distinct().Take(2).ToArray();
@@ -111,17 +111,17 @@ internal static class Show
             {
                 if (true == flag)
                 {
-                    ((IParse)MyTake).Parse("1".ToFlagedArgs());
+                    ((IParse)MaxFound).Parse("1".ToFlagedArgs());
                     ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
                     ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                     PrintMatchedLine = (_) => 0;
-                    ((SwitchInvoker<(IConsolePause, string, int), bool>)
+                    ((SwitchInvoker<CountFound, bool>)
                     FoundCount).SetImplementation((it) =>
                     {
-                        if (it.Item3 > 0)
+                        if (it.Count > 0)
                         {
-                            Console.WriteLine(it.Item2);
-                            it.Item1.Printed(it.Item2.Length);
+                            Console.WriteLine(it.Filename);
+                            it.Pause.Printed(it.Filename.Length);
                             return true;
                         }
                         return false;
