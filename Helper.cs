@@ -141,6 +141,8 @@ internal static partial class Helper
         {
             Console.WriteLine("""
                 Read redir console input if no FILE is -
+
+                https://github.com/ck-yung/grep/blob/master/README.md
                 """);
         }
         else
@@ -187,8 +189,6 @@ internal static partial class Helper
             Console.WriteLine("""
                  --color   COLOR
                  --color  ~COLOR
-                
-                Read redir console input if FILE is -
 
                 For example,
                   grep -nm 3 class *.cs
@@ -219,20 +219,6 @@ internal static partial class Helper
         Console.WriteLine($"{nameThe}/C# v{version} {copyright}");
 
         return false;
-    }
-
-    public static void RegexByWordPattern()
-    {
-        //ToPattern = (it) => [
-        //    "^" + it + @"\s",
-        //    @"\s" + it + @"\s",
-        //    @"\s" + it + "$",
-        //];
-    }
-
-    public static RegX.Regex ToRegex(this string arg)
-    {
-        return new RegX.Regex(arg, RegX.RegexOptions.IgnoreCase);
     }
 
     public static string[] FromWildCard(this string arg)

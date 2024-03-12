@@ -119,9 +119,18 @@ internal static class Options
     static public Func<string, string, bool> TextContains
     { get; private set; } = (line, text) => line.Contains(text);
 
+    static public readonly IInvoke<string, string> PatternWordText
+        = new SwitchInvoker<string, string>(OptWord, alterFor: true,
+            init: Helper.Itself, alter: (arg) =>
+            {
+                if (false == arg.StartsWith(@"\b")) arg = @"\b" + arg;
+                if (false == arg.EndsWith(@"\b")) arg = arg + @"\b";
+                return arg;
+            });
+
     static public readonly IInvoke<string, RegX.Regex> ToRegex
-        = new SwitchInvoker<string, RegX.Regex>(
-            OptCaseSensitive, init: (it) => new RegX.Regex(it),
+        = new SwitchInvoker<string, RegX.Regex>(OptCaseSensitive,
+            init: (it) => new RegX.Regex(PatternWordText.Invoke(it)),
             alterFor: false, alterPost: (flag) =>
             {
                 if (flag)
@@ -134,7 +143,7 @@ internal static class Options
                         StringComparison.InvariantCultureIgnoreCase);
                 }
             },
-            alter: (it) => new RegX.Regex(it,
+            alter: (it) => new RegX.Regex(PatternWordText.Invoke(it),
                 RegX.RegexOptions.IgnoreCase));
 
     #region Matching Functions
@@ -253,6 +262,7 @@ internal static class Options
         (IParse)Show.LineNumber,
         (IParse)Show.LogVerbose,
         (IParse)MatchRegex,
+        (IParse)PatternWordText,
         (IParse)ToPattern,
         (IParse)Show.PauseMaker,
     ];
