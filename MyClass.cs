@@ -117,7 +117,7 @@ static public partial class MyOptions
                     {
                         if (!it.MoveNext())
                         {
-                            throw ConfigException.MissingValue(Name); // TODO
+                            throw ConfigException.MissingValue(Name, ExtraHelp);
                         }
                         yield return
                             new(true, it.Current.Type, it.Current.Arg);

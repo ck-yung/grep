@@ -36,8 +36,6 @@ public class ImplicitBool
 
 internal partial class Helper
 {
-    public const string ExtraHelp = "+?";
-
     public static string GetUnique(IEnumerable<string> args, IParse opt)
     {
         var rtn = args
@@ -48,7 +46,7 @@ internal partial class Helper
 
         if (rtn.Length == 0)
         {
-            throw ConfigException.MissingValue(opt.Name);
+            throw ConfigException.MissingValue(opt.Name, opt.ExtraHelp);
         }
 
         if (rtn.Length > 1)
@@ -77,6 +75,7 @@ internal class ConfigException : Exception
 {
     public record Info(ArgType Type, string Source, Exception Error);
 
+
     public ConfigException(string message) : base(message)
     {
     }
@@ -93,16 +92,15 @@ internal class ConfigException : Exception
         return Errors;
     }
 
-    static internal ConfigException MissingValue(string name)
+    static internal ConfigException MissingValue(
+        string name, string extraHelp = "")
     {
-        var msg = new StringBuilder();// Shortcut:
-        msg.AppendLine($"Missing value to '{name}'");
-        //var shortcutFound = MyOptions.GetShortCut(name);
-        //if (string.IsNullOrEmpty(shortcutFound))
-        //{
-        //    shortcutFound = name;
-        //}
-        //msg.Append($"Try '{nameof(grep)} {shortcutFound} +?'");
-        return new(msg.ToString());
+        if (string.IsNullOrEmpty(extraHelp))
+        {
+            return new($"Missing value to '{name}'\n" +
+                $"Syntax: {nameof(grep)} -?");
+        }
+        return new($"Missing value to '{name}'\n" +
+            extraHelp);
     }
 }

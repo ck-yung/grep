@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using static grep.MyOptions;
 using RegX = System.Text.RegularExpressions;
 
@@ -13,7 +12,7 @@ internal static class Options
     public const string OptColor = "--color"; // ---------------------- TODO
     public const string OptFilesFrom = "--files-from";
     public const string OptCaseSensitive = "--case-sensitive";
-    public const string OptWord = "--word"; // ------------------------ TODO
+    public const string OptWord = "--word";
     public const string OptLineNumber = "--line-number";
     public const string OptCountOnly = "--count-only";
     public const string OptFileMatch = "--file-match";
@@ -25,14 +24,16 @@ internal static class Options
     public const string OptFixedTextPattern = "--fixed-strings";
     public const string OptPause = "--pause";
 
-    public static readonly IEnumerable<KeyValuePair<string, string>> ValueShortCuts =
+    public static readonly IEnumerable<KeyValuePair<string, string>>
+        ValueShortCuts =
         [
             new("-f", OptPatternFile),
             new("-m", OptMaxCount),
             new("-T", OptFilesFrom),
         ];
 
-    public static readonly IEnumerable<KeyValuePair<string, string[]>> SwitchShortCuts =
+    public static readonly IEnumerable<KeyValuePair<string, string[]>>
+        SwitchShortCuts =
         [
             new("-F", [OptFixedTextPattern, TextOn]),
             new("-c", [OptCountOnly, TextOn]),
@@ -84,7 +85,8 @@ internal static class Options
 
         var mapShortcuts = switchShortCuts
             .Union(valueShortCuts
-            .Select((it) => new KeyValuePair<string, string[]>(it.Key, [it.Value])))
+            .Select((it) => new KeyValuePair<string, string[]>(
+                it.Key, [it.Value])))
             .ToImmutableDictionary((it) => it.Key, (it) => it.Value);
 
         foreach (var arg in SeparateCombiningShortcut())
@@ -116,8 +118,22 @@ internal static class Options
         return [new(true, type, arg)];
     }
 
-    static public Func<string, string, bool> TextContains
-    { get; private set; } = (line, text) => line.Contains(text);
+    static public Func<string, string, int, int> TextIndexOf
+    { set; private get; } =
+        (line, text, startIndex) => line.IndexOf(text, startIndex);
+
+    static public IEnumerable<int> TextFindAllIndexOf_Impl(
+        string line, string text)
+    {
+        int foundAt = 0;
+        while ((foundAt = TextIndexOf(line, text, foundAt)) >= 0)
+        {
+            yield return foundAt;
+            foundAt += text.Length;
+        }
+    }
+    static public Func<string, string, IEnumerable<int>> TextFindAllIndexOf
+    { get; private set; } = TextFindAllIndexOf_Impl;
 
     static public readonly IInvoke<string, string> PatternWordText
         = new SwitchInvoker<string, string>(OptWord, alterFor: true,
@@ -135,63 +151,37 @@ internal static class Options
             {
                 if (flag)
                 {
-                    TextContains = (line, text) => line.Contains(text);
+                    TextIndexOf = (line, text,
+                        startIndex) => line.IndexOf(text, startIndex);
                 }
                 else
                 {
-                    TextContains = (line, text) => line.Contains(text,
+                    TextIndexOf = (line, text,
+                        startIndex) => line.IndexOf(text, startIndex,
                         StringComparison.InvariantCultureIgnoreCase);
                 }
             },
             alter: (it) => new RegX.Regex(PatternWordText.Invoke(it),
                 RegX.RegexOptions.IgnoreCase));
 
-    #region Matching Functions
-    static public Func<Func<string, string, bool>, Func<string, string, bool>>
-        MatchText { get; private set; } = Helper.Itself;
-
-    static public readonly IInvoke<RegX.Regex, Func<string, Match[]>>
-        MatchRegex = new SwitchInvoker<RegX.Regex, Func<string, Match[]>>(
+    static public readonly IInvoke<IEnumerable<Match>, Match[]>
+        MetaMatches = new SwitchInvoker<IEnumerable<Match>, Match[]>(
             OptInvertMatch, alterFor: true,
-
-            init: (regex) =>
-            (it) => regex.Matches(it)
-            .OfType<RegX.Match>()
-            .Where((it) => it.Success)
-            .Select((it) => new Match(it.Index, it.Length))
-            .ToArray(),
-
-            alterPost: (flag) =>
-            {
-                if (flag)
-                {
-                    MatchText = (func) =>
-                    (line, text) => true != func(line, text);
-                }
-                else
-                {
-                    MatchText = Helper.Itself;
-                }
-            },
-
-            alter: (regex) =>
-            {
-                bool b2(string it) => regex.Matches(it)
-                .OfType<RegX.Match>()
-                .Where((it) => it.Success).Any();
-                return (it) => b2(it) ? [] : Match.ZeroOne;
-            });
-    #endregion
+            init: (matches) => matches.ToArray(),
+            alter: (matches) => matches.Any() ? [] : Match.ZeroOne);
 
     static public readonly IInvoke<string, Pattern> ToPattern =
         new SwitchInvoker<string, Pattern>(
             OptFixedTextPattern, alterFor: true,
-            init: (it) => new Pattern( ToRegex.Invoke(it)),
+            init: (it) => new Pattern(ToRegex.Invoke(it)),
             alter: (it) => new Pattern(it));
 
-    static public readonly IInvoke<string[], (Func<string, Match[]>, IEnumerable<string>)>
-        PatternsFrom = new ParseInvoker<string[], (Func<string, Match[]>, IEnumerable<string>)>(
+    static public readonly IInvoke<string[],
+        (Func<string, Match[]>, IEnumerable<string>)>
+        PatternsFrom = new ParseInvoker<string[],
+            (Func<string, Match[]>, IEnumerable<string>)>(
             OptPatternFile, help: "PATTERN-FILE",
+            extraHelp: $"For example, {nameof(grep)} {OptPatternFile} regex.txt ..",
             init: (args) =>
             {
                 Pattern pattern;
@@ -242,6 +232,7 @@ internal static class Options
     static public readonly IInvoke<Ignore, IEnumerable<string>> FilesFrom
         = new ParseInvoker<Ignore, IEnumerable<string>>(
             OptFilesFrom, help: "FILES-FROM", init: (_) => [],
+            extraHelp: $"For example, {nameof(grep)} {OptFilesFrom} cs-file.txt ..",
             resolve: (opt, argsThe) =>
             {
                 var files = argsThe.Distinct().Take(2).ToArray();
@@ -261,7 +252,7 @@ internal static class Options
         (IParse)Show.Filename,
         (IParse)Show.LineNumber,
         (IParse)Show.LogVerbose,
-        (IParse)MatchRegex,
+        (IParse)MetaMatches,
         (IParse)PatternWordText,
         (IParse)ToPattern,
         (IParse)Show.PauseMaker,

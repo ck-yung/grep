@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Reflection;
+using static System.Net.Mime.MediaTypeNames;
 using RegX = System.Text.RegularExpressions;
 
 namespace grep;
@@ -253,14 +254,18 @@ class Pattern
 
     public Pattern(string pattern)
     {
-        var tmp3 = Options.MatchText(Options.TextContains);
-        Matches = (it) => tmp3(it, pattern) ? Match.ZeroOne : [];
+        Matches = (line) => Options.MetaMatches.Invoke(
+        Options.TextFindAllIndexOf(line, pattern)
+        .Select((it) => new Match(it, pattern.Length)));
     }
 
     public Pattern(RegX.Regex regex)
     {
-        var tmp5 = Options.MatchRegex.Invoke(regex);
-        Matches = (it) => tmp5(it);
+        Matches = (line) => Options.MetaMatches.Invoke(
+            regex.Matches(line)
+            .OfType<RegX.Match>()
+            .Where(it => it.Success)
+            .Select((it) => new Match(it.Index, it.Length)));
     }
 }
 

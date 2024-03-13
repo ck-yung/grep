@@ -77,6 +77,7 @@ internal static class Show
         MaxFound = new ParseInvoker<
             IEnumerable<MatchResult>, IEnumerable<MatchResult>>(
             name: OptMaxCount, help: "NUMBER", init: Helper.Itself,
+            extraHelp: $"For example, {nameof(grep)} {OptMaxCount} 2 ..",
             resolve: (opt, argsThe) =>
             {
                 var args = argsThe.Distinct().Take(2).ToArray();

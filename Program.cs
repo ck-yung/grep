@@ -21,7 +21,6 @@ class Program
         catch (ConfigException ce)
         {
             Console.WriteLine(ce.Message);
-            Console.WriteLine($"Syntax: {nameof(grep)} -?");
         }
         catch (Exception ee)
         {
