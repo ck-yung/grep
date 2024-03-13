@@ -132,6 +132,34 @@ internal static class Options
             foundAt += text.Length;
         }
     }
+
+    static public IEnumerable<int> TextFindAllIndexOf_WordImpl(
+        string line, string text)
+    {
+        bool CheckAlphNum(int pos)
+        {
+            var charThe = line[pos];
+            if ('0' <= charThe && charThe <= '9') return true;
+            if ('A' <= charThe && charThe <= 'Z') return true;
+            if ('a' <= charThe && charThe <= 'z') return true;
+            return false;
+        }
+
+        int foundAt = 0;
+        while ((foundAt = TextIndexOf(line, text, foundAt)) >= 0)
+        {
+            bool chk = true;
+            if (0 < foundAt) chk = (false == CheckAlphNum(foundAt - 1));
+            if ((foundAt + text.Length) < line.Length)
+                chk &= (false == CheckAlphNum(foundAt + text.Length));
+            if (chk)
+            {
+                yield return foundAt;
+            }
+            foundAt += text.Length;
+        }
+    }
+
     static public Func<string, string, IEnumerable<int>> TextFindAllIndexOf
     { get; private set; } = TextFindAllIndexOf_Impl;
 
@@ -142,6 +170,11 @@ internal static class Options
                 if (false == arg.StartsWith(@"\b")) arg = @"\b" + arg;
                 if (false == arg.EndsWith(@"\b")) arg = arg + @"\b";
                 return arg;
+            }, alterPost: (flag) =>
+            {
+                TextFindAllIndexOf = (flag)
+                ? TextFindAllIndexOf_WordImpl
+                : TextFindAllIndexOf_Impl;
             });
 
     static public readonly IInvoke<string, RegX.Regex> ToRegex

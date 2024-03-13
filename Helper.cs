@@ -49,6 +49,7 @@ internal static partial class Helper
         if (envir.Contains(DebugFlagText))
         {
             Log.DebugFlag = true;
+            Log.Debug("Debug log is enabled.");
             return envir.Replace(DebugFlagText, "");
         }
         return envir;
