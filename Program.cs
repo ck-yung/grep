@@ -68,7 +68,7 @@ class Program
                 {
                     var lenPrinted = Show.Filename.Invoke(path);
                     lenPrinted += Show.LineNumber.Invoke(it.LineNumber);
-                    lenPrinted += Show.PrintMatchedLine(it.Line);
+                    lenPrinted += Show.PrintMatchedLine(it);
                     pause.Printed(lenPrinted);
                     return it;
                 })

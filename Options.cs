@@ -287,16 +287,6 @@ internal static class Options
                 .Where((it) => it.Length > 0));
             });
 
-    static public readonly IInvoke<Ignore, Ignore> Color = new ParseInvoker
-        <Ignore, Ignore>(TextColor, help: "COLOR",
-        extraHelp: "Color assignment",
-        init: Ignore.Maker,
-        resolve: (opt, argsThe) =>
-        {
-            var args = argsThe.Distinct().Take(3).ToArray();
-            Log.Debug("Opt color < ", args.Select((it) => it.Arg).ToArray());
-        });
-
     public static readonly IParse[] Parsers = [
         (IParse)ToRegex,
         (IParse)Show.Filename,
@@ -306,7 +296,7 @@ internal static class Options
         (IParse)PatternWordText,
         (IParse)ToPattern,
         (IParse)Show.PauseMaker,
-        (IParse)Color,
+        (IParse)Show.SwitchColor,
     ];
 
     public static readonly IParse[] NonEnvirParsers = [

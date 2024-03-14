@@ -1,4 +1,5 @@
-﻿using static grep.MyOptions;
+﻿using System.Runtime.InteropServices;
+using static grep.MyOptions;
 using static grep.Options;
 
 namespace grep;
@@ -29,13 +30,6 @@ internal static class Show
                 Console.Write(msg);
                 return msg.Length;
             });
-
-    static public Func<string, int> PrintMatchedLine { get; private set; } =
-        (line) =>
-        {
-            Console.WriteLine(line);
-            return line.Length;
-        };
 
     public record CountFound(IConsolePause Pause, string Filename, int Count);
 
@@ -129,6 +123,173 @@ internal static class Show
                     });
                 }
             });
+
+    #region Color
+    static int PrintLineWithoutColor(MatchResult arg)
+    {
+        Console.WriteLine(arg.Line);
+        return arg.Line.Length;
+    }
+    static int PrintLineColor(MatchResult arg)
+    {
+        var ndxLast = 0;
+        foreach ((var ndx, var len) in arg.Matches)
+        {
+            SwitchColor.Invoke(false);
+            switch (ndxLast, ndx)
+            {
+                case (0, 0): break;
+                default:
+                    Console.Write(arg.Line[ndxLast..ndx]);
+                    break;
+            }
+            SwitchColor.Invoke(true);
+            Console.Write(arg.Line[ndx..(ndx + len)]);
+            ndxLast = ndx + len;
+        }
+        Console.ResetColor();
+        if (ndxLast < arg.Line.Length)
+        {
+            Console.Write(arg.Line[ndxLast..]);
+        }
+        Console.ResetColor();
+        Console.WriteLine();
+        return arg.Line.Length;
+    }
+    static public Func<MatchResult, int> PrintMatchedLine { get; private set; } =
+        (arg) => PrintLineColor(arg);
+
+    static ConsoleColor OldForeColor { get; set; } = Console.ForegroundColor;
+    static ConsoleColor OldBackColor { get; set; } = Console.BackgroundColor;
+    static ConsoleColor HighlightForeColor { get; set; } = ConsoleColor.Red;
+    static ConsoleColor HighlightBackColor { get; set; } = Console.BackgroundColor;
+    static bool TryParseToForeColor(string arg, out ConsoleColor output)
+    {
+        bool rtn = false;
+        if (Enum.TryParse(typeof(ConsoleColor), arg,
+            ignoreCase: true, out var result))
+        {
+            output = (ConsoleColor)result;
+            rtn = true;
+        }
+        else
+        {
+            output = ConsoleColor.White;
+        }
+        return rtn;
+    }
+
+    static public readonly IInvoke<bool, Ignore> SwitchColor = new ParseInvoker
+        <bool, Ignore>(TextColor, help: "COLOR",
+        extraHelp: "Color assignment *TODO*",
+        init: (flag) =>
+        {
+            if (flag)
+            {
+                Console.ForegroundColor = HighlightForeColor;
+                Console.BackgroundColor = HighlightBackColor;
+            }
+            else
+            {
+                Console.ForegroundColor = OldForeColor;
+                Console.BackgroundColor = OldBackColor;
+            }
+            return Ignore.Void;
+        },
+        resolve: (opt, argsThe) =>
+        {
+            var typeThe = argsThe.First().Type;
+            var args = argsThe.Select((it) => it.Arg).Distinct().Take(3).ToArray();
+            if (args.Length > 2)
+            {
+                ConfigException.Add(typeThe, new ArgumentException(
+                    $"Too many value ('{args[0]}','{args[1]}','{args[2]}') to {opt.Name}"));
+                return;
+            }
+
+            if (args.Length < 2)
+            {
+                var argFirst = args[0];
+                if (TextOff.Equals(argFirst,
+                    StringComparison.InvariantCultureIgnoreCase))
+                {
+                    PrintMatchedLine = (it) => PrintLineWithoutColor(it);
+                    return;
+                }
+
+                if (argFirst.Equals("~"))
+                {
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        HighlightForeColor = OldBackColor;
+                        HighlightBackColor = OldForeColor;
+                    }
+                    else
+                    {
+                        var infoType = (typeThe == ArgType.CommandLine)
+                        ? "Command line" : "Envir";
+                        ConfigException.Add(typeThe, new ArgumentException(
+                            $"{infoType}: Inverse to {opt.Name} is NOT supporte in the running OS."));
+                    }
+                    return;
+                }
+
+                (bool isBackground, string colorText) = (argFirst.StartsWith("~"), argFirst);
+                if (isBackground)
+                {
+                    colorText = colorText[1..];
+                }
+                if (TryParseToForeColor(colorText, out var colorThe))
+                {
+                    if (isBackground)
+                    {
+                        HighlightBackColor = colorThe;
+                    }
+                    else
+                    {
+                        HighlightForeColor = colorThe;
+                    }
+                }
+                else
+                {
+                    ConfigException.Add(typeThe, new
+                        ArgumentException(
+                        $"'{argFirst}' to {opt.Name} is NOT valid!"));
+                }
+                return;
+            }
+
+            bool isHighForeOk;
+            bool isHighBackOk;
+            ConsoleColor highFore;
+            ConsoleColor highBack;
+            switch (args[0].StartsWith("~"), args[1].StartsWith("~"))
+            {
+                case (true, false):
+                    isHighBackOk = TryParseToForeColor(args[0][1..], out highBack);
+                    isHighForeOk = TryParseToForeColor(args[1], out highFore);
+                    break;
+                case (false, true):
+                    isHighBackOk = TryParseToForeColor(args[1][1..], out highBack);
+                    isHighForeOk = TryParseToForeColor(args[0], out highFore);
+                    break;
+                default:
+                    ConfigException.Add(typeThe, new ArgumentException(
+                        $"Values '{args[0]}' and '{args[1]}' to {opt.Name} are NOT valid!"));
+                    return;
+            }
+            if (isHighBackOk && isHighForeOk)
+            {
+                HighlightBackColor = highBack;
+                HighlightForeColor = highFore;
+            }
+            else
+            {
+                ConfigException.Add(typeThe, new ArgumentException(
+                    $"Values '{args[0]}' and '{args[1]}' to {opt.Name} are NOT valid!"));
+            }
+        });
+    #endregion
 
     static public readonly IInvoke<Ignore, IConsolePause> PauseMaker =
         new SwitchInvoker<Ignore, IConsolePause>(TextPause,
