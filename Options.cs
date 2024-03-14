@@ -37,7 +37,6 @@ internal static class Options
         [
             new("-F", [TextFixedTextPattern, TextOn]),
             new("-c", [TextCountOnly, TextOn]),
-            new("-C", [TextColor]),
             new("-h", [TextShowFilename, TextOff]),
             new("-i", [TextCaseSensitive, TextOff]),
             new("-l", [TextFileMatch, TextOn]),

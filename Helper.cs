@@ -1,6 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Reflection;
-using static System.Net.Mime.MediaTypeNames;
+﻿using System.Reflection;
 using RegX = System.Text.RegularExpressions;
 
 namespace grep;
@@ -116,6 +114,11 @@ internal static partial class Helper
             ?.Contains(DebugFlagText) ?? false;
     }
 
+    record InfoShortcut(string Shortcut, string[] Others)
+    {
+        public static readonly InfoShortcut Empty = new("", []);
+    }
+
     public static bool PrintSyntax(bool isDetailed = false)
     {
         Console.WriteLine("Syntax:");
@@ -145,30 +148,33 @@ internal static partial class Helper
             var cc = Options.ShortCuts
                 .Union(Options.NonEnvirShortCuts
                 .Select((it) => new KeyValuePair<string, string[]>(it.Key, [it.Value])))
-                .Select((it) => new KeyValuePair<string, (string Shortcut, string[] Others)>(
-                    it.Value[0], (it.Key, it.Value)));
-            var jj = from b2 in bb
-                     join c2 in cc
-                     on b2.Key equals c2.Key into cc3
-                     from c3 in cc3.DefaultIfEmpty()
-                     select new
-                     {
-                         Name = b2.Key,
-                         EnvrParser = b2.Value,
-                         c3.Value.Shortcut,
-                         c3.Value.Others,
-                     };
-            Console.WriteLine("Shortcut           OPTION  with            Envir");
-            foreach (var j2 in jj
-                .OrderBy((it) => it.EnvrParser.IsEnvir)
-                .ThenBy((it) => it.Shortcut))
-            {
-                Console.Write($"{j2.Shortcut,6}{j2.Name,19}  ");
-                var valueLength = 0;
-                if (j2.Others.Length > 1)
+                .Select((it) => new KeyValuePair<string, InfoShortcut>(
+                    it.Value[0], new(it.Key, it.Value)));
+            var jj2 = bb.GroupJoin(cc, (b2) => b2.Key, (c2) => c2.Key,
+                (b2, cc2) => new
                 {
-                    Console.Write(j2.Others[1]);
-                    valueLength = j2.Others[1].Length;
+                    Name = b2.Key,
+                    EnvrParser = b2.Value,
+                    Info = cc2?.Select((it) => it.Value).ToArray() ?? [],
+                });
+
+            Console.WriteLine("Shortcut           OPTION  with            Envir");
+            foreach (var j2 in jj2
+                .OrderBy((it) => it.EnvrParser.IsEnvir))
+            {
+                var j3 = InfoShortcut.Empty;
+                if (j2.Info.Length > 0)
+                {
+                    j3 = j2.Info[0];
+                }
+
+                Console.Write($"{j3.Shortcut,6}{j2.Name,19}  ");
+                var valueLength = 0;
+                var aa = j3.Others;
+                if (aa.Length > 1)
+                {
+                    Console.Write(aa[1]);
+                    valueLength = aa[1].Length;
                 }
                 else
                 {
