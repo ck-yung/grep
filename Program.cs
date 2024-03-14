@@ -12,11 +12,6 @@ class Program
         try
         {
             RunMain(args);
-
-            foreach (var ce2 in ConfigException.GetErrors())
-            {
-                Console.WriteLine(ce2);
-            }
         }
         catch (ConfigException ce)
         {
@@ -31,9 +26,11 @@ class Program
 
     static bool RunMain(string[] args)
     {
-        var envVars = GetEnvirOpts(CheckEnvirDebug(nameof(grep)));
-        var envUnknown = envVars.Resolve([])
-            .Select((it) => it.Arg).ToArray();
+        var envUnknown = SplitEnvirVar(CheckEnvirDebug(nameof(grep)))
+            .ToFlagedArgs(ArgType.Environment, Options.ShortCuts, [])
+            .Resolve([])
+            .Select((it) => it.Arg)
+            .ToArray();
 
         if (args.Length == 0) return PrintSyntax();
 
@@ -46,8 +43,8 @@ class Program
         if (qry.Any()) return PrintSyntax(isDetailed: true);
 
         args = args.ToFlagedArgs(ArgType.CommandLine,
-            Options.SwitchShortCuts, Options.ValueShortCuts)
-            .Resolve(Options.ExtraParsers)
+            Options.ShortCuts, Options.NonEnvirShortCuts)
+            .Resolve(Options.NonEnvirParsers)
             .Select((it) => it.Arg)
             .ToArray();
 
@@ -103,6 +100,16 @@ class Program
         {
             Show.LogVerbose.Invoke(
                 $"Unknown envir: {string.Join(' ', envUnknown)}");
+        }
+
+        foreach (var infoError in ConfigException.GetErrors())
+        {
+            var envrThe = infoError.Type == ArgType.CommandLine
+                ? "Command line" : "Envir";
+            var srceThe = string.IsNullOrEmpty(infoError.Source)
+                ? "" : " " + infoError.Source;
+            Show.LogVerbose.Invoke(
+                $"{envrThe}{srceThe}: {infoError.Error.Message}");
         }
         return true;
     }

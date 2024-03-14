@@ -9,42 +9,43 @@ internal static class Options
     public const string TextOff = "off";
     public const string TextOn = "on";
 
-    public const string OptColor = "--color"; // ---------------------- TODO
-    public const string OptFilesFrom = "--files-from";
-    public const string OptCaseSensitive = "--case-sensitive";
-    public const string OptWord = "--word";
-    public const string OptLineNumber = "--line-number";
-    public const string OptCountOnly = "--count-only";
-    public const string OptFileMatch = "--file-match";
-    public const string OptInvertMatch = "--invert-match";
-    public const string OptPatternFile = "--pattern-file";
-    public const string OptQuiet = "--quiet";
-    public const string OptMaxCount = "--max-count";
-    public const string OptShowFilename = "--show-filename";
-    public const string OptFixedTextPattern = "--fixed-strings";
-    public const string OptPause = "--pause";
+    public const string TextColor = "--color";
+    public const string TextFilesFrom = "--files-from";
+    public const string TextCaseSensitive = "--case-sensitive";
+    public const string TextWord = "--word";
+    public const string TextLineNumber = "--line-number";
+    public const string TextCountOnly = "--count-only";
+    public const string TextFileMatch = "--file-match";
+    public const string TextInvertMatch = "--invert-match";
+    public const string TextPatternFile = "--pattern-file";
+    public const string TextQuiet = "--quiet";
+    public const string TextMaxCount = "--max-count";
+    public const string TextShowFilename = "--show-filename";
+    public const string TextFixedTextPattern = "--fixed-strings";
+    public const string TextPause = "--pause";
 
     public static readonly IEnumerable<KeyValuePair<string, string>>
-        ValueShortCuts =
+        NonEnvirShortCuts =
         [
-            new("-f", OptPatternFile),
-            new("-m", OptMaxCount),
-            new("-T", OptFilesFrom),
+            new("-f", TextPatternFile),
+            new("-m", TextMaxCount),
+            new("-T", TextFilesFrom),
         ];
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
-        SwitchShortCuts =
+        ShortCuts =
         [
-            new("-F", [OptFixedTextPattern, TextOn]),
-            new("-c", [OptCountOnly, TextOn]),
-            new("-h", [OptShowFilename, TextOff]),
-            new("-i", [OptCaseSensitive, TextOff]),
-            new("-l", [OptFileMatch, TextOn]),
-            new("-n", [OptLineNumber, TextOn]),
-            new("-p", [OptPause, TextOff]),
-            new("-q", [OptQuiet, TextOn]),
-            new("-v", [OptInvertMatch, TextOn]),
-            new("-w", [OptWord, TextOn]),
+            new("-F", [TextFixedTextPattern, TextOn]),
+            new("-c", [TextCountOnly, TextOn]),
+            new("-C", [TextColor]),
+            new("-h", [TextShowFilename, TextOff]),
+            new("-i", [TextCaseSensitive, TextOff]),
+            new("-l", [TextFileMatch, TextOn]),
+            new("-n", [TextLineNumber, TextOn]),
+            new("-p", [TextPause, TextOff]),
+            new("-q", [TextQuiet, TextOn]),
+            new("-v", [TextInvertMatch, TextOn]),
+            new("-w", [TextWord, TextOn]),
         ];
 
     public static IEnumerable<FlagedArg> ToFlagedArgs(
@@ -136,8 +137,17 @@ internal static class Options
     static public IEnumerable<int> TextFindAllIndexOf_WordImpl(
         string line, string text)
     {
-        bool CheckAlphNum(int pos)
+        bool CheckAlphNum(int pos, bool isBackward)
         {
+            if (isBackward)
+            {
+                if (pos == 0) return false;
+                pos -= 1;
+            }
+            else
+            {
+                if (line.Length <= pos) return false;
+            }
             var charThe = line[pos];
             if ('0' <= charThe && charThe <= '9') return true;
             if ('A' <= charThe && charThe <= 'Z') return true;
@@ -148,11 +158,8 @@ internal static class Options
         int foundAt = 0;
         while ((foundAt = TextIndexOf(line, text, foundAt)) >= 0)
         {
-            bool chk = true;
-            if (0 < foundAt) chk = (false == CheckAlphNum(foundAt - 1));
-            if ((foundAt + text.Length) < line.Length)
-                chk &= (false == CheckAlphNum(foundAt + text.Length));
-            if (chk)
+            if ((false == CheckAlphNum(foundAt, isBackward: true)) &&
+                (false == CheckAlphNum(foundAt + text.Length, false)))
             {
                 yield return foundAt;
             }
@@ -164,11 +171,11 @@ internal static class Options
     { get; private set; } = TextFindAllIndexOf_Impl;
 
     static public readonly IInvoke<string, string> PatternWordText
-        = new SwitchInvoker<string, string>(OptWord, alterFor: true,
+        = new SwitchInvoker<string, string>(TextWord, alterFor: true,
             init: Helper.Itself, alter: (arg) =>
             {
                 if (false == arg.StartsWith(@"\b")) arg = @"\b" + arg;
-                if (false == arg.EndsWith(@"\b")) arg = arg + @"\b";
+                if (false == arg.EndsWith(@"\b")) arg += @"\b";
                 return arg;
             }, alterPost: (flag) =>
             {
@@ -178,7 +185,7 @@ internal static class Options
             });
 
     static public readonly IInvoke<string, RegX.Regex> ToRegex
-        = new SwitchInvoker<string, RegX.Regex>(OptCaseSensitive,
+        = new SwitchInvoker<string, RegX.Regex>(TextCaseSensitive,
             init: (it) => new RegX.Regex(PatternWordText.Invoke(it)),
             alterFor: false, alterPost: (flag) =>
             {
@@ -199,13 +206,13 @@ internal static class Options
 
     static public readonly IInvoke<IEnumerable<Match>, Match[]>
         MetaMatches = new SwitchInvoker<IEnumerable<Match>, Match[]>(
-            OptInvertMatch, alterFor: true,
+            TextInvertMatch, alterFor: true,
             init: (matches) => matches.ToArray(),
             alter: (matches) => matches.Any() ? [] : Match.ZeroOne);
 
     static public readonly IInvoke<string, Pattern> ToPattern =
         new SwitchInvoker<string, Pattern>(
-            OptFixedTextPattern, alterFor: true,
+            TextFixedTextPattern, alterFor: true,
             init: (it) => new Pattern(ToRegex.Invoke(it)),
             alter: (it) => new Pattern(it));
 
@@ -213,8 +220,8 @@ internal static class Options
         (Func<string, Match[]>, IEnumerable<string>)>
         PatternsFrom = new ParseInvoker<string[],
             (Func<string, Match[]>, IEnumerable<string>)>(
-            OptPatternFile, help: "PATTERN-FILE",
-            extraHelp: $"For example, {nameof(grep)} {OptPatternFile} regex.txt ..",
+            TextPatternFile, help: "PATTERN-FILE",
+            extraHelp: $"For example, {nameof(grep)} {TextPatternFile} regex.txt ..",
             init: (args) =>
             {
                 Pattern pattern;
@@ -236,10 +243,10 @@ internal static class Options
                 if (files.Length > 1)
                 {
                     throw new ConfigException(
-                        $"Too many files ('{files[0]}','{files[1]}') to {opt.Name} are found!");
+                        $"Too many files ('{files[0].Arg}','{files[1].Arg}') to {opt.Name} are found!");
                 }
 
-                var patternFuncs = ReadAllLinesFrom(files[0], opt.Name)
+                var patternFuncs = ReadAllLinesFrom(files[0].Arg, opt.Name)
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0)
                 .Distinct()
@@ -264,21 +271,31 @@ internal static class Options
 
     static public readonly IInvoke<Ignore, IEnumerable<string>> FilesFrom
         = new ParseInvoker<Ignore, IEnumerable<string>>(
-            OptFilesFrom, help: "FILES-FROM", init: (_) => [],
-            extraHelp: $"For example, {nameof(grep)} {OptFilesFrom} cs-file.txt ..",
+            TextFilesFrom, help: "FILES-FROM", init: (_) => [],
+            extraHelp: $"For example, {nameof(grep)} {TextFilesFrom} cs-file.txt ..",
             resolve: (opt, argsThe) =>
             {
                 var files = argsThe.Distinct().Take(2).ToArray();
                 if (files.Length > 1)
                 {
                     throw new ConfigException(
-                        $"Too many files ('{files[0]}','{files[1]}') to {opt.Name} are found!");
+                        $"Too many files ('{files[0].Arg}','{files[1].Arg}') to {opt.Name} are found!");
                 }
 
-                opt.SetImplementation((_) => ReadAllLinesFrom(files[0], opt.Name)
+                opt.SetImplementation((_) => ReadAllLinesFrom(files[0].Arg, opt.Name)
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0));
             });
+
+    static public readonly IInvoke<Ignore, Ignore> Color = new ParseInvoker
+        <Ignore, Ignore>(TextColor, help: "COLOR",
+        extraHelp: "Color assignment",
+        init: Ignore.Maker,
+        resolve: (opt, argsThe) =>
+        {
+            var args = argsThe.Distinct().Take(3).ToArray();
+            Log.Debug("Opt color < ", args.Select((it) => it.Arg).ToArray());
+        });
 
     public static readonly IParse[] Parsers = [
         (IParse)ToRegex,
@@ -289,15 +306,16 @@ internal static class Options
         (IParse)PatternWordText,
         (IParse)ToPattern,
         (IParse)Show.PauseMaker,
+        (IParse)Color,
     ];
 
-    public static readonly IParse[] ExtraParsers = [
+    public static readonly IParse[] NonEnvirParsers = [
         (IParse)Show.MaxFound,
         (IParse)PatternsFrom,
         (IParse)FilesFrom,
         (IParse)Show.FilenameOnly,
         (IParse)Show.FoundCount,
-        ];
+    ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args,
         IEnumerable<IParse> extraParsers)

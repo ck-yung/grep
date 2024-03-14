@@ -6,7 +6,7 @@ namespace grep;
 internal static class Show
 {
     static public readonly IInvoke<string, int> Filename =
-        new SwitchInvoker<string, int>(OptShowFilename,
+        new SwitchInvoker<string, int>(TextShowFilename,
             init: (filename) =>
             {
                 var msg = $"{filename}:";
@@ -21,7 +21,7 @@ internal static class Show
     /// false, if break for scanning the file
     /// </summary>
     static public readonly IInvoke<int, int> LineNumber =
-        new SwitchInvoker<int, int>(OptLineNumber,
+        new SwitchInvoker<int, int>(TextLineNumber,
             init: (_) => 0,
             alterFor: true, alter: (lineNumber) =>
             {
@@ -40,7 +40,7 @@ internal static class Show
     public record CountFound(IConsolePause Pause, string Filename, int Count);
 
     static public readonly IInvoke<CountFound, bool> FoundCount =
-        new SwitchInvoker<CountFound, bool>(OptCountOnly,
+        new SwitchInvoker<CountFound, bool>(TextCountOnly,
             init: (it) => it.Count > 0,
             alterFor: true, alterPost: (flag) =>
             {
@@ -64,7 +64,7 @@ internal static class Show
             });
 
     static public readonly IInvoke<string, Ignore> LogVerbose =
-        new SwitchInvoker<string, Ignore>(OptQuiet,
+        new SwitchInvoker<string, Ignore>(TextQuiet,
             init: (msg) =>
             {
                 Console.WriteLine(msg);
@@ -76,17 +76,17 @@ internal static class Show
         IEnumerable<MatchResult>, IEnumerable<MatchResult>>
         MaxFound = new ParseInvoker<
             IEnumerable<MatchResult>, IEnumerable<MatchResult>>(
-            name: OptMaxCount, help: "NUMBER", init: Helper.Itself,
-            extraHelp: $"For example, {nameof(grep)} {OptMaxCount} 2 ..",
+            name: TextMaxCount, help: "NUMBER", init: Helper.Itself,
+            extraHelp: $"For example, {nameof(grep)} {TextMaxCount} 2 ..",
             resolve: (opt, argsThe) =>
             {
                 var args = argsThe.Distinct().Take(2).ToArray();
                 if (args.Length > 1)
                 {
                     throw new ConfigException(
-                        $"Too many values ({args[0]},{args[1]}) to {opt.Name}");
+                        $"Too many values ({args[0].Arg},{args[1].Arg}) to {opt.Name}");
                 }
-                if (int.TryParse(args[0], out var takeCount))
+                if (int.TryParse(args[0].Arg, out var takeCount))
                 {
                     if (takeCount > 0)
                     {
@@ -106,7 +106,7 @@ internal static class Show
             });
 
     static public readonly IInvoke<Ignore, Ignore> FilenameOnly =
-        new SwitchInvoker<Ignore, Ignore>(OptFileMatch,
+        new SwitchInvoker<Ignore, Ignore>(TextFileMatch,
             init: Ignore.Maker, alter: Ignore.Maker,
             alterFor: true, alterPost: (flag) =>
             {
@@ -131,7 +131,7 @@ internal static class Show
             });
 
     static public readonly IInvoke<Ignore, IConsolePause> PauseMaker =
-        new SwitchInvoker<Ignore, IConsolePause>(OptPause,
+        new SwitchInvoker<Ignore, IConsolePause>(TextPause,
             init: (_) => new ConsolePause(),
             alterFor: false,
             alter: (_) => new FakePause());

@@ -55,23 +55,12 @@ internal static partial class Helper
         return envir;
     }
 
-    static internal IEnumerable<FlagedArg> GetEnvirOpts(string value)
+    static internal IEnumerable<string> SplitEnvirVar(string value)
     {
         if (string.IsNullOrEmpty(value)) return [];
-
-        try
-        {
-            var aa = value.Split(' ',';','"')
-                .Select((it) => it.Trim())
-                .Where((it) => it.Length > 0);
-            return aa.ToFlagedArgs(ArgType.Environment,
-                Options.SwitchShortCuts, []);
-        }
-        catch (Exception ee)
-        {
-            ConfigException.Add(ArgType.Environment, value, ee);
-            return [];
-        }
+        return value.Split(' ', ';', '"')
+            .Select((it) => it.Trim())
+            .Where((it) => it.Length > 0);
     }
 
     static string? LastOptionReadConsole = null;
@@ -151,12 +140,12 @@ internal static partial class Helper
         {
             var bb = Options.Parsers
                 .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(true, it)))
-                .Union(Options.ExtraParsers
+                .Union(Options.NonEnvirParsers
                 .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))))
                 .ToImmutableDictionary((it) => it.Key, (it) => it.Value);
             Console.WriteLine("Short-cut           Option  with            Envir");
-            foreach ((var key, var strings) in Options.SwitchShortCuts
-                .Union(Options.ValueShortCuts
+            foreach ((var key, var strings) in Options.ShortCuts
+                .Union(Options.NonEnvirShortCuts
                 .Select((it) => new KeyValuePair<string, string[]>(it.Key, [it.Value])))
                 .OrderBy((it) => it.Key))
             {
@@ -182,15 +171,13 @@ internal static partial class Helper
                         break;
                     default:
                         var a2 = string.Join(' ', strings.Skip(1));
-                        Console.Write($"{a2}   <-- <-- TODO");
+                        Console.Write($"{a2}   ???");
                         break;
                 }
                 Console.WriteLine();
             }
 
             Console.WriteLine("""
-                 --color   COLOR
-                 --color  ~COLOR
 
                 For example,
                   grep -nm 3 class *.cs

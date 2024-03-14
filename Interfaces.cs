@@ -34,29 +34,26 @@ public class ImplicitBool
     }
 }
 
-internal partial class Helper
-{
-    public static string GetUnique(IEnumerable<string> args, IParse opt)
-    {
-        var rtn = args
-            .Where((it) => it.Length > 0)
-            .Distinct(comparer: StringComparer.InvariantCultureIgnoreCase)
-            .Take(2)
-            .ToArray();
-
-        if (rtn.Length == 0)
-        {
-            throw ConfigException.MissingValue(opt.Name, opt.ExtraHelp);
-        }
-
-        if (rtn.Length > 1)
-        {
-            throw new ConfigException($"Too many values ({rtn[0]};{rtn[1]}) to '{opt.Name}'");
-        }
-
-        return rtn[0];
-    }
-}
+//internal partial class Helper
+//{
+//    public static string GetUnique(IEnumerable<string> args, IParse opt)
+//    {
+//        var rtn = args
+//            .Where((it) => it.Length > 0)
+//            .Distinct(comparer: StringComparer.InvariantCultureIgnoreCase)
+//            .Take(2)
+//            .ToArray();
+//        if (rtn.Length == 0)
+//        {
+//            throw ConfigException.MissingValue(opt.Name, opt.ExtraHelp);
+//        }
+//        if (rtn.Length > 1)
+//        {
+//            throw new ConfigException($"Too many values ({rtn[0]};{rtn[1]}) to '{opt.Name}'");
+//        }
+//        return rtn[0];
+//    }
+//}
 
 //public class ShowSyntaxException : Exception
 //{
@@ -75,14 +72,13 @@ internal class ConfigException : Exception
 {
     public record Info(ArgType Type, string Source, Exception Error);
 
-
     public ConfigException(string message) : base(message)
     {
     }
 
     static readonly IList<Info> Errors = new List<Info>();
 
-    static public void Add(ArgType type, string source, Exception e)
+    static public void Add(ArgType type, Exception e, string source = "")
     {
         Errors.Add(new Info(type, source, e));
     }

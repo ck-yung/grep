@@ -86,12 +86,11 @@ static public partial class MyOptions
 
         public string Help { get; init; }
         public string ExtraHelp { get; init; }
-        public Action<Parser, IEnumerable<string>>
-            Resolve
+        public Action<Parser, IEnumerable<FlagedArg>> Resolve
         { get; init; }
 
         public Parser(string name, string help,
-            Action<Parser, IEnumerable<string>> resolve,
+            Action<Parser, IEnumerable<FlagedArg>> resolve,
             string extraHelp = "")
         {
             Name = name;
@@ -131,7 +130,7 @@ static public partial class MyOptions
 
             if (groupThe.TryGetValue(true, out var matches))
             {
-                Resolve(this, matches.Select((it) => it.Arg));
+                Resolve(this, matches);
             }
 
             if (groupThe.TryGetValue(false, out var notMatches))
@@ -146,7 +145,7 @@ static public partial class MyOptions
     internal class SimpleParser : Parser
     {
         public SimpleParser(string name,
-            Action<Parser, IEnumerable<string>> resolve,
+            Action<Parser, IEnumerable<FlagedArg>> resolve,
             string help = "", string extraHelp = "")
             : base(name, help, resolve, extraHelp)
         {
@@ -157,7 +156,7 @@ static public partial class MyOptions
     {
         protected Func<T, R> imp { get; private set; }
         public ParseInvoker(string name, Func<T, R> @init,
-            Action<ParseInvoker<T, R>, IEnumerable<string>> resolve,
+            Action<ParseInvoker<T, R>, IEnumerable<FlagedArg>> resolve,
             string help = "", string extraHelp = "") :
             base(name, help,
                 resolve: (obj, args) =>
@@ -198,31 +197,39 @@ static public partial class MyOptions
             {
                 var argsThe = args.Distinct().Take(2).ToArray();
                 if (argsThe.Length > 1)
-                    throw new ConfigException(
-                        $"Too many values ('{argsThe[0]}','{argsThe[1]}') are found to '{name}'!");
-
-                bool isEnabledFlag;
-                if (TextOn.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
                 {
-                    isEnabledFlag = true;
+                    ConfigException.Add(argsThe[0].Type, new ArgumentException(
+                        $"Too many values ('{argsThe[0].Arg}','{argsThe[1].Arg}') are found to '{name}'!"));
+                    return;
                 }
-                else if (TextOff.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
+
+                var argThe = argsThe[0];
+                Else<bool, Ignore> flagSwitch;
+                if (TextOn.Equals(argThe.Arg, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    isEnabledFlag = false;
+                    flagSwitch = new Else<bool, Ignore>(true);
+                }
+                else if (TextOff.Equals(argThe.Arg, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    flagSwitch = new Else<bool, Ignore>(false);
                 }
                 else
                 {
-                    throw new ConfigException(
-                        $"Value '{argsThe[0]}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!");
+                    flagSwitch = new Else<bool, Ignore>(Ignore.Void);
+                    ConfigException.Add(argThe.Type, new ArgumentException(
+                        $"Value '{argThe.Arg}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!"));
                 }
 
-                if (alterFor == isEnabledFlag)
+                if (flagSwitch.IsRight)
                 {
-                    ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
-                }
-                else
-                {
-                    ((SwitchInvoker<T, R>)opt).SetImplementation(init);
+                    if (alterFor == flagSwitch.Right())
+                    {
+                        ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
+                    }
+                    else
+                    {
+                        ((SwitchInvoker<T, R>)opt).SetImplementation(init);
+                    }
                 }
             })
         {
@@ -236,33 +243,41 @@ static public partial class MyOptions
             {
                 var argsThe = args.Distinct().Take(2).ToArray();
                 if (argsThe.Length > 1)
-                    throw new ConfigException(
-                        $"Too many values ('{argsThe[0]}','{argsThe[1]}') are found to '{name}'!");
-
-                bool isEnabledFlag;
-                if (TextOn.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
                 {
-                    isEnabledFlag = true;
+                    ConfigException.Add(argsThe[0].Type, new ArgumentException(
+                        $"Too many values ('{argsThe[0].Arg}','{argsThe[1].Arg}') are found to '{name}'!"));
+                    return;
                 }
-                else if (TextOff.Equals(argsThe[0], StringComparison.InvariantCultureIgnoreCase))
+
+                var argThe = argsThe[0];
+                Else<bool, Ignore> flagSwitch;
+                if (TextOn.Equals(argThe.Arg, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    isEnabledFlag = false;
+                    flagSwitch = new Else<bool, Ignore>(true);
+                }
+                else if (TextOff.Equals(argThe.Arg, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    flagSwitch = new Else<bool, Ignore>(false);
                 }
                 else
                 {
-                    throw new ConfigException(
-                        $"Value '{argsThe[0]}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!");
+                    flagSwitch = new Else<bool, Ignore>(Ignore.Void);
+                    ConfigException.Add(argThe.Type, new ArgumentException(
+                        $"Value '{argThe.Arg}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!"));
                 }
 
-                if (alterFor == isEnabledFlag)
+                if (flagSwitch.IsRight)
                 {
-                    ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
-                    alterPost(isEnabledFlag);
-                }
-                else
-                {
-                    ((SwitchInvoker<T, R>)opt).SetImplementation(init);
-                    alterPost(isEnabledFlag);
+                    if (alterFor == flagSwitch.Right())
+                    {
+                        ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
+                        alterPost(alterFor);
+                    }
+                    else
+                    {
+                        ((SwitchInvoker<T, R>)opt).SetImplementation(init);
+                        alterPost(!alterFor);
+                    }
                 }
             })
         {
