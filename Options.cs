@@ -63,7 +63,7 @@ internal static class Options
                 {
                     yield return current;
                 }
-                else if (current.StartsWith("-") && current.Length > 2)
+                else if (current.StartsWith('-') && current.Length > 2)
                 {
                     if ('0' <= current[1] && current[1] <= '9')
                     {

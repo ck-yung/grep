@@ -141,46 +141,51 @@ internal static partial class Helper
             var bb = Options.Parsers
                 .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(true, it)))
                 .Union(Options.NonEnvirParsers
-                .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))))
-                .ToImmutableDictionary((it) => it.Key, (it) => it.Value);
-            Console.WriteLine("Short-cut           Option  with            Envir");
-            foreach ((var key, var strings) in Options.ShortCuts
+                .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))));
+            var cc = Options.ShortCuts
                 .Union(Options.NonEnvirShortCuts
                 .Select((it) => new KeyValuePair<string, string[]>(it.Key, [it.Value])))
-                .OrderBy((it) => it.Key))
+                .Select((it) => new KeyValuePair<string, (string Shortcut, string[] Others)>(
+                    it.Value[0], (it.Key, it.Value)));
+            var jj = from b2 in bb
+                     join c2 in cc
+                     on b2.Key equals c2.Key into cc3
+                     from c3 in cc3.DefaultIfEmpty()
+                     select new
+                     {
+                         Name = b2.Key,
+                         EnvrParser = b2.Value,
+                         c3.Value.Shortcut,
+                         c3.Value.Others,
+                     };
+            Console.WriteLine("Shortcut           OPTION  with            Envir");
+            foreach (var j2 in jj
+                .OrderBy((it) => it.EnvrParser.IsEnvir)
+                .ThenBy((it) => it.Shortcut))
             {
-                Console.Write($"{key,4}   ");
-                Console.Write($"{strings[0],19}  ");
-                EnvrParser? found;
-                switch (strings.Length > 1, bb.TryGetValue(strings[0], out found))
+                Console.Write($"{j2.Shortcut,6}{j2.Name,19}  ");
+                var valueLength = 0;
+                if (j2.Others.Length > 1)
                 {
-                    case (true, true):
-                        Console.Write($"{strings[1],-12} ");
-                        if (true != (found?.IsEnvir ?? false))
-                        {
-                            Console.Write("   Not");
-                        }
-                        break;
-                    case (false, true):
-                        var help = found?.Parser?.Help ?? "";
-                        Console.Write($"{help,-12} ");
-                        if (true != (found?.IsEnvir ?? false))
-                        {
-                            Console.Write("   Not");
-                        }
-                        break;
-                    default:
-                        var a2 = string.Join(' ', strings.Skip(1));
-                        Console.Write($"{a2}   ???");
-                        break;
+                    Console.Write(j2.Others[1]);
+                    valueLength = j2.Others[1].Length;
+                }
+                else
+                {
+                    Console.Write(j2.EnvrParser.Parser.Help);
+                    valueLength = j2.EnvrParser.Parser.Help.Length;
+                }
+                if (false == j2.EnvrParser.IsEnvir)
+                {
+                    var a3 = "Non-envir".PadLeft(25 - valueLength);
+                    Console.Write(a3);
                 }
                 Console.WriteLine();
             }
-
             Console.WriteLine("""
 
                 For example,
-                  grep -nm 3 class *.cs
+                  grep -nm 3 class *.cs --color black --color ~yellow
                   grep -ic class -T cs-files.txt
                   dir *.cs | grep -i Class -
                   dir2 -sb *.cs --within 4hours | grep -n class -T -

@@ -29,7 +29,7 @@ static public partial class MyOptions
     /// <summary>
     /// Implicit boolean, default false
     /// </summary>
-    internal class SwitchParser : ImplicitBool, IParse
+    internal class SwitchParser : IParse
     {
         public string Name { get; init; }
 
@@ -65,7 +65,6 @@ static public partial class MyOptions
                 var current = it.Current;
                 if (current.Arg == Name)
                 {
-                    Flag = true;
                     if (notYetActed)
                     {
                         notYetActed = false;

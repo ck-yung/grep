@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace grep;
+﻿namespace grep;
 
 public enum ArgType
 {
@@ -24,49 +22,6 @@ public interface IInvoke<T, R>
 {
     R Invoke(T arg);
 }
-
-public class ImplicitBool
-{
-    protected bool Flag { get; set; } = false;
-    static public implicit operator bool(ImplicitBool the)
-    {
-        return the.Flag;
-    }
-}
-
-//internal partial class Helper
-//{
-//    public static string GetUnique(IEnumerable<string> args, IParse opt)
-//    {
-//        var rtn = args
-//            .Where((it) => it.Length > 0)
-//            .Distinct(comparer: StringComparer.InvariantCultureIgnoreCase)
-//            .Take(2)
-//            .ToArray();
-//        if (rtn.Length == 0)
-//        {
-//            throw ConfigException.MissingValue(opt.Name, opt.ExtraHelp);
-//        }
-//        if (rtn.Length > 1)
-//        {
-//            throw new ConfigException($"Too many values ({rtn[0]};{rtn[1]}) to '{opt.Name}'");
-//        }
-//        return rtn[0];
-//    }
-//}
-
-//public class ShowSyntaxException : Exception
-//{
-//    internal ShowSyntaxException(IParse parser)
-//        : base(MyOptions.GetHelpText(parser))
-//    {
-//        if (false ==
-//            string.IsNullOrEmpty(parser.ExtraHelp))
-//        {
-//            base.Data["extra"] = parser.ExtraHelp;
-//        }
-//    }
-//}
 
 internal class ConfigException : Exception
 {
