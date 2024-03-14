@@ -181,7 +181,7 @@ internal static class Show
 
     static public readonly IInvoke<bool, Ignore> SwitchColor = new ParseInvoker
         <bool, Ignore>(TextColor, help: "COLOR",
-        extraHelp: "Color assignment *TODO*",
+        extraHelp: $"'{nameof(grep)} {TextColor} -' for help",
         init: (flag) =>
         {
             if (flag)
@@ -210,6 +210,55 @@ internal static class Show
             if (args.Length < 2)
             {
                 var argFirst = args[0];
+                if (argFirst == "-")
+                {
+                    Console.WriteLine($"""
+                        Syntax: {nameof(grep)} {TextColor}  COLOR
+                        Syntax: {nameof(grep)} {TextColor} ~COLOR
+                        """);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        Console.WriteLine($"Syntax: {nameof(grep)} {TextColor} ~");
+                    }
+
+                    static void switchBackgroundColor(bool isBlack, ConsoleColor arg)
+                    {
+                        Console.ForegroundColor = arg;
+                        Console.BackgroundColor = (isBlack, arg) switch
+                        {
+                            (_, ConsoleColor.Black) => ConsoleColor.Gray,
+                            (_, ConsoleColor.Gray) => ConsoleColor.Black,
+                            (true, _) => ConsoleColor.Black,
+                            _ => ConsoleColor.Gray,
+                        };
+                        Console.Write(isBlack ? " Good " : " Demo ");
+                    }
+
+                    static void switchForegroundColor(ConsoleColor arg)
+                    {
+                        Console.BackgroundColor = arg;
+                        Console.ForegroundColor = arg switch
+                        {
+                            (ConsoleColor.Black) => ConsoleColor.Gray,
+                            _ => ConsoleColor.Black,
+                        };
+                        Console.Write(" Blackground ");
+                    }
+                    Console.WriteLine($"where COLOR is one of the following:");
+                    foreach (ConsoleColor cr2 in Enum.GetValues(typeof(ConsoleColor)))
+                    {
+                        Console.Write($"\t{cr2,-12}");
+                        switchBackgroundColor(true, cr2);
+                        switchBackgroundColor(false, cr2);
+                        Console.ResetColor();
+                        Console.Write("  ");
+                        switchForegroundColor(cr2);
+                        Console.ResetColor();
+                        Console.WriteLine();
+                    }
+                    Environment.Exit(0);
+                }
+
                 if (TextOff.Equals(argFirst,
                     StringComparison.InvariantCultureIgnoreCase))
                 {
