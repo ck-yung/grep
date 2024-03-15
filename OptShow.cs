@@ -95,7 +95,7 @@ internal static class Show
                 else
                 {
                     throw new ConfigException(
-                        $"Value to {opt.Name} SHOULD be a number but '{args[0]}' is found!");
+                        $"Value to {opt.Name} SHOULD be a number but '{args[0].Arg}' is found!");
                 }
             });
 

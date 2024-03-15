@@ -295,11 +295,11 @@ internal static class Options
         (IParse)PatternWordText,
         (IParse)ToPattern,
         (IParse)Show.PauseMaker,
+        (IParse)Show.MaxFound,
         (IParse)Show.SwitchColor,
     ];
 
     public static readonly IParse[] NonEnvirParsers = [
-        (IParse)Show.MaxFound,
         (IParse)PatternsFrom,
         (IParse)FilesFrom,
         (IParse)Show.FilenameOnly,
