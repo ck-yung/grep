@@ -219,16 +219,11 @@ internal static class Options
             {
                 if (it.IsFirstCmdLineArg)
                 {
-                    if (it.Text == "~")
-                    {
-                        return new Pattern(ToRegex.Invoke("~"));
-                    }
+                    if (it.Text == "~") return new Pattern("~");
                     if (it.Text.StartsWith('~'))
                     {
-                        var tmp = System.Net
-                            .WebUtility.UrlDecode(it.Text[1..]);
-                        Log.Debug("Decode '{0}' > '{1}',{2}", it.Text[1..], tmp, tmp.Length);
-                        return new Pattern(tmp);
+                        return new Pattern(System.Net
+                            .WebUtility.UrlDecode(it.Text[1..]));
                     }
                     return new Pattern(ToRegex.Invoke(it.Text));
                 }
@@ -236,7 +231,7 @@ internal static class Options
             },
             alter: (it) => new Pattern(it.Text));
 
-    const string hintOfFile = "\nRead redir console input if - is assigned.";
+    const string hintOfFile = "\nRead redir console input if - is assigned to the option.";
 
     static public readonly IInvoke<string[],
         (Func<string, Match[]>, IEnumerable<string>)>

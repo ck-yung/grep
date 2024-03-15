@@ -348,7 +348,7 @@ class ConsolePause : IConsolePause
 
     public void Disable()
     {
-        Limit = 2;
+        MaxLineNumber = 2;
         Increase = FakeInc;
     }
 
@@ -359,12 +359,13 @@ class ConsolePause : IConsolePause
             Disable();
             return;
         }
-        Limit = Console.WindowHeight - 1;
-        if (Limit < 2)
+        MaxLineNumber = Console.WindowHeight - 1;
+        if (MaxLineNumber < 2)
         {
-            Limit = 2;
+            MaxLineNumber = 2;
             Increase = FakeInc;
         }
+        MaxLineLength = Console.WindowWidth - 1;
     }
 
     public bool Assign(int limit)
@@ -375,7 +376,7 @@ class ConsolePause : IConsolePause
             return true;
         }
         if (1 > limit) return false;
-        Limit = limit;
+        MaxLineNumber = limit;
         return true;
     }
 
@@ -388,17 +389,23 @@ class ConsolePause : IConsolePause
         }
     }
 
-    int Limit { get; set; } = int.MaxValue;
+    int MaxLineNumber { get; set; } = int.MaxValue;
+    int MaxLineLength { get; set; } = int.MaxValue;
     int Counter { get; set; } = 0;
-    static int RealInc(int arg) => arg + 1;
-    static int FakeInc(int _) => 1;
-    Func<int, int> Increase = (it) => RealInc(it);
+    static int RealInc(int arg, int inc) => arg + inc;
+    static int FakeInc(int _1, int _2) => 1;
+    Func<int, int, int> Increase = (it2, it3) => RealInc(it2, it3);
 
     // TODO: 'length' handling
     public void IncreaseCounter(int length)
     {
-        Counter = Increase(Counter);
-        if (Counter >= Limit)
+        int incNumber = 1;
+        if (MaxLineLength > 0)
+        {
+            incNumber += length / MaxLineLength;
+        }
+        Counter = Increase(Counter, incNumber);
+        if (Counter >= MaxLineNumber)
         {
             Console.Write("Press any key (q to quit, c to cancel pause) ");
             var inp = Console.ReadKey();

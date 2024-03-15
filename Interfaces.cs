@@ -31,7 +31,7 @@ internal class ConfigException : Exception
     {
     }
 
-    static readonly IList<Info> Errors = new List<Info>();
+    static readonly List<Info> Errors = [];
 
     static public void Add(ArgType type, Exception e, IParse? option = null)
     {
