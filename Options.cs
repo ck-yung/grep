@@ -130,6 +130,7 @@ internal static class Options
         {
             yield return foundAt;
             foundAt += text.Length;
+            if ((foundAt < 0) || (line.Length <= foundAt)) break;
         }
     }
 
@@ -163,6 +164,7 @@ internal static class Options
                 yield return foundAt;
             }
             foundAt += text.Length;
+            if ((foundAt < 0) || (line.Length <= foundAt)) break;
         }
     }
 
@@ -209,11 +211,30 @@ internal static class Options
             init: (matches) => matches.ToArray(),
             alter: (matches) => matches.Any() ? [] : Match.ZeroOne);
 
-    static public readonly IInvoke<string, Pattern> ToPattern =
-        new SwitchInvoker<string, Pattern>(
+    public record PatternParam(bool IsFirstCmdLineArg, string Text);
+    static public readonly IInvoke<PatternParam, Pattern> ToPattern =
+        new SwitchInvoker<PatternParam, Pattern>(
             TextFixedTextPattern, alterFor: true,
-            init: (it) => new Pattern(ToRegex.Invoke(it)),
-            alter: (it) => new Pattern(it));
+            init: (it) =>
+            {
+                if (it.IsFirstCmdLineArg)
+                {
+                    if (it.Text == "~")
+                    {
+                        return new Pattern(ToRegex.Invoke("~"));
+                    }
+                    if (it.Text.StartsWith('~'))
+                    {
+                        var tmp = System.Net
+                            .WebUtility.UrlDecode(it.Text[1..]);
+                        Log.Debug("Decode '{0}' > '{1}',{2}", it.Text[1..], tmp, tmp.Length);
+                        return new Pattern(tmp);
+                    }
+                    return new Pattern(ToRegex.Invoke(it.Text));
+                }
+                return new Pattern(ToRegex.Invoke(it.Text));
+            },
+            alter: (it) => new Pattern(it.Text));
 
     const string hintOfFile = "\nRead redir console input if - is assigned.";
 
@@ -231,10 +252,10 @@ internal static class Options
                     case 0:
                         throw new ConfigException("No pattern is found.");
                     case 1:
-                        pattern = ToPattern.Invoke(args[0]);
+                        pattern = ToPattern.Invoke(new(IsFirstCmdLineArg: true, args[0]));
                         return ((line) => pattern.Matches(line), []);
                     default:
-                        pattern = ToPattern.Invoke(args[0]);
+                        pattern = ToPattern.Invoke(new(IsFirstCmdLineArg: true, args[0]));
                         return ((line) => pattern.Matches(line), args.Skip(1));
                 }
             },
@@ -251,7 +272,7 @@ internal static class Options
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0)
                 .Distinct()
-                .Select((it) => ToPattern.Invoke(it))
+                .Select((it) => ToPattern.Invoke(new(false, it)))
                 .Select((it) => it.Matches)
                 .ToArray();
 

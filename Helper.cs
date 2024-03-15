@@ -135,6 +135,7 @@ internal static partial class Helper
         {
             Console.WriteLine("""
                 Read redir console input if FILE is -
+                PATTERN is a URL-coded fixed-string if the first char is ~
 
                 https://github.com/ck-yung/grep/blob/master/README.md
                 """);

@@ -15,10 +15,16 @@ class Program
         }
         catch (ConfigException ce)
         {
+            Console.ResetColor();
+            if (0 < Console.GetCursorPosition().Left)
+                Console.WriteLine();
             Console.WriteLine(ce.Message);
         }
         catch (Exception ee)
         {
+            Console.ResetColor();
+            if (0 < Console.GetCursorPosition().Left)
+                Console.WriteLine();
             Console.WriteLine(IsEnvirDebug()
                 ? ee.ToString() : ee.Message);
         }
