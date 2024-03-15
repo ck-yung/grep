@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using static grep.MyOptions;
 using static grep.Options;
 
@@ -31,6 +32,38 @@ internal static class Show
                 return msg.Length;
             });
 
+    #region File Count and Found Count
+    static int TotalFileCountImp { get; set; } = 0;
+    static int TotalFoundCountImp { get; set; } = 0;
+    static public readonly IInvoke<Else<int, Ignore>, Ignore> TotalCount =
+        new SwitchInvoker<Else<int, Ignore>, Ignore>(TextTotal,
+            help: TextOn, alterFor: true,
+            init: (_) => Ignore.Void,
+            alter: (it) =>
+            {
+                if (it.IsRight)
+                {
+                    if (it.Right() > 0)
+                    {
+                        TotalFileCountImp += 1;
+                        TotalFoundCountImp += it.Right();
+                    }
+                }
+                else
+                {
+                    var tmp = (TotalFileCountImp, TotalFoundCountImp) switch
+                    {
+                        (0, 0) => "No finding is matched.",
+                        (1, 1) => "One finding is matched.",
+                        (1, _) => $"{TotalFoundCountImp} findings in a file are matched.",
+                        _ => $"{TotalFoundCountImp} findings in {TotalFileCountImp} files are matched.",
+                    };
+                    Console.WriteLine(tmp);
+                }
+                return Ignore.Void;
+            });
+    #endregion
+
     public record CountFound(IConsolePause Pause, string Filename, int Count);
 
     static public readonly IInvoke<CountFound, bool> FoundCount =
@@ -61,7 +94,10 @@ internal static class Show
         new SwitchInvoker<string, Ignore>(TextQuiet,
             init: (msg) =>
             {
-                Console.WriteLine(msg);
+                if (false == string.IsNullOrEmpty(msg))
+                {
+                    Console.WriteLine(msg);
+                }
                 return Ignore.Void;
             },
             alterFor: true, alter: Ignore<string>.Maker);

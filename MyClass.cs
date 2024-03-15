@@ -24,11 +24,6 @@ internal class Else<R, L>
 
 static public partial class MyOptions
 {
-
-    // TODO: Check if needed
-    /// <summary>
-    /// Implicit boolean, default false
-    /// </summary>
     internal class SwitchParser : IParse
     {
         public string Name { get; init; }

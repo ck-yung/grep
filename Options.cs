@@ -23,6 +23,7 @@ internal static class Options
     public const string TextShowFilename = "--show-filename";
     public const string TextFixedTextPattern = "--fixed-strings";
     public const string TextPause = "--pause";
+    public const string TextTotal = "--total";
 
     public static readonly IEnumerable<KeyValuePair<string, string>>
         NonEnvirShortCuts =
@@ -322,6 +323,7 @@ internal static class Options
         (IParse)FilesFrom,
         (IParse)Show.FilenameOnly,
         (IParse)Show.FoundCount,
+        (IParse)Show.TotalCount,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args,

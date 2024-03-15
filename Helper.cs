@@ -396,7 +396,6 @@ class ConsolePause : IConsolePause
     static int FakeInc(int _1, int _2) => 1;
     Func<int, int, int> Increase = (it2, it3) => RealInc(it2, it3);
 
-    // TODO: 'length' handling
     public void IncreaseCounter(int length)
     {
         int incNumber = 1;

@@ -63,7 +63,7 @@ class Program
         }
         var pause = Show.PauseMaker.Invoke(Ignore.Void);
 
-        var filesMatched = paths
+        var _ = paths
             .Select((it) => it.FromWildCard())
             .SelectMany((it) => it)
             .Union(Options.FilesFrom.Invoke(Ignore.Void))
@@ -84,28 +84,12 @@ class Program
                     return it;
                 })
                 .Count();
+                Show.TotalCount.Invoke(new Else<int, Ignore>(cnt));
                 return Show.FoundCount.Invoke(
                     new Show.CountFound(pause, path, cnt));
-            })
-            .GroupBy((it) => it)
-            .ToImmutableDictionary((grp) => grp.Key,
-            (grp) => grp.Count());
+            }).Count();
 
-        switch (filesMatched.TryGetValue(true, out var cntFilesMatch),
-            filesMatched.Count == 0)
-        {
-            case (true, _):
-                if (cntFilesMatch == 1)
-                    Show.LogVerbose.Invoke($"One files is matched.");
-                else
-                    Show.LogVerbose.Invoke($"{cntFilesMatch} files are matched.");
-                break;
-            case (false, true):
-                throw new ConfigException("No file is given");
-            default:
-                Show.LogVerbose.Invoke($"No file is matched.");
-                break;
-        }
+        Show.TotalCount.Invoke(new Else<int, Ignore>(Ignore.Void));
 
         if (envUnknown.Length > 0)
         {
