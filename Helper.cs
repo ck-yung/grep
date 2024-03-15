@@ -134,7 +134,7 @@ internal static partial class Helper
         if (false == isDetailed)
         {
             Console.WriteLine("""
-                Read redir console input if no FILE is -
+                Read redir console input if FILE is -
 
                 https://github.com/ck-yung/grep/blob/master/README.md
                 """);
@@ -189,7 +189,6 @@ internal static partial class Helper
                 Console.WriteLine();
             }
             Console.WriteLine("""
-
                 For example,
                   grep -nm 3 class *.cs --color black --color ~yellow
                   grep -ic class -T cs-files.txt
@@ -398,11 +397,11 @@ class ConsolePause : IConsolePause
         Counter = Increase(Counter);
         if (Counter >= Limit)
         {
-            Console.Write("Press any key (q to quit, c to cancel coming pause) ");
+            Console.Write("Press any key (q to quit, c to cancel pause) ");
             var inp = Console.ReadKey();
             Console.Write("\r");
-            //nsole.Write("Press any key (q to quit, c to cancel coming pause) 12");
-            Console.Write("                                                      ");
+            //nsole.Write("Press any key (q to quit, c to cancel pause) 12");
+            Console.Write("                                               ");
             Console.Write("\r");
             if (inp.KeyChar == 'q' || inp.KeyChar == 'Q')
             {

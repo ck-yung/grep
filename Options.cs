@@ -215,12 +215,14 @@ internal static class Options
             init: (it) => new Pattern(ToRegex.Invoke(it)),
             alter: (it) => new Pattern(it));
 
+    const string hintOfFile = "\nRead redir console input if - is assigned.";
+
     static public readonly IInvoke<string[],
         (Func<string, Match[]>, IEnumerable<string>)>
         PatternsFrom = new ParseInvoker<string[],
             (Func<string, Match[]>, IEnumerable<string>)>(
             TextPatternFile, help: "PATTERN-FILE",
-            extraHelp: $"For example, {nameof(grep)} {TextPatternFile} regex.txt ..",
+            extraHelp: $"For example, {nameof(grep)} {TextPatternFile} regex.txt ..{hintOfFile}",
             init: (args) =>
             {
                 Pattern pattern;
@@ -271,7 +273,7 @@ internal static class Options
     static public readonly IInvoke<Ignore, IEnumerable<string>> FilesFrom
         = new ParseInvoker<Ignore, IEnumerable<string>>(
             TextFilesFrom, help: "FILES-FROM", init: (_) => [],
-            extraHelp: $"For example, {nameof(grep)} {TextFilesFrom} cs-file.txt ..",
+            extraHelp: $"For example, {nameof(grep)} {TextFilesFrom} cs-file.txt ..{hintOfFile}",
             resolve: (opt, argsThe) =>
             {
                 var files = argsThe.Distinct().Take(2).ToArray();

@@ -212,14 +212,7 @@ internal static class Show
                 var argFirst = args[0];
                 if (argFirst == "-")
                 {
-                    Console.WriteLine($"""
-                        Syntax: {nameof(grep)} {TextColor}  COLOR
-                        Syntax: {nameof(grep)} {TextColor} ~COLOR
-                        """);
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        Console.WriteLine($"Syntax: {nameof(grep)} {TextColor} ~");
-                    }
+                    Console.WriteLine($"Syntax: {nameof(grep)} {TextColor}  COLOR ..");
 
                     static void switchBackgroundColor(bool isBlack, ConsoleColor arg)
                     {
@@ -255,6 +248,37 @@ internal static class Show
                         switchForegroundColor(cr2);
                         Console.ResetColor();
                         Console.WriteLine();
+                    }
+                    Console.WriteLine();
+
+                    // ........-123456789012345678901234567890
+                    var hint = "Assign background color by";
+                    Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} ~COLOR ..");
+
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        hint = "Exchange colors by";
+                        Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} ~ ..");
+                    }
+
+                    hint = "Disable the feature by";
+                    Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} off ..");
+
+                    Console.WriteLine($"""
+
+                            Option can be assigned by envir var '{nameof(grep)}', for example
+                            """);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        Console.WriteLine($"""
+                            set {nameof(grep)}={TextColor} black; {TextColor} ~yellow
+                            """);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"""
+                            export {nameof(grep)}="{TextColor} black; {TextColor} ~yellow"
+                            """);
                     }
                     Environment.Exit(0);
                 }
