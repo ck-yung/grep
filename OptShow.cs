@@ -181,7 +181,7 @@ internal static class Show
 
     static public readonly IInvoke<bool, Ignore> SwitchColor = new ParseInvoker
         <bool, Ignore>(TextColor, help: "COLOR",
-        extraHelp: $"'{nameof(grep)} {TextColor} -' for help",
+        extraHelp: $"For help, please run: {nameof(grep)} {TextColor} -",
         init: (flag) =>
         {
             if (flag)
@@ -203,86 +203,87 @@ internal static class Show
             if (args.Length > 2)
             {
                 ConfigException.Add(typeThe, new ArgumentException(
-                    $"Too many value ('{args[0]}','{args[1]}','{args[2]}') to {opt.Name}"));
+                    $"Too many value ('{args[0]}','{args[1]}','{args[2]}') to {opt.Name}"),
+                    option: opt);
                 return;
+            }
+
+            if (("-" == args[0]) || ((args.Length > 1) && ("-" == args[1])))
+            {
+                Console.WriteLine($"Syntax: {nameof(grep)} {TextColor}  COLOR ..");
+
+                static void switchBackgroundColor(bool isBlack, ConsoleColor arg)
+                {
+                    Console.ForegroundColor = arg;
+                    Console.BackgroundColor = (isBlack, arg) switch
+                    {
+                        (_, ConsoleColor.Black) => ConsoleColor.Gray,
+                        (_, ConsoleColor.Gray) => ConsoleColor.Black,
+                        (true, _) => ConsoleColor.Black,
+                        _ => ConsoleColor.Gray,
+                    };
+                    Console.Write(isBlack ? " Good " : " Demo ");
+                }
+
+                static void switchForegroundColor(ConsoleColor arg)
+                {
+                    Console.BackgroundColor = arg;
+                    Console.ForegroundColor = arg switch
+                    {
+                        (ConsoleColor.Black) => ConsoleColor.Gray,
+                        _ => ConsoleColor.Black,
+                    };
+                    Console.Write(" Blackground ");
+                }
+                Console.WriteLine($"where COLOR is one of the following:");
+                foreach (ConsoleColor cr2 in Enum.GetValues(typeof(ConsoleColor)))
+                {
+                    Console.Write($"\t{cr2,-12}");
+                    switchBackgroundColor(true, cr2);
+                    switchBackgroundColor(false, cr2);
+                    Console.ResetColor();
+                    Console.Write("  ");
+                    switchForegroundColor(cr2);
+                    Console.ResetColor();
+                    Console.WriteLine();
+                }
+                Console.WriteLine();
+
+                // ........-123456789012345678901234567890
+                var hint = "Assign background color by";
+                Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} ~COLOR ..");
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    hint = "Exchange colors by";
+                    Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} ~ ..");
+                }
+
+                hint = "Disable the feature by";
+                Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} off ..");
+
+                Console.WriteLine($"""
+
+                            Option can be assigned by envir var '{nameof(grep)}', for example
+                            """);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Console.WriteLine($"""
+                            set {nameof(grep)}={TextColor} black; {TextColor} ~yellow
+                            """);
+                }
+                else
+                {
+                    Console.WriteLine($"""
+                            export {nameof(grep)}="{TextColor} black; {TextColor} ~yellow"
+                            """);
+                }
+                Environment.Exit(0);
             }
 
             if (args.Length < 2)
             {
                 var argFirst = args[0];
-                if (argFirst == "-")
-                {
-                    Console.WriteLine($"Syntax: {nameof(grep)} {TextColor}  COLOR ..");
-
-                    static void switchBackgroundColor(bool isBlack, ConsoleColor arg)
-                    {
-                        Console.ForegroundColor = arg;
-                        Console.BackgroundColor = (isBlack, arg) switch
-                        {
-                            (_, ConsoleColor.Black) => ConsoleColor.Gray,
-                            (_, ConsoleColor.Gray) => ConsoleColor.Black,
-                            (true, _) => ConsoleColor.Black,
-                            _ => ConsoleColor.Gray,
-                        };
-                        Console.Write(isBlack ? " Good " : " Demo ");
-                    }
-
-                    static void switchForegroundColor(ConsoleColor arg)
-                    {
-                        Console.BackgroundColor = arg;
-                        Console.ForegroundColor = arg switch
-                        {
-                            (ConsoleColor.Black) => ConsoleColor.Gray,
-                            _ => ConsoleColor.Black,
-                        };
-                        Console.Write(" Blackground ");
-                    }
-                    Console.WriteLine($"where COLOR is one of the following:");
-                    foreach (ConsoleColor cr2 in Enum.GetValues(typeof(ConsoleColor)))
-                    {
-                        Console.Write($"\t{cr2,-12}");
-                        switchBackgroundColor(true, cr2);
-                        switchBackgroundColor(false, cr2);
-                        Console.ResetColor();
-                        Console.Write("  ");
-                        switchForegroundColor(cr2);
-                        Console.ResetColor();
-                        Console.WriteLine();
-                    }
-                    Console.WriteLine();
-
-                    // ........-123456789012345678901234567890
-                    var hint = "Assign background color by";
-                    Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} ~COLOR ..");
-
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        hint = "Exchange colors by";
-                        Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} ~ ..");
-                    }
-
-                    hint = "Disable the feature by";
-                    Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} off ..");
-
-                    Console.WriteLine($"""
-
-                            Option can be assigned by envir var '{nameof(grep)}', for example
-                            """);
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        Console.WriteLine($"""
-                            set {nameof(grep)}={TextColor} black; {TextColor} ~yellow
-                            """);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"""
-                            export {nameof(grep)}="{TextColor} black; {TextColor} ~yellow"
-                            """);
-                    }
-                    Environment.Exit(0);
-                }
-
                 if (TextOff.Equals(argFirst,
                     StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -327,7 +328,8 @@ internal static class Show
                 {
                     ConfigException.Add(typeThe, new
                         ArgumentException(
-                        $"'{argFirst}' to {opt.Name} is NOT valid!"));
+                        $"'{argFirst}' to {opt.Name} is NOT valid!"),
+                        option: opt);
                 }
                 return;
             }
@@ -348,7 +350,8 @@ internal static class Show
                     break;
                 default:
                     ConfigException.Add(typeThe, new ArgumentException(
-                        $"Values '{args[0]}' and '{args[1]}' to {opt.Name} are NOT valid!"));
+                        $"Values '{args[0]}' and '{args[1]}' to {opt.Name} are NOT valid!"),
+                        option: opt);
                     return;
             }
             if (isHighBackOk && isHighForeOk)
@@ -359,7 +362,8 @@ internal static class Show
             else
             {
                 ConfigException.Add(typeThe, new ArgumentException(
-                    $"Values '{args[0]}' and '{args[1]}' to {opt.Name} are NOT valid!"));
+                    $"Values '{args[0]}' and '{args[1]}' to {opt.Name} are NOT valid!"),
+                    option: opt);
             }
         });
     #endregion

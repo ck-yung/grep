@@ -106,10 +106,12 @@ class Program
         {
             var envrThe = infoError.Type == ArgType.CommandLine
                 ? "Command line" : "Envir";
-            var srceThe = string.IsNullOrEmpty(infoError.Source)
-                ? "" : " " + infoError.Source;
             Show.LogVerbose.Invoke(
-                $"{envrThe}{srceThe}: {infoError.Error.Message}");
+                $"{envrThe}: {infoError.Error.Message}");
+            if (false == string.IsNullOrEmpty(infoError.Option?.ExtraHelp))
+            {
+                Show.LogVerbose.Invoke(infoError.Option.ExtraHelp);
+            }
         }
         return true;
     }

@@ -25,7 +25,7 @@ public interface IInvoke<T, R>
 
 internal class ConfigException : Exception
 {
-    public record Info(ArgType Type, string Source, Exception Error);
+    public record Info(ArgType Type, IParse? Option, Exception Error);
 
     public ConfigException(string message) : base(message)
     {
@@ -33,9 +33,9 @@ internal class ConfigException : Exception
 
     static readonly IList<Info> Errors = new List<Info>();
 
-    static public void Add(ArgType type, Exception e, string source = "")
+    static public void Add(ArgType type, Exception e, IParse? option = null)
     {
-        Errors.Add(new Info(type, source, e));
+        Errors.Add(new Info(type, option, e));
     }
 
     static public IEnumerable<Info> GetErrors()

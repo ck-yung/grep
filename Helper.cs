@@ -192,8 +192,10 @@ internal static partial class Helper
                 For example,
                   grep -nm 3 class *.cs --color black --color ~yellow
                   grep -ic class -T cs-files.txt
-                  dir *.cs | grep -i Class -
+                  dir *.cs | grep Class - --case-sensitive on
                   dir2 -sb *.cs --within 4hours | grep -n class -T -
+
+                Options can be assigned in envir var 'grep'.
                 """);
         }
         return false;
