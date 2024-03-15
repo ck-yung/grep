@@ -1,5 +1,5 @@
 # grep
-**v0.0.3.0**
+**v0.9.0.0**
 
 ## Syntax:
 ```
@@ -20,6 +20,8 @@ dir2 -sd | grep !lost+found
 
 * ```grep``` does not support ```FILE``` in wild card format.
 * ```PATTERN``` is a regular expression if it is NOT leading by a ```!``` char.
+
+[Link to ```dir2```](https://www.nuget.org/packages/dir2)
 
 ## Options
 ```
