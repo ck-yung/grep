@@ -50,6 +50,11 @@ class Program
 
         (var matches, var paths) = Options.PatternsFrom.Invoke(args);
 
+        if (Console.IsOutputRedirected)
+        {
+            ((IParse)Show.SwitchColor).Parse([
+                new(true, ArgType.CommandLine, "off")]);
+        }
         var pause = Show.PauseMaker.Invoke(Ignore.Void);
 
         var filesMatched = paths

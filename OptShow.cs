@@ -231,6 +231,7 @@ internal static class Show
                     Console.ForegroundColor = arg switch
                     {
                         (ConsoleColor.Black) => ConsoleColor.Gray,
+                        (ConsoleColor.DarkGray) => ConsoleColor.White,
                         _ => ConsoleColor.Black,
                     };
                     Console.Write(" Blackground ");
@@ -308,7 +309,7 @@ internal static class Show
                     return;
                 }
 
-                (bool isBackground, string colorText) = (argFirst.StartsWith("~"), argFirst);
+                (bool isBackground, string colorText) = (argFirst.StartsWith('~'), argFirst);
                 if (isBackground)
                 {
                     colorText = colorText[1..];
@@ -338,7 +339,7 @@ internal static class Show
             bool isHighBackOk;
             ConsoleColor highFore;
             ConsoleColor highBack;
-            switch (args[0].StartsWith("~"), args[1].StartsWith("~"))
+            switch (args[0].StartsWith('~'), args[1].StartsWith('~'))
             {
                 case (true, false):
                     isHighBackOk = TryParseToForeColor(args[0][1..], out highBack);
@@ -370,7 +371,14 @@ internal static class Show
 
     static public readonly IInvoke<Ignore, IConsolePause> PauseMaker =
         new SwitchInvoker<Ignore, IConsolePause>(TextPause,
-            init: (_) => new ConsolePause(),
+            init: (_) =>
+            {
+                if (Console.IsInputRedirected || Console.IsOutputRedirected)
+                {
+                    return new FakePause();
+                }
+                return new ConsolePause();
+            },
             alterFor: false,
             alter: (_) => new FakePause());
 }

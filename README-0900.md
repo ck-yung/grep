@@ -67,6 +67,14 @@ dir2 -sd | grep !lost+found
 
 ![Color Feature](https://raw.githubusercontent.com/ck-yung/grep/master/images/help.gif)
 
+## Known Issuses
+
+1. When using Windows Terminal, it CANNOT show black background color under the following color scheme.
+
+* Tango Light
+
+* Solarized Light
+
 Yung, Chun Kau
 
 <yung.chun.kau@gmail.com>
