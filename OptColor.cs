@@ -123,7 +123,9 @@ internal static partial class Show
             }
 
             // color demo
-            if (("-" == args[0]) || ((args.Length > 1) && ("-" == args[1])))
+            if (("-" == args[0]) ||
+            opt.Help.Equals(args[0], StringComparison.InvariantCultureIgnoreCase) ||
+            ((args.Length > 1) && ("-" == args[1])))
             {
                 Console.WriteLine($"Syntax: {nameof(grep)} {TextColor}  COLOR ..");
 

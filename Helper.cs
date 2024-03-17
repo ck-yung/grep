@@ -165,28 +165,23 @@ internal static partial class Helper
                     : InfoShortcut.Empty,
                 });
 
-            Console.WriteLine("Shortcut           Option  with            Envir");
+            Console.WriteLine("Shortcut           Option  with           Envir");
             foreach (var j2 in jj2
                 .OrderBy((it) => it.EnvrParser.IsEnvir))
             {
                 var j3 = j2.Info;
-                Console.Write($"{j3.Shortcut,6}{j2.Name,19}  ");
-                var valueLength = 0;
-                var aa = j3.Expands;
-                if (aa.Length > 0)
+                Console.Write($"{j2.Info.Shortcut,6}{j2.Name,19}  ");
+
+                var a2 = j3.Expands.Length == 0
+                    ? j2.EnvrParser.Parser.Help : j3.Expands[0];
+
+                if (j2.EnvrParser.IsEnvir)
                 {
-                    Console.Write(aa[0]);
-                    valueLength = aa[0].Length;
+                    Console.Write(a2);
                 }
                 else
                 {
-                    Console.Write(j2.EnvrParser.Parser.Help);
-                    valueLength = j2.EnvrParser.Parser.Help.Length;
-                }
-                if (false == j2.EnvrParser.IsEnvir)
-                {
-                    var a3 = "Command line only".PadLeft(25 - valueLength);
-                    Console.Write(a3);
+                    Console.Write($"{a2,-14} Command line only");
                 }
                 Console.WriteLine();
             }

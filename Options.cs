@@ -260,6 +260,13 @@ internal static class Options
                         $"Too many files ('{files[0].Arg}','{files[1].Arg}') to {opt.Name} are found!");
                 }
 
+                if (opt.Help.Equals(files[0].Arg,
+                    StringComparison.InvariantCultureIgnoreCase) &&
+                    (false == File.Exists(files[0].Arg)))
+                {
+                    throw new ArgumentException(opt.ExtraHelp);
+                }
+
                 var patternFuncs = ReadAllLinesFrom(files[0].Arg, opt.Name)
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0)
@@ -294,6 +301,13 @@ internal static class Options
                 {
                     throw new ConfigException(
                         $"Too many files ('{files[0].Arg}','{files[1].Arg}') to {opt.Name} are found!");
+                }
+
+                if (opt.Help.Equals(files[0].Arg,
+                    StringComparison.InvariantCultureIgnoreCase) &&
+                    (false == File.Exists(files[0].Arg)))
+                {
+                    throw new ArgumentException(opt.ExtraHelp);
                 }
 
                 opt.SetImplementation((_) => ReadAllLinesFrom(files[0].Arg, opt.Name)

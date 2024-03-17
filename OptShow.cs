@@ -116,6 +116,13 @@ internal static partial class Show
                     throw new ConfigException(
                         $"Too many values ({args[0].Arg},{args[1].Arg}) to {opt.Name}");
                 }
+
+                if (opt.Help.Equals(args[0].Arg,
+                    StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new ArgumentException(opt.ExtraHelp);
+                }
+
                 if (int.TryParse(args[0].Arg, out var takeCount))
                 {
                     if (takeCount > 0)
