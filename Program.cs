@@ -9,8 +9,15 @@ class Program
 {
     static void Main(string[] args)
     {
+        string[] envUnknown = [];
         try
         {
+            envUnknown = SplitEnvirVar(CheckEnvirDebug(nameof(grep)))
+                .ToFlagedArgs(ArgType.Environment, Options.ShortCuts, [])
+                .Resolve([])
+                .Select((it) => it.Arg)
+                .ToArray();
+
             RunMain(args);
         }
         catch (ConfigException ce)
@@ -18,7 +25,8 @@ class Program
             Console.ResetColor();
             if (0 < Console.GetCursorPosition().Left)
                 Console.WriteLine();
-            Console.WriteLine(ce.Message);
+            if (false == string.IsNullOrWhiteSpace(ce.Message))
+                Console.WriteLine(ce.Message);
         }
         catch (Exception ee)
         {
@@ -28,16 +36,28 @@ class Program
             Console.WriteLine(IsEnvirDebug()
                 ? ee.ToString() : ee.Message);
         }
+
+        if (envUnknown.Length > 0)
+        {
+            Show.LogVerbose.Invoke(
+                $"'{string.Join(' ', envUnknown)}' is known to envir '{nameof(grep)}'.");
+        }
+
+        foreach (var infoError in ConfigException.GetErrors())
+        {
+            var envrThe = infoError.Type == ArgType.CommandLine
+                ? "Command line" : "Envir";
+            Show.LogVerbose.Invoke(
+                $"{envrThe}: {infoError.Error.Message}");
+            if (false == string.IsNullOrEmpty(infoError.Option?.ExtraHelp))
+            {
+                Show.LogVerbose.Invoke(infoError.Option.ExtraHelp);
+            }
+        }
     }
 
     static bool RunMain(string[] args)
     {
-        var envUnknown = SplitEnvirVar(CheckEnvirDebug(nameof(grep)))
-            .ToFlagedArgs(ArgType.Environment, Options.ShortCuts, [])
-            .Resolve([])
-            .Select((it) => it.Arg)
-            .ToArray();
-
         if (args.Length == 0) return PrintSyntax();
 
         if (args.Any((it) => it == "--version")) return PrintVersion();
@@ -90,24 +110,6 @@ class Program
             }).Count();
 
         Show.TotalCount.Invoke(new Else<int, Ignore>(Ignore.Void));
-
-        if (envUnknown.Length > 0)
-        {
-            Show.LogVerbose.Invoke(
-                $"Unknown envir: {string.Join(' ', envUnknown)}");
-        }
-
-        foreach (var infoError in ConfigException.GetErrors())
-        {
-            var envrThe = infoError.Type == ArgType.CommandLine
-                ? "Command line" : "Envir";
-            Show.LogVerbose.Invoke(
-                $"{envrThe}: {infoError.Error.Message}");
-            if (false == string.IsNullOrEmpty(infoError.Option?.ExtraHelp))
-            {
-                Show.LogVerbose.Invoke(infoError.Option.ExtraHelp);
-            }
-        }
         return true;
     }
 }

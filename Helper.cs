@@ -114,7 +114,7 @@ internal static partial class Helper
             ?.Contains(DebugFlagText) ?? false;
     }
 
-    record InfoShortcut(string Shortcut, string[] Others)
+    record InfoShortcut(string Shortcut, string[] Expands)
     {
         public static readonly InfoShortcut Empty = new("", []);
     }
@@ -147,35 +147,29 @@ internal static partial class Helper
                 .Union(Options.NonEnvirParsers
                 .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))));
             var cc = Options.ShortCuts
-                .Union(Options.NonEnvirShortCuts
-                .Select((it) => new KeyValuePair<string, string[]>(it.Key, [it.Value])))
-                .Select((it) => new KeyValuePair<string, InfoShortcut>(
-                    it.Value[0], new(it.Key, it.Value)));
-            var jj2 = bb.GroupJoin(cc, (b2) => b2.Key, (c2) => c2.Key,
+                .Union(Options.NonEnvirShortCuts);
+            var jj2 = bb.GroupJoin(cc, (b2) => b2.Key, (c2) => (c2.Value.Length > 0) ? c2.Value[0] : "?",
                 (b2, cc2) => new
                 {
                     Name = b2.Key,
                     EnvrParser = b2.Value,
-                    Info = cc2?.Select((it) => it.Value).ToArray() ?? [],
+                    Info = cc2.Any()
+                    ? new InfoShortcut(cc2.First().Key, cc2.First().Value.Skip(1).ToArray())
+                    : InfoShortcut.Empty,
                 });
 
             Console.WriteLine("Shortcut           OPTION  with            Envir");
             foreach (var j2 in jj2
                 .OrderBy((it) => it.EnvrParser.IsEnvir))
             {
-                var j3 = InfoShortcut.Empty;
-                if (j2.Info.Length > 0)
-                {
-                    j3 = j2.Info[0];
-                }
-
+                var j3 = j2.Info;
                 Console.Write($"{j3.Shortcut,6}{j2.Name,19}  ");
                 var valueLength = 0;
-                var aa = j3.Others;
-                if (aa.Length > 1)
+                var aa = j3.Expands;
+                if (aa.Length > 0)
                 {
-                    Console.Write(aa[1]);
-                    valueLength = aa[1].Length;
+                    Console.Write(aa[0]);
+                    valueLength = aa[0].Length;
                 }
                 else
                 {
@@ -406,23 +400,18 @@ class ConsolePause : IConsolePause
         Counter = Increase(Counter, incNumber);
         if (Counter >= MaxLineNumber)
         {
-            Console.Write("Press any key (q to quit, c to cancel pause) ");
+            Console.Write("Press any key (q to quit) ");
             var inp = Console.ReadKey();
             Console.Write("\r");
-            //nsole.Write("Press any key (q to quit, c to cancel pause) 12");
-            Console.Write("                                               ");
+            //nsole.Write("Press any key (q to quit) 12");
+            Console.Write("                            ");
             Console.Write("\r");
             if (inp.KeyChar == 'q' || inp.KeyChar == 'Q')
             {
-                Console.ResetColor();
-                Environment.Exit(0);
+                throw new ConfigException("Aborted");
             }
             Auto();
             Counter = 0;
-            if (inp.KeyChar == 'c' || inp.KeyChar == 'C')
-            {
-                Disable();
-            }
         }
     }
 }

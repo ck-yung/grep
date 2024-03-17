@@ -25,33 +25,33 @@ internal static class Options
     public const string TextPause = "--pause";
     public const string TextTotal = "--total";
 
-    public static readonly IEnumerable<KeyValuePair<string, string>>
+    public static readonly IEnumerable<KeyValuePair<string, string[]>>
         NonEnvirShortCuts =
         [
-            new("-f", TextPatternFile),
-            new("-m", TextMaxCount),
-            new("-T", TextFilesFrom),
+            new("-f", [TextPatternFile]),
+            new("-m", [TextMaxCount]),
+            new("-T", [TextFilesFrom]),
+            new("-c", [TextCountOnly, TextOn]),
+            new("-l", [TextFileMatch, TextOn]),
+            new("-v", [TextInvertMatch, TextOn]),
         ];
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
         ShortCuts =
         [
             new("-F", [TextFixedTextPattern, TextOn]),
-            new("-c", [TextCountOnly, TextOn]),
             new("-h", [TextShowFilename, TextOff]),
             new("-i", [TextCaseSensitive, TextOff]),
-            new("-l", [TextFileMatch, TextOn]),
             new("-n", [TextLineNumber, TextOn]),
             new("-p", [TextPause, TextOff]),
             new("-q", [TextQuiet, TextOn]),
-            new("-v", [TextInvertMatch, TextOn]),
             new("-w", [TextWord, TextOn]),
         ];
 
     public static IEnumerable<FlagedArg> ToFlagedArgs(
         this IEnumerable<string> args, ArgType type,
-        IEnumerable<KeyValuePair<string, string[]>> switchShortCuts,
-        IEnumerable<KeyValuePair<string, string>> valueShortCuts)
+        IEnumerable<KeyValuePair<string, string[]>> shortcuts,
+        IEnumerable<KeyValuePair<string, string[]>> extraShortcuts)
     {
         var itrThe = args.GetEnumerator();
         IEnumerable<string> SeparateCombiningShortcut()
@@ -84,10 +84,10 @@ internal static class Options
             }
         }
 
-        var mapShortcuts = switchShortCuts
-            .Union(valueShortCuts
+        var mapShortcuts = shortcuts
+            .Union(extraShortcuts
             .Select((it) => new KeyValuePair<string, string[]>(
-                it.Key, [it.Value])))
+                it.Key, it.Value)))
             .ToImmutableDictionary((it) => it.Key, (it) => it.Value);
 
         foreach (var arg in SeparateCombiningShortcut())
@@ -310,20 +310,20 @@ internal static class Options
         (IParse)Show.Filename,
         (IParse)Show.LineNumber,
         (IParse)Show.LogVerbose,
-        (IParse)MetaMatches,
         (IParse)PatternWordText,
         (IParse)ToPattern,
         (IParse)Show.PauseMaker,
         (IParse)Show.MaxFound,
         (IParse)Show.SwitchColor,
+        (IParse)Show.TotalCount,
     ];
 
     public static readonly IParse[] NonEnvirParsers = [
         (IParse)PatternsFrom,
         (IParse)FilesFrom,
+        (IParse)MetaMatches,
         (IParse)Show.FilenameOnly,
         (IParse)Show.FoundCount,
-        (IParse)Show.TotalCount,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args,
