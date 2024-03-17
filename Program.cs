@@ -85,7 +85,7 @@ class Program
         var lineMarched = Show.PrintLineMaker.Invoke(Ignore.Void);
 
         (var matches, var paths) = Options.PatternsFrom.Invoke(args);
-        var _ = paths
+        var cntProcessed = paths
             .Select((it) => it.FromWildCard())
             .SelectMany((it) => it)
             .Union(Options.FilesFrom.Invoke(Ignore.Void))
@@ -111,7 +111,14 @@ class Program
                     new Show.CountFound(pause, path, cnt));
             }).Count();
 
-        Show.TotalCount.Invoke(new Else<int, Ignore>(Ignore.Void));
+        if (cntProcessed == 0)
+        {
+            Show.LogVerbose.Invoke("No file is found.");
+        }
+        else
+        {
+            Show.TotalCount.Invoke(new Else<int, Ignore>(Ignore.Void));
+        }
         return true;
     }
 }

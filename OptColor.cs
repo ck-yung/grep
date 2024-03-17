@@ -127,7 +127,7 @@ internal static partial class Show
             opt.Help.Equals(args[0], StringComparison.InvariantCultureIgnoreCase) ||
             ((args.Length > 1) && ("-" == args[1])))
             {
-                Console.WriteLine($"Syntax: {nameof(grep)} {TextColor}  COLOR ..");
+                Console.WriteLine($"Syntax: {nameof(grep)} {TextColor} COLOR ..");
 
                 static void switchBackgroundColor(bool isBlack, ConsoleColor arg)
                 {
@@ -169,12 +169,12 @@ internal static partial class Show
 
                 // ........-123456789012345678901234567890
                 var hint = "Assign background color by";
-                Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} ~COLOR ..");
+                Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} b-COLOR ..");
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    hint = "Exchange colors by";
-                    Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} ~ ..");
+                    hint = "Invert colors by";
+                    Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} -- ..");
                 }
 
                 hint = "Disable the feature by";
@@ -187,13 +187,13 @@ internal static partial class Show
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     Console.WriteLine($"""
-                            set {nameof(grep)}={TextColor} black; {TextColor} ~yellow
+                            set {nameof(grep)}={TextColor} black; {TextColor} b-yellow
                             """);
                 }
                 else
                 {
                     Console.WriteLine($"""
-                            export {nameof(grep)}="{TextColor} black; {TextColor} ~yellow"
+                            export {nameof(grep)}="{TextColor} black; {TextColor} b-yellow"
                             """);
                 }
                 Environment.Exit(0);
@@ -209,7 +209,7 @@ internal static partial class Show
                     return;
                 }
 
-                if (argFirst.Equals("~"))
+                if (argFirst.Equals("--"))
                 {
                     if (false == RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
@@ -222,10 +222,10 @@ internal static partial class Show
                     return;
                 }
 
-                (bool isBackground, string colorText) = (argFirst.StartsWith('~'), argFirst);
+                (bool isBackground, string colorText) = (argFirst.StartsWith("b-"), argFirst);
                 if (isBackground)
                 {
-                    colorText = colorText[1..];
+                    colorText = colorText[2..];
                 }
                 if (TryParseToConsoleColor(colorText, out var colorThe))
                 {
@@ -253,14 +253,14 @@ internal static partial class Show
             bool isHighBackOk;
             ConsoleColor highFore;
             ConsoleColor highBack;
-            switch (args[0].StartsWith('~'), args[1].StartsWith('~'))
+            switch (args[0].StartsWith("b-"), args[1].StartsWith("b-"))
             {
                 case (true, false):
-                    isHighBackOk = TryParseToConsoleColor(args[0][1..], out highBack);
+                    isHighBackOk = TryParseToConsoleColor(args[0][2..], out highBack);
                     isHighForeOk = TryParseToConsoleColor(args[1], out highFore);
                     break;
                 case (false, true):
-                    isHighBackOk = TryParseToConsoleColor(args[1][1..], out highBack);
+                    isHighBackOk = TryParseToConsoleColor(args[1][2..], out highBack);
                     isHighForeOk = TryParseToConsoleColor(args[0], out highFore);
                     break;
                 default:
