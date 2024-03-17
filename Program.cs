@@ -12,11 +12,18 @@ class Program
         string[] envUnknown = [];
         try
         {
-            envUnknown = SplitEnvirVar(CheckEnvirDebug(nameof(grep)))
-                .ToFlagedArgs(ArgType.Environment, Options.ShortCuts, [])
-                .Resolve([])
-                .Select((it) => it.Arg)
-                .ToArray();
+            try
+            {
+                envUnknown = SplitEnvirVar(CheckEnvirDebug(nameof(grep)))
+                    .ToFlagedArgs(ArgType.Environment, Options.ShortCuts, [])
+                    .Resolve([])
+                    .Select((it) => it.Arg)
+                    .ToArray();
+            }
+            catch (Exception ee)
+            {
+                ConfigException.Add(ArgType.Environment, ee);
+            }
 
             RunMain(args);
         }
@@ -46,7 +53,7 @@ class Program
         foreach (var infoError in ConfigException.GetErrors())
         {
             var envrThe = infoError.Type == ArgType.CommandLine
-                ? "Command line" : "Envir";
+                ? "Command line" : $"Envir '{nameof(grep)}'";
             Show.LogVerbose.Invoke(
                 $"{envrThe}: {infoError.Error.Message}");
             if (false == string.IsNullOrEmpty(infoError.Option?.ExtraHelp))
@@ -74,15 +81,10 @@ class Program
             .Select((it) => it.Arg)
             .ToArray();
 
-        (var matches, var paths) = Options.PatternsFrom.Invoke(args);
-
-        if (Console.IsOutputRedirected)
-        {
-            ((IParse)Show.SwitchColor).Parse([
-                new(true, ArgType.CommandLine, "off")]);
-        }
         var pause = Show.PauseMaker.Invoke(Ignore.Void);
+        var lineMarched = Show.PrintLineMaker.Invoke(Ignore.Void);
 
+        (var matches, var paths) = Options.PatternsFrom.Invoke(args);
         var _ = paths
             .Select((it) => it.FromWildCard())
             .SelectMany((it) => it)
@@ -99,7 +101,7 @@ class Program
                 {
                     var lenPrinted = Show.Filename.Invoke(path);
                     lenPrinted += Show.LineNumber.Invoke(it.LineNumber);
-                    lenPrinted += Show.PrintMatchedLine(it);
+                    lenPrinted += lineMarched.Print(it);
                     pause.Printed(lenPrinted);
                     return it;
                 })

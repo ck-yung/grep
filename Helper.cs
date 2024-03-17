@@ -31,6 +31,14 @@ public record MatchResult(int LineNumber, string Line, Match[] Matches);
 
 internal static partial class Helper
 {
+    static public bool IsAlphaNumber(this char arg)
+    {
+        if ('0' <= arg && arg <= '9') return true;
+        if ('A' <= arg && arg <= 'Z') return true;
+        if ('a' <= arg && arg <= 'z') return true;
+        return false;
+    }
+
     static public IEnumerable<T> Invoke<T>(this IEnumerable<T> seq,
         Func<IEnumerable<T>, IEnumerable<T>> func)
     {
@@ -135,7 +143,6 @@ internal static partial class Helper
         {
             Console.WriteLine("""
                 Read redir console input if FILE is -
-                PATTERN is a URL-coded fixed-string if the first char is ~
 
                 https://github.com/ck-yung/grep/blob/master/README.md
                 """);
@@ -158,7 +165,7 @@ internal static partial class Helper
                     : InfoShortcut.Empty,
                 });
 
-            Console.WriteLine("Shortcut           OPTION  with            Envir");
+            Console.WriteLine("Shortcut           Option  with            Envir");
             foreach (var j2 in jj2
                 .OrderBy((it) => it.EnvrParser.IsEnvir))
             {
@@ -178,7 +185,7 @@ internal static partial class Helper
                 }
                 if (false == j2.EnvrParser.IsEnvir)
                 {
-                    var a3 = "Non-envir".PadLeft(25 - valueLength);
+                    var a3 = "Command line only".PadLeft(25 - valueLength);
                     Console.Write(a3);
                 }
                 Console.WriteLine();
@@ -186,11 +193,10 @@ internal static partial class Helper
             Console.WriteLine("""
                 For example,
                   grep -nm 3 class *.cs --color black --color ~yellow
-                  grep -ic class -T cs-files.txt
-                  dir *.cs | grep Class - --case-sensitive on
+                  dir *.cs | grep -i 2024 -
                   dir2 -sb *.cs --within 4hours | grep -n class -T -
 
-                Options can be assigned in envir var 'grep'.
+                Options can be stored in envir var 'grep'.
                 """);
         }
         return false;

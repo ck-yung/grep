@@ -4,10 +4,13 @@ public enum ArgType
 {
     CommandLine,
     Environment,
-};
+    Never,
+}
 
-public record FlagedArg(bool Flag, ArgType Type, string Arg);
-
+public record FlagedArg(bool Flag, ArgType Type, string Arg)
+{
+    static public FlagedArg Never = new(true, ArgType.Never, "Never");
+}
 
 public interface IParse
 {

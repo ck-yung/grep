@@ -138,7 +138,7 @@ internal static class Options
     static public IEnumerable<int> TextFindAllIndexOf_WordImpl(
         string line, string text)
     {
-        bool CheckAlphNum(int pos, bool isBackward)
+        bool CheckAlphaNum(int pos, bool isBackward)
         {
             if (isBackward)
             {
@@ -149,18 +149,14 @@ internal static class Options
             {
                 if (line.Length <= pos) return false;
             }
-            var charThe = line[pos];
-            if ('0' <= charThe && charThe <= '9') return true;
-            if ('A' <= charThe && charThe <= 'Z') return true;
-            if ('a' <= charThe && charThe <= 'z') return true;
-            return false;
+            return line[pos].IsAlphaNumber();
         }
 
         int foundAt = 0;
         while ((foundAt = TextIndexOf(line, text, foundAt)) >= 0)
         {
-            if ((false == CheckAlphNum(foundAt, isBackward: true)) &&
-                (false == CheckAlphNum(foundAt + text.Length, false)))
+            if ((false == CheckAlphaNum(foundAt, isBackward: true)) &&
+                (false == CheckAlphaNum(foundAt + text.Length, false)))
             {
                 yield return foundAt;
             }
@@ -314,7 +310,7 @@ internal static class Options
         (IParse)ToPattern,
         (IParse)Show.PauseMaker,
         (IParse)Show.MaxFound,
-        (IParse)Show.SwitchColor,
+        (IParse)Show.PrintLineMaker,
         (IParse)Show.TotalCount,
     ];
 
