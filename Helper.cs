@@ -239,6 +239,11 @@ internal static partial class Helper
                 return aa
                     .Select((it) => it.StartsWith("." + Path.DirectorySeparatorChar)
                     ? it[2..] : it)
+                    .Where((it) =>
+                    {
+                        var filename = Path.GetFileName(it);
+                        return true != SubDir.ExclFile.Invoke(filename);
+                    })
                     .ToArray();
             }
         }
