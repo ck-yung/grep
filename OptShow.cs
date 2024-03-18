@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using static grep.MyOptions;
+﻿using static grep.MyOptions;
 using static grep.Options;
 
 namespace grep;

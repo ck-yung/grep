@@ -84,14 +84,18 @@ class Program
         var pause = Show.PauseMaker.Invoke(Ignore.Void);
         var lineMarched = Show.PrintLineMaker.Invoke(Ignore.Void);
 
-        (var matches, var paths) = Options.PatternsFrom.Invoke(args);
+        (var isRedir, var matches, var paths) = Options.PatternsFrom.Invoke(args);
         var cntProcessed = paths
             .Select((it) => it.FromWildCard())
             .SelectMany((it) => it)
-            .Union(Options.FilesFrom.Invoke(Ignore.Void))
+            .Union(Options.FilesFrom.Invoke(
+                new Options.FilesFromParam(
+                    IsPatternFromRedirConsole: isRedir,
+                    IsArgsEmpty: paths.Length == 0)))
             .Distinct()
             .Select((path) =>
             {
+                Options.HideFilename(path);
                 var cnt = Options.ReadAllLinesFrom(path, option: "FILE")
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using static grep.MyOptions;
 using RegX = System.Text.RegularExpressions;
 
@@ -230,10 +231,11 @@ internal static class Options
 
     const string hintOfFile = "\nRead redir console input if - is assigned to the option.";
 
-    static public readonly IInvoke<string[],
-        (Func<string, Match[]>, IEnumerable<string>)>
-        PatternsFrom = new ParseInvoker<string[],
-            (Func<string, Match[]>, IEnumerable<string>)>(
+    public record PatternsFromResult(bool IsFromRedirConsole,
+        Func<string, Match[]> Matches, string[] Args);
+
+    static public readonly IInvoke<string[], PatternsFromResult>
+        PatternsFrom = new ParseInvoker<string[], PatternsFromResult>(
             TextPatternFile, help: "PATTERN-FILE",
             extraHelp: $"For example, {nameof(grep)} {TextPatternFile} regex.txt ..{hintOfFile}",
             init: (args) =>
@@ -245,10 +247,10 @@ internal static class Options
                         throw new ConfigException("No pattern is found.");
                     case 1:
                         pattern = ToPattern.Invoke(new(IsFirstCmdLineArg: true, args[0]));
-                        return ((line) => pattern.Matches(line), []);
+                        return new(false, (line) => pattern.Matches(line), []);
                     default:
                         pattern = ToPattern.Invoke(new(IsFirstCmdLineArg: true, args[0]));
-                        return ((line) => pattern.Matches(line), args.Skip(1));
+                        return new(false, (line) => pattern.Matches(line), args.Skip(1).ToArray());
                 }
             },
             resolve: (opt, argsThe) =>
@@ -260,14 +262,15 @@ internal static class Options
                         $"Too many files ('{files[0].Arg}','{files[1].Arg}') to {opt.Name} are found!");
                 }
 
-                if (opt.Help.Equals(files[0].Arg,
+                var fileThe = files[0].Arg;
+                if (opt.Help.Equals(fileThe,
                     StringComparison.InvariantCultureIgnoreCase) &&
-                    (false == File.Exists(files[0].Arg)))
+                    (false == File.Exists(fileThe)))
                 {
                     throw new ArgumentException(opt.ExtraHelp);
                 }
 
-                var patternFuncs = ReadAllLinesFrom(files[0].Arg, opt.Name)
+                var patternFuncs = ReadAllLinesFrom(fileThe, opt.Name)
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0)
                 .Distinct()
@@ -280,7 +283,7 @@ internal static class Options
                 .FirstOrDefault((it) => it.Length > 0)
                 ?? [];
 
-                opt.SetImplementation((args) => (matchFunc, args));
+                opt.SetImplementation((args) => new("-" == fileThe, matchFunc, args));
             });
 
     static public IEnumerable<string> ReadAllLinesFrom(string path, string option)
@@ -290,10 +293,28 @@ internal static class Options
             : Helper.ReadAllLinesFromFile(path, option);
     }
 
-    static public readonly IInvoke<Ignore, IEnumerable<string>> FilesFrom
-        = new ParseInvoker<Ignore, IEnumerable<string>>(
-            TextFilesFrom, help: "FILES-FROM", init: (_) => [],
+    static public void HideFilename(string path)
+    {
+        if (path == "-")
+        {
+            ((IParse)Show.Filename).Parse(TextOff.ToFlagedArgs());
+        }
+    }
+
+    public record FilesFromParam(bool IsPatternFromRedirConsole, bool IsArgsEmpty);
+    static public readonly IInvoke<FilesFromParam, IEnumerable<string>> FilesFrom
+        = new ParseInvoker<FilesFromParam, IEnumerable<string>>(
+            TextFilesFrom, help: "FILES-FROM",
             extraHelp: $"For example, {nameof(grep)} {TextFilesFrom} cs-file.txt ..{hintOfFile}",
+             init: (arg) =>
+             {
+                 if (arg.IsPatternFromRedirConsole) return [];
+                 if (arg.IsArgsEmpty && Console.IsInputRedirected)
+                 {
+                     return ["-"];
+                 }
+                 return [];
+             },
             resolve: (opt, argsThe) =>
             {
                 var files = argsThe.Distinct().Take(2).ToArray();
@@ -303,14 +324,15 @@ internal static class Options
                         $"Too many files ('{files[0].Arg}','{files[1].Arg}') to {opt.Name} are found!");
                 }
 
-                if (opt.Help.Equals(files[0].Arg,
+                var fileThe = files[0].Arg;
+                if (opt.Help.Equals(fileThe,
                     StringComparison.InvariantCultureIgnoreCase) &&
-                    (false == File.Exists(files[0].Arg)))
+                    (false == File.Exists(fileThe)))
                 {
                     throw new ArgumentException(opt.ExtraHelp);
                 }
 
-                opt.SetImplementation((_) => ReadAllLinesFrom(files[0].Arg, opt.Name)
+                opt.SetImplementation((_) => ReadAllLinesFrom(fileThe, opt.Name)
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0));
             });
@@ -328,6 +350,7 @@ internal static class Options
         (IParse)Show.TotalCount,
     ];
 
+    // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'
     public static readonly IParse[] NonEnvirParsers = [
         (IParse)PatternsFrom,
         (IParse)FilesFrom,
