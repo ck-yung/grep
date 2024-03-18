@@ -35,13 +35,17 @@ internal static partial class Show
 
     static bool TryParseToConsoleColor(string arg, out ConsoleColor result)
     {
+        if (string.IsNullOrEmpty(arg))
+            throw new ArgumentNullException(
+                $"Parm to func {nameof(TryParseToConsoleColor)}");
+        result = default;
+        if (arg[0].IsNumber()) return false;
         if (Enum.TryParse(typeof(ConsoleColor), arg,
             ignoreCase: true, out var tmp))
         {
             result = (ConsoleColor)tmp;
             return true;
         }
-        result = default;
         return false;
     }
 
@@ -202,7 +206,7 @@ internal static partial class Show
             Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} -- ..");
         }
 
-        hint = "Change color per line by";
+        hint = "Change color per batch by";
         Console.WriteLine(
             $"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR,NUMBER,COLOR ..");
         hint = "";
@@ -227,7 +231,8 @@ internal static partial class Show
         }
     }
 
-    [GeneratedRegex(@"(?<fore>\w{3,12})(\,(?<back>\w{3,12}))?(\,(?<num>\w{1,5}))?(\,(?<foreBatch>\w{3,12}))?(\,(?<backBatch>\w{3,12}))?")]
+    [GeneratedRegex(
+        @"^(?<fore>\w{3,12})(\,(?<back>\w{3,12}))?(\,(?<num>\w{1,5}))?(\,(?<foreBatch>\w{3,12}))?(\,(?<backBatch>\w{3,12}))?$")]
     private static partial Regex RegexColors();
 
     static public readonly IInvoke<Ignore, IPrintMatchedLine> PrintLineMaker = new
@@ -289,8 +294,9 @@ internal static partial class Show
                 }
                 else
                 {
+                    Log.Debug($"{typeThe}> OS='{RuntimeInformation.OSDescription}'");
                     ConfigException.Add(typeThe, new ArgumentException(
-                        $"Inverse to {opt.Name} is NOT supporte in the running OS."));
+                        $"Inverse to {opt.Name} is NOT supported in the running OS."));
                 }
                 return;
             }
@@ -299,7 +305,7 @@ internal static partial class Show
             if (true != matchThe.Success)
             {
                 ConfigException.Add(typeThe, new ArgumentException(
-                    $"Inverse to {opt.Name} is NOT supporte in the running OS."));
+                    $"Value '{argThe}' to {opt.Name} is NOT valid!"));
                 return;
             }
 
@@ -311,7 +317,7 @@ internal static partial class Show
                     option: opt);
                 return;
             }
-            ConsoleColor foreColor;
+            ConsoleColor foreColor = ConsoleColor.Red;
             if (false == TryParseToConsoleColor(tmp2, out foreColor))
             {
                 ConfigException.Add(typeThe, new ArgumentException(
@@ -329,7 +335,7 @@ internal static partial class Show
                 return;
             }
 
-            ConsoleColor backColor;
+            ConsoleColor backColor = Console.BackgroundColor;
             if (false == TryParseToConsoleColor(tmp2, out backColor))
             {
                 ConfigException.Add(typeThe, new ArgumentException(
@@ -373,7 +379,7 @@ internal static partial class Show
                     option: opt);
                 return;
             }
-            ConsoleColor foreBatch;
+            ConsoleColor foreBatch = Console.ForegroundColor;
             if (false == TryParseToConsoleColor(tmp2, out foreBatch))
             {
                 ConfigException.Add(typeThe, new ArgumentException(
@@ -389,7 +395,7 @@ internal static partial class Show
                     foreColor, backColor, countPerBatch, foreBatch));
                 return;
             }
-            ConsoleColor backBatch;
+            ConsoleColor backBatch = Console.BackgroundColor;
             if (false == TryParseToConsoleColor(tmp2, out backBatch))
             {
                 ConfigException.Add(typeThe, new ArgumentException(

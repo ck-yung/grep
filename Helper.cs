@@ -31,6 +31,12 @@ public record MatchResult(int LineNumber, string Line, Match[] Matches);
 
 internal static partial class Helper
 {
+    static public bool IsNumber(this char arg)
+    {
+        if ('0' <= arg && arg <= '9') return true;
+        return false;
+    }
+
     static public bool IsAlphaNumber(this char arg)
     {
         if ('0' <= arg && arg <= '9') return true;
@@ -187,7 +193,7 @@ internal static partial class Helper
             }
             Console.WriteLine("""
                 For example,
-                  grep -nm 3 class *.cs --color black --color ~yellow
+                  grep -nm 3 class *.cs --color black,yellow
                   dir *.cs | grep -i 2024 -
                   dir2 -sb *.cs --within 4hours | grep -n class -T -
 
