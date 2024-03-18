@@ -26,6 +26,8 @@ internal static class Options
     public const string TextPause = "--pause";
     public const string TextTotal = "--total";
     public const string TextSubDir = "--sub-dir";
+    public const string TextExclFile = "--excl-file";
+    public const string TextExclDir = "--excl-dir";
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
         NonEnvirShortCuts =
@@ -49,6 +51,8 @@ internal static class Options
             new("-p", [TextPause, TextOff]),
             new("-q", [TextQuiet, TextOn]),
             new("-w", [TextWord, TextOn]),
+            new("-x", [TextExclFile]),
+            new("-X", [TextExclDir]),
         ];
 
     public static IEnumerable<FlagedArg> ToFlagedArgs(
@@ -352,6 +356,8 @@ internal static class Options
         (IParse)Show.MaxFound,
         (IParse)Show.PrintLineMaker,
         (IParse)Show.TotalCount,
+        (IParse)SubDir.ExclFile,
+        (IParse)SubDir.ExclDir,
     ];
 
     // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'

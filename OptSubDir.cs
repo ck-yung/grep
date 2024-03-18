@@ -27,10 +27,44 @@ static public class SubDir
         return regText.ToString();
     }
 
-    public record ScanParam(bool IsPatternFromRedirConsole, string[] Paths);
+    static public readonly IInvoke<string, bool> ExclFile =
+        new ParseInvoker<string, bool>(TextExclFile, help: "FILE-WILD ..",
+            init: Always<string>.Never, resolve: (opt, argsThe) =>
+            {
+                var regexs = argsThe
+                .Select((it) => it.Arg)
+                .Distinct()
+                .Select((it) => it.ToRegexText())
+                .Select((it) => ToRegex.Invoke(it))
+                .ToArray();
+                Func<string, bool> exclMatching = (arg) =>
+                regexs
+                .Select((it) => it.Match(arg))
+                .Where((it) => it.Success).Any();
+                opt.SetImplementation((it) => exclMatching(it));
+            });
 
-    static public readonly IInvoke<ScanParam, IEnumerable<string>>
-        FileScan = new ParseInvoker<ScanParam, IEnumerable<string>>(
+    static public readonly IInvoke<string, bool> ExclDir =
+        new ParseInvoker<string, bool>(TextExclDir, help: "DIR-WILD ..",
+            init: Always<string>.Never, resolve: (opt, argsThe) =>
+            {
+                var regexs = argsThe
+                .Select((it) => it.Arg)
+                .Distinct()
+                .Select((it) => it.ToRegexText())
+                .Select((it) => ToRegex.Invoke(it))
+                .ToArray();
+                Func<string, bool> exclMatching = (arg) =>
+                regexs
+                .Select((it) => it.Match(arg))
+                .Where((it) => it.Success).Any();
+                opt.SetImplementation((it) => exclMatching(it));
+            });
+
+    public record FileScanParam(bool IsPatternFromRedirConsole, string[] Paths);
+
+    static public readonly IInvoke<FileScanParam, IEnumerable<string>>
+        FileScan = new ParseInvoker<FileScanParam, IEnumerable<string>>(
             name: TextSubDir, help: "DIR-NAME",
             extraHelp: $"For example, {nameof(grep)} {TextSubDir} demoDir ..",
             init: (arg) => arg.Paths
@@ -51,11 +85,20 @@ static public class SubDir
                 }
 
                 var dirThe = args[0].Arg;
+                string wild2 = "";
+                Func<string, string, string> joinPath =
+                (path, file) => Path.Join(path, file);
+
+                Log.Debug($"{opt.Name} dir='{dirThe}'");
                 if (true != Directory.Exists(dirThe))
                 {
-                    throw new ArgumentException($"Dir '{dirThe}' is NOT found!");
+                    wild2 = Path.GetFileName(dirThe) ?? "*.*";
+                    dirThe = Path.GetDirectoryName(dirThe) ?? ".";
                 }
-                Log.Debug($"{opt.Name} dir='{dirThe}'");
+                if (dirThe == ".")
+                {
+                    joinPath = (_, file) => file;
+                }
 
                 Func<string, bool> makeMatching(string[] patterns)
                 {
@@ -63,17 +106,8 @@ static public class SubDir
                     if (patterns.Length > 0)
                     {
                         var tmp2 = patterns
-                        .Select((it) =>
-                        {
-                            Log.Debug($"{opt.Name} pattern:'{it}' before ToRegexText");
-                            return it;
-                        })
-                        .Select((it2) => it2.ToRegexText())
-                        .Select((it2) =>
-                        {
-                            Log.Debug($"{opt.Name} pattern:'{it2}' before regex");
-                            return new Regex(it2);
-                        })
+                        .Select((it) => it.ToRegexText())
+                        .Select((it) => ToRegex.Invoke(it))
                         .ToArray();
 
                         rtn = (it) => tmp2
@@ -91,24 +125,27 @@ static public class SubDir
 
                 opt.SetImplementation((arg) =>
                 {
-                    var nameMatching = makeMatching(arg.Paths);
+                    var wilds = arg.Paths;
+                    if (false == string.IsNullOrEmpty(wild2))
+                    {
+                        wilds = wilds.Union([wild2]).ToArray();
+                    }
+                    var nameMatching = makeMatching(wilds);
 
                     return Dir.Scan
                     .ListFiles(dirThe,
                     filterDirname: (parentThe, dirName) =>
                     {
-                        if (dirName.StartsWith(".git")) return false;
-                        //var rtn = nameMatching(fileName);
-                        //Show.LogVerbose.Invoke($"Checking '{dirName}':'{fileName}'>{rtn}");
-                        return true;
+                        return true != ExclDir.Invoke(dirName);
                     })
                     .Where((it) =>
                     {
                         var filename = Path.GetFileName(it);
-                        var rtn = nameMatching(filename);
-                        return rtn;
+                        var rtn2 = nameMatching(filename);
+                        var rtn3 = ExclFile.Invoke(filename);
+                        return rtn2 && (false == rtn3);
                     })
-                    .Select((it) => Path.Join(dirThe, it));
+                    .Select((it) => joinPath(dirThe, it));
                 });
             });
 }
