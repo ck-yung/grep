@@ -85,17 +85,12 @@ class Program
         var lineMarched = Show.PrintLineMaker.Invoke(Ignore.Void);
 
         (var isRedir, var matches, var paths) = Options.PatternsFrom.Invoke(args);
-        var cntProcessed = paths
-            .Select((it) => it.FromWildCard())
-            .SelectMany((it) => it)
-            .Union(Options.FilesFrom.Invoke(
-                new Options.FilesFromParam(
-                    IsPatternFromRedirConsole: isRedir,
-                    IsArgsEmpty: paths.Length == 0)))
-            .Distinct()
+        Log.Debug("RunMain paths='{0}'", string.Join(",",paths));
+        var cntProcessed = SubDir.FileScan.Invoke(new(isRedir, paths))
             .Select((path) =>
             {
-                Options.HideFilename(path);
+                Log.Debug($"FileScan '{path}'");
+                Options.IsRedirConsoleInput(path);
                 var cnt = Options.ReadAllLinesFrom(path, option: "FILE")
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))
@@ -114,7 +109,8 @@ class Program
                 Show.TotalCount.Invoke(new Else<int, Ignore>(cnt));
                 return Show.FoundCount.Invoke(
                     new Show.CountFound(pause, path, cnt));
-            }).Count();
+            })
+            .Count();
 
         if (cntProcessed == 0)
         {

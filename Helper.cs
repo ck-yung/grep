@@ -407,6 +407,7 @@ class ConsolePause : IConsolePause
         Counter = Increase(Counter, incNumber);
         if (Counter >= MaxLineNumber)
         {
+            Console.ResetColor();
             Console.Write("Press any key (q to quit) ");
             var inp = Console.ReadKey();
             Console.Write("\r");

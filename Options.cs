@@ -25,6 +25,7 @@ internal static class Options
     public const string TextFixedTextPattern = "--fixed-strings";
     public const string TextPause = "--pause";
     public const string TextTotal = "--total";
+    public const string TextSubDir = "--sub-dir";
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
         NonEnvirShortCuts =
@@ -35,6 +36,7 @@ internal static class Options
             new("-c", [TextCountOnly, TextOn]),
             new("-l", [TextFileMatch, TextOn]),
             new("-v", [TextInvertMatch, TextOn]),
+            new("-s", [TextSubDir]),
         ];
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
@@ -293,12 +295,14 @@ internal static class Options
             : Helper.ReadAllLinesFromFile(path, option);
     }
 
-    static public void HideFilename(string path)
+    static public bool IsRedirConsoleInput(string path)
     {
         if (path == "-")
         {
             ((IParse)Show.Filename).Parse(TextOff.ToFlagedArgs());
+            return true;
         }
+        return false;
     }
 
     public record FilesFromParam(bool IsPatternFromRedirConsole, bool IsArgsEmpty);
@@ -357,6 +361,7 @@ internal static class Options
         (IParse)MetaMatches,
         (IParse)Show.FilenameOnly,
         (IParse)Show.FoundCount,
+        (IParse)SubDir.FileScan,
     ];
 
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args,
