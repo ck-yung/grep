@@ -99,6 +99,7 @@ class Program
                 .Invoke(Show.MaxFound.Invoke)
                 .Select((it) =>
                 {
+                    lineMarched.SetDefaultColor();
                     var lenPrinted = Show.Filename.Invoke(path);
                     lenPrinted += Show.LineNumber.Invoke(it.LineNumber);
                     lenPrinted += lineMarched.Print(it);
