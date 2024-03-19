@@ -8,7 +8,7 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 
 ### Examples
 ```
-grep Syn.*x README.md
+grep -in syn.*ax *.md
 
 cat *cs | grep using.*Linq
 

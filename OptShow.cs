@@ -9,6 +9,7 @@ internal static partial class Show
         new SwitchInvoker<string, int>(TextShowFilename,
             init: (filename) =>
             {
+                if ("-" == filename) return 0;
                 var msg = $"{filename}:";
                 Console.Write(msg);
                 return msg.Length;
@@ -31,9 +32,14 @@ internal static partial class Show
             });
 
     #region File Count and Found Count
-    static int TotalFileCountImp { get; set; } = 0;
-    static int TotalFoundCountImp { get; set; } = 0;
-    static public readonly IInvoke<Else<int, Ignore>, Ignore> TotalCount =
+    static int GrandTotalFileCount { get; set; } = 0;
+    static int GrandTotalFindingCount { get; set; } = 0;
+
+    /// <summary>
+    /// Add finding counter by passing 'int', OR,
+    /// print total counter by passing 'Ignore.Void'
+    /// </summary>
+    static public readonly IInvoke<Else<int, Ignore>, Ignore> AddFoundCount =
         new SwitchInvoker<Else<int, Ignore>, Ignore>(TextTotal,
             help: TextOn, alterFor: true,
             init: (_) => Ignore.Void,
@@ -43,18 +49,18 @@ internal static partial class Show
                 {
                     if (it.Right() > 0)
                     {
-                        TotalFileCountImp += 1;
-                        TotalFoundCountImp += it.Right();
+                        GrandTotalFileCount += 1;
+                        GrandTotalFindingCount += it.Right();
                     }
                 }
                 else
                 {
-                    var tmp = (TotalFileCountImp, TotalFoundCountImp) switch
+                    var tmp = (GrandTotalFileCount, GrandTotalFindingCount) switch
                     {
                         (0, 0) => "No finding is matched.",
                         (1, 1) => "One finding is matched.",
-                        (1, _) => $"{TotalFoundCountImp} findings in a file are matched.",
-                        _ => $"{TotalFoundCountImp} findings in {TotalFileCountImp} files are matched.",
+                        (1, _) => $"{GrandTotalFindingCount} findings in a file are matched.",
+                        _ => $"{GrandTotalFindingCount} findings in {GrandTotalFileCount} files are matched.",
                     };
                     Console.WriteLine(tmp);
                 }
@@ -62,9 +68,9 @@ internal static partial class Show
             });
     #endregion
 
-    public record CountFound(IConsolePause Pause, string Filename, int Count);
+    public record CountFound(string Filename, int Count, IConsolePause Pause);
 
-    static public readonly IInvoke<CountFound, bool> FoundCount =
+    static public readonly IInvoke<CountFound, bool> PrintIfAnyFound =
         new SwitchInvoker<CountFound, bool>(TextCountOnly,
             init: (it) => it.Count > 0,
             alterFor: true, alterPost: (flag) =>
@@ -151,7 +157,7 @@ internal static partial class Show
                     ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                     ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
 
-                    ((SwitchInvoker<CountFound, bool>)FoundCount)
+                    ((SwitchInvoker<CountFound, bool>)PrintIfAnyFound)
                     .SetImplementation((it) =>
                     {
                         if (it.Count > 0)

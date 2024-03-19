@@ -38,7 +38,7 @@ internal static class Options
             new("-c", [TextCountOnly, TextOn]),
             new("-l", [TextFileMatch, TextOn]),
             new("-v", [TextInvertMatch, TextOn]),
-            new("-s", [TextSubDir]),
+            new("-s", [TextSubDir, TextOn]),
         ];
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
@@ -223,17 +223,31 @@ internal static class Options
             {
                 if (it.IsFirstCmdLineArg)
                 {
-                    if (it.Text == "~") return new Pattern("~");
-                    if (it.Text.StartsWith('~'))
+                    if (it.Text == "~~")
                     {
-                        return new Pattern(System.Net
-                            .WebUtility.UrlDecode(it.Text[1..]));
+                        Log.Debug("Pattern of fixed '~~'");
+                        return new Pattern("~~");
                     }
-                    return new Pattern(ToRegex.Invoke(it.Text));
+                    if (it.Text.StartsWith("~~"))
+                    {
+                        var a2 = System.Net.WebUtility
+                        .UrlDecode(it.Text[2..]);
+                        Log.Debug($"Pattern of fixed-1st-string '{a2}' for '{it.Text}'");
+                        return new Pattern(a2);
+                    }
+                    var a3 = ToRegex.Invoke(it.Text);
+                    Log.Debug($"Pattern of regex-1st-string '{a3}' for '{it.Text}'");
+                    return new Pattern(a3);
                 }
-                return new Pattern(ToRegex.Invoke(it.Text));
+                var a4 = ToRegex.Invoke(it.Text);
+                Log.Debug($"Pattern of regex-string '{a4}' for '{it.Text}'");
+                return new Pattern(a4);
             },
-            alter: (it) => new Pattern(it.Text));
+            alter: (it) =>
+            {
+                Log.Debug($"Pattern of fixed-string '{it.Text}'");
+                return new Pattern(it.Text);
+            });
 
     const string hintOfFile = "\nRead redir console input if - is assigned to the option.";
 
@@ -299,16 +313,6 @@ internal static class Options
             : Helper.ReadAllLinesFromFile(path, option);
     }
 
-    static public bool IsRedirConsoleInput(string path)
-    {
-        if (path == "-")
-        {
-            ((IParse)Show.Filename).Parse(TextOff.ToFlagedArgs());
-            return true;
-        }
-        return false;
-    }
-
     public record FilesFromParam(bool IsPatternFromRedirConsole, bool IsArgsEmpty);
     static public readonly IInvoke<FilesFromParam, IEnumerable<string>> FilesFrom
         = new ParseInvoker<FilesFromParam, IEnumerable<string>>(
@@ -355,7 +359,7 @@ internal static class Options
         (IParse)Show.PauseMaker,
         (IParse)Show.MaxFound,
         (IParse)Show.PrintLineMaker,
-        (IParse)Show.TotalCount,
+        (IParse)Show.AddFoundCount,
         (IParse)SubDir.ExclFile,
         (IParse)SubDir.ExclDir,
     ];
@@ -366,7 +370,7 @@ internal static class Options
         (IParse)FilesFrom,
         (IParse)MetaMatches,
         (IParse)Show.FilenameOnly,
-        (IParse)Show.FoundCount,
+        (IParse)Show.PrintIfAnyFound,
         (IParse)SubDir.FileScan,
     ];
 

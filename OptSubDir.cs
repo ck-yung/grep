@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+using System.Collections.Immutable;
 using static grep.MyOptions;
 using static grep.Options;
 
@@ -61,91 +61,107 @@ static public class SubDir
                 opt.SetImplementation((it) => exclMatching(it));
             });
 
-    public record FileScanParam(bool IsPatternFromRedirConsole, string[] Paths);
+    record InfoPath(string Directory, string Filename);
+    static Func<string, bool> makeMatching(IEnumerable<string> patterns)
+    {
+        if (false == patterns.Any())
+        {
+            Log.Debug($"{nameof(makeMatching)} patterns is EMTPY");
+            return Always<string>.True;
+        }
 
-    static public readonly IInvoke<FileScanParam, IEnumerable<string>>
-        FileScan = new ParseInvoker<FileScanParam, IEnumerable<string>>(
-            name: TextSubDir, help: "DIR-NAME",
-            extraHelp: $"For example, {nameof(grep)} {TextSubDir} demoDir ..",
-            init: (arg) => arg.Paths
-            .Select((it) => it.FromWildCard())
-            .SelectMany((it) => it)
-            .Union(FilesFrom.Invoke(
-                new FilesFromParam(
-                    arg.IsPatternFromRedirConsole,
-                    IsArgsEmpty: arg.Paths.Length == 0)))
-            .Distinct(),
-            resolve: (opt, argsThe) =>
+        var regexes = patterns
+        .Select((it) => it.ToRegexText())
+        .Select((it) => ToRegex.Invoke(it))
+        .ToArray();
+
+        return (it) => regexes
+        .Select((regex) => regex.Match(it))
+        .Any((match) => match.Success);
+    }
+
+    static IEnumerable<string> scanDirs(IEnumerable<string> dirs, Func<string, bool> matching)
+    {
+        Func<string, string, string> makeJoinFunc(string dirThe)
+        {
+            if (dirThe == ".") return (_, file) => file;
+            return (dir2, file2) => Path.Join(dirThe, file2);
+        }
+
+        return dirs
+            .Select((dir) => new
             {
-                var args = argsThe.Distinct().Take(2).ToArray();
-                if (args.Length > 1)
+                DirName = dir,
+                JoinFunc = makeJoinFunc(dir)
+            })
+            .Select((it) => Dir.Scan.ListFiles(it.DirName,
+                filterDirname: (parentThe, dirName) =>
                 {
-                    throw new ConfigException(
-                        $"Too many values ({args[0].Arg},{args[1].Arg}) to {opt.Name}");
+                    return true != ExclDir.Invoke(dirName);
+                })
+                .Where((it2) =>
+                {
+                    var filename = Path.GetFileName(it2);
+                    return matching(filename) &&
+                    (false == ExclFile.Invoke(filename));
+                })
+                .Select((it2) => it.JoinFunc(it.DirName, it2)))
+            .SelectMany((it2) => it2);
+    }
+
+    static public readonly IInvoke<string[], IEnumerable<string>>
+        FileScan = new SwitchInvoker<string[], IEnumerable<string>>(
+            name: TextSubDir,
+            init: (paths) => paths
+            .Select((it) => it.FromWildCard())
+            .SelectMany((it) => it),
+            alterFor: true,
+            alter: (wilds) =>
+            {
+                var map1st = wilds
+                .GroupBy((it) => Directory.Exists(it))
+                .ToImmutableDictionary((grp) => grp.Key,
+                (grp) => grp.Select((it) => it));
+
+                IEnumerable<string> dirs = [];
+                if (map1st.TryGetValue(true, out var temp5))
+                {
+                    dirs = temp5.AsEnumerable();
                 }
 
-                var dirThe = args[0].Arg;
-                string wild2 = "";
-                Func<string, string, string> joinPath =
-                (path, file) => Path.Join(path, file);
+                IEnumerable<string> wilds2 = [];
 
-                Log.Debug($"{opt.Name} dir='{dirThe}'");
-                if (true != Directory.Exists(dirThe))
-                {
-                    wild2 = Path.GetFileName(dirThe) ?? "*.*";
-                    dirThe = Path.GetDirectoryName(dirThe) ?? ".";
-                }
-                if (dirThe == ".")
-                {
-                    joinPath = (_, file) => file;
-                }
+                //  vvvvvv TODO
+                var map2nd = ImmutableDictionary<string, string[]>.Empty;
+                //  ^^^^^^ TODO
 
-                Func<string, bool> makeMatching(string[] patterns)
+                if (map1st.TryGetValue(false, out var temp2))
                 {
-                    Func<string, bool> rtn = Always<string>.True;
-                    if (patterns.Length > 0)
+                    var aa2 = temp2
+                    .Select((it) => new InfoPath(
+                        Path.GetDirectoryName(it) ?? "",
+                        Path.GetFileName(it)))
+                    .GroupBy((it) => string.IsNullOrEmpty(it.Directory))
+                    .ToImmutableDictionary((grp) => grp.Key,
+                    (grp) => grp);
+                    if (aa2.TryGetValue(true, out var temp3))
                     {
-                        var tmp2 = patterns
-                        .Select((it) => it.ToRegexText())
-                        .Select((it) => ToRegex.Invoke(it))
-                        .ToArray();
-
-                        rtn = (it) => tmp2
-                        .Select((it2) => it2.Match(it))
-                        .Where((it2) => it2.Success)
-                        .Any();
+                        wilds2 = temp3
+                        .Select((it) => it.Filename);
                     }
-                    else
+                    if (aa2.TryGetValue(false, out var temp4))
                     {
-                        Log.Debug($"{opt.Name} patterns is EMTPY!");
+                        // TODO vvvvvv
+                        map2nd = temp4
+                        .GroupBy((it) => it.Directory)
+                        .ToImmutableDictionary((grp) => grp.Key,
+                        (grp) => grp.Select((it) => it.Filename).ToArray());
+                        // TODO ^^^^^^
                     }
-
-                    return rtn;
                 }
 
-                opt.SetImplementation((arg) =>
-                {
-                    var wilds = arg.Paths;
-                    if (false == string.IsNullOrEmpty(wild2))
-                    {
-                        wilds = wilds.Union([wild2]).ToArray();
-                    }
-                    var nameMatching = makeMatching(wilds);
+                var matchingFunc2 = makeMatching(wilds2);
 
-                    return Dir.Scan
-                    .ListFiles(dirThe,
-                    filterDirname: (parentThe, dirName) =>
-                    {
-                        return true != ExclDir.Invoke(dirName);
-                    })
-                    .Where((it) =>
-                    {
-                        var filename = Path.GetFileName(it);
-                        var rtn2 = nameMatching(filename);
-                        var rtn3 = ExclFile.Invoke(filename);
-                        return rtn2 && (false == rtn3);
-                    })
-                    .Select((it) => joinPath(dirThe, it));
-                });
+                return scanDirs(dirs, matchingFunc2);
             });
 }

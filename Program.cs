@@ -1,7 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.IO;
-
-namespace grep;
+﻿namespace grep;
 
 using static grep.Helper;
 
@@ -84,14 +81,18 @@ class Program
         var pause = Show.PauseMaker.Invoke(Ignore.Void);
         var lineMarched = Show.PrintLineMaker.Invoke(Ignore.Void);
 
-        (var isRedir, var matches, var paths) = Options.PatternsFrom.Invoke(args);
+        (var isPatternsFromRedir, var matches, var paths) =
+            Options.PatternsFrom.Invoke(args);
         Log.Debug("RunMain paths='{0}'", string.Join(",",paths));
-        var cntProcessed = SubDir.FileScan.Invoke(new(isRedir, paths))
+
+        var cntFileScanned =SubDir.FileScan.Invoke(paths)
+            .Union(Options.FilesFrom.Invoke(
+                new(isPatternsFromRedir, IsArgsEmpty: paths.Length == 0)))
+            .Distinct()
             .Select((path) =>
             {
-                Log.Debug($"FileScan '{path}'");
-                Options.IsRedirConsoleInput(path);
-                var cnt = Options.ReadAllLinesFrom(path, option: "FILE")
+                Log.Debug($"Scan file '{path}'");
+                var cntFinding = Options.ReadAllLinesFrom(path, option: "FILE")
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))
                 .Where((it) => it.Matches.Length > 0)
@@ -106,19 +107,19 @@ class Program
                     return it;
                 })
                 .Count();
-                Show.TotalCount.Invoke(new Else<int, Ignore>(cnt));
-                return Show.FoundCount.Invoke(
-                    new Show.CountFound(pause, path, cnt));
+                Show.AddFoundCount.Invoke(new(cntFinding));
+                return Show.PrintIfAnyFound.Invoke(
+                    new(path, cntFinding, pause));
             })
             .Count();
 
-        if (cntProcessed == 0)
+        if (cntFileScanned == 0)
         {
             Show.LogVerbose.Invoke("No file is found.");
         }
         else
         {
-            Show.TotalCount.Invoke(new Else<int, Ignore>(Ignore.Void));
+            Show.AddFoundCount.Invoke(new(Ignore.Void));
         }
         return true;
     }
