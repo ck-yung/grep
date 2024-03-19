@@ -290,7 +290,7 @@ internal static class Options
                     throw new ArgumentException(opt.ExtraHelp);
                 }
 
-                var patternFuncs = ReadAllLinesFrom(fileThe, opt.Name)
+                var patternFuncs = Helper.ReadAllLinesFromFile(fileThe, opt.Name)
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0)
                 .Distinct()
@@ -305,13 +305,6 @@ internal static class Options
 
                 opt.SetImplementation((args) => new("-" == fileThe, matchFunc, args));
             });
-
-    static public IEnumerable<string> ReadAllLinesFrom(string path, string option)
-    {
-        return (path == "-")
-            ? Helper.ReadAllLinesFromConsole(option)
-            : Helper.ReadAllLinesFromFile(path, option);
-    }
 
     public record FilesFromParam(bool IsPatternFromRedirConsole, bool IsArgsEmpty);
     static public readonly IInvoke<FilesFromParam, IEnumerable<string>> FilesFrom
@@ -344,7 +337,8 @@ internal static class Options
                     throw new ArgumentException(opt.ExtraHelp);
                 }
 
-                opt.SetImplementation((_) => ReadAllLinesFrom(fileThe, opt.Name)
+                opt.SetImplementation((_) => Helper.ReadAllLinesFromFile(
+                    fileThe, opt.Name)
                 .Select((it) => it.Trim())
                 .Where((it) => it.Length > 0));
             });

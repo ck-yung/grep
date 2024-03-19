@@ -92,7 +92,7 @@ class Program
             .Select((path) =>
             {
                 Log.Debug($"Scan file '{path}'");
-                var cntFinding = Options.ReadAllLinesFrom(path, option: "FILE")
+                var cntFinding = Helper.ReadAllLinesFromFile(path, option: "FILE")
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))
                 .Where((it) => it.Matches.Length > 0)
