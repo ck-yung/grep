@@ -86,9 +86,7 @@ static public class SubDir
 
                 IEnumerable<string> wilds2 = [];
 
-                //  vvvvvv TODO
                 var map2nd = ImmutableDictionary<string, string[]>.Empty;
-                //  ^^^^^^ TODO
 
                 if (map1st.TryGetValue(false, out var temp2))
                 {
@@ -108,12 +106,10 @@ static public class SubDir
                         }
                         if (aa2.TryGetValue(false, out var temp4))
                         {
-                            // TODO vvvvvv
                             map2nd = temp4
                             .GroupBy((it) => it.Directory)
                             .ToImmutableDictionary((grp) => grp.Key,
                             (grp) => grp.Select((it) => it.Filename).ToArray());
-                            // TODO ^^^^^^
                         }
                 }
 
@@ -126,6 +122,7 @@ static public class SubDir
                     }
 
                     var regexes = patterns
+                    .Distinct()
                     .Select((it) => it.ToRegexText())
                     .Select((it) => ToRegex.Invoke(it))
                     .ToArray();
@@ -135,7 +132,7 @@ static public class SubDir
                     .Any((match) => match.Success);
                 }
 
-                var matchingFunc2 = makeMatching(wilds2);
+                var matchingFunc = makeMatching(wilds2);
 
                 Func<string, string, string> makeJoinFunc(string dirThe)
                 {
@@ -143,7 +140,7 @@ static public class SubDir
                     return (dir2, file2) => Path.Join(dirThe, file2);
                 }
 
-                return dirs
+                var rtn2 = dirs
                 .Select((dir) => new
                 {
                     DirName = dir,
@@ -157,10 +154,33 @@ static public class SubDir
                     .Where((it2) =>
                     {
                         var filename = Path.GetFileName(it2);
-                        return matchingFunc2(filename) &&
+                        return matchingFunc(filename) &&
                         (false == ExclFile.Invoke(filename));
                     })
                     .Select((it2) => it.JoinFunc(it.DirName, it2)))
                 .SelectMany((it2) => it2);
+
+                var rtn3 = map2nd
+                .Select((it) => new
+                {
+                    DirName = it.Key,
+                    Matching = makeMatching(it.Value.Union(wilds2)),
+                    JoinFunc = makeJoinFunc(it.Key)
+                })
+                .Select((it) => Dir.Scan.ListFiles(it.DirName,
+                    filterDirname: (parentThe, dirName) =>
+                    {
+                        return true != ExclDir.Invoke(dirName);
+                    })
+                    .Where((it2) =>
+                    {
+                        var filename = Path.GetFileName(it2);
+                        return it.Matching(filename) &&
+                        (false == ExclFile.Invoke(filename));
+                    })
+                    .Select((it2) => it.JoinFunc(it.DirName, it2)))
+                .SelectMany((it2) => it2);
+
+                return rtn2.Union(rtn3);
             });
 }
