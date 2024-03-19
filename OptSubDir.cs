@@ -1,32 +1,12 @@
 using System.Collections.Immutable;
 using static grep.MyOptions;
 using static grep.Options;
+using static Dir.Wild;
 
 namespace grep;
 
 static public class SubDir
 {
-    static string ToRegexText(this string arg)
-    {
-        var regText = new System.Text.StringBuilder("^");
-        regText.Append(arg
-            .Replace(@"\", @"\\")
-            .Replace("^", @"\^")
-            .Replace("$", @"\$")
-            .Replace(".", @"\.")
-            .Replace("+", @"\+")
-            .Replace("?", ".")
-            .Replace("*", ".*")
-            .Replace("(", @"\(")
-            .Replace(")", @"\)")
-            .Replace("[", @"\[")
-            .Replace("]", @"\]")
-            .Replace("{", @"\{")
-            .Replace("}", @"\}")
-            ).Append('$');
-        return regText.ToString();
-    }
-
     static public readonly IInvoke<string, bool> ExclFile =
         new ParseInvoker<string, bool>(TextExclFile, help: "FILE-WILD ..",
             init: Always<string>.Never, resolve: (opt, argsThe) =>
@@ -111,6 +91,11 @@ static public class SubDir
                             .ToImmutableDictionary((grp) => grp.Key,
                             (grp) => grp.Select((it) => it.Filename).ToArray());
                         }
+                }
+
+                if (false == dirs.Any() && false == map2nd.Any())
+                {
+                    dirs = ["."];
                 }
 
                 Func<string, bool> makeMatching(IEnumerable<string> patterns)

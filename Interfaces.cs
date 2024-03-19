@@ -9,7 +9,7 @@ public enum ArgType
 
 public record FlagedArg(bool Flag, ArgType Type, string Arg)
 {
-    static public FlagedArg Never = new(true, ArgType.Never, "Never");
+    static public readonly FlagedArg Never = new(true, ArgType.Never, "Never");
 }
 
 public interface IParse
@@ -26,13 +26,9 @@ public interface IInvoke<T, R>
     R Invoke(T arg);
 }
 
-internal class ConfigException : Exception
+internal class ConfigException(string message) : Exception(message)
 {
     public record Info(ArgType Type, IParse? Option, Exception Error);
-
-    public ConfigException(string message) : base(message)
-    {
-    }
 
     static readonly List<Info> Errors = [];
 

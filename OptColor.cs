@@ -36,8 +36,8 @@ internal static partial class Show
     static bool TryParseToConsoleColor(string arg, out ConsoleColor result)
     {
         if (string.IsNullOrEmpty(arg))
-            throw new ArgumentNullException(
-                $"Parm to func {nameof(TryParseToConsoleColor)}");
+            throw new ArgumentException(
+                $"Null param to func {nameof(TryParseToConsoleColor)}");
         result = default;
         if (arg[0].IsNumber()) return false;
         if (Enum.TryParse(typeof(ConsoleColor), arg,
@@ -66,7 +66,7 @@ internal static partial class Show
             Console.BackgroundColor = DefaultBackground;
         }
 
-        Action IncreaseLineCount = () =>
+        Action IncreaseLineCount { get; set; } = () =>
         {
             int rtn = LineCount + 1;
             if (rtn >= CounterPerBatch)
@@ -353,8 +353,7 @@ internal static partial class Show
                 return;
             }
 
-            int countPerBatch;
-            if (false == int.TryParse(tmp2, out countPerBatch))
+            if (false == int.TryParse(tmp2, out int countPerBatch))
             {
                 ConfigException.Add(typeThe, new ArgumentException(
                     $"Count-Batch '{tmp2}' to {opt.Name} is NOT a number!"),

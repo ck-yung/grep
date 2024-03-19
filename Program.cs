@@ -66,11 +66,10 @@ class Program
 
         if (args.Any((it) => it == "--version")) return PrintVersion();
 
-        var qry = from arg in args
-                  join help in new string[] { "--help", "-?" }
-                  on arg equals help into helpFound
-                  from found in helpFound select found;
-        if (qry.Any()) return PrintSyntax(isDetailed: true);
+        if (args.Any((it) => it == "--help" || it == "-?"))
+        {
+            return PrintSyntax(isDetailed: true);
+        }
 
         args = args.ToFlagedArgs(ArgType.CommandLine,
             Options.ShortCuts, Options.NonEnvirShortCuts)

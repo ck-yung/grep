@@ -10,36 +10,47 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 ```
 grep -in syn.*ax *.md
 
-cat *cs | grep using.*Linq
+grep -in class -s *.cs --excl-dir obj --excl-dir bin
 
 dir2 -sb *cs | grep syn.*x -niT -
 
-dir2 -sd | grep !lost+found
-
 ```
 
-* ```grep``` does not support ```FILE``` in wild card format.
-* ```PATTERN``` is a regular expression if it is NOT leading by a ```!``` char.
+* ```grep``` supports ```FILE``` in wild card format.
 
 [Link to ```dir2```](https://www.nuget.org/packages/dir2)
 
 ## Options
 ```
-  NAME                  DEFAULT  ALTERATIVE
-  --color               RED      COLOR
-                                 !COLOR
-  --case-sensitive      on       off
-  --word                off      on
-  --line-number         off      on
-  --count-only          off      on
-  --file-match          off      on
-  --invert-match        off      on
-  --show-filename       on       off
-  --pause               on       off
-  --fixed-strings       off      on
-  --max-count           UNLIMIT  NUMBER
-  --files-from                   FILES-FROM
-  --file                         REGEX-FILE
+Syntax:
+  grep [OPTIONS] PATTERN          [FILE [FILE ..]]
+  grep [OPTIONS] -f PATTERN-FILE  [FILE [FILE ..]]
+
+Shortcut           Option  with           Envir
+    -f     --pattern-file  PATTERN-FILE   Command line only
+    -T       --files-from  FILES-FROM     Command line only
+    -v     --invert-match  on             Command line only
+    -l       --file-match  on             Command line only
+    -c       --count-only  on             Command line only
+    -s          --sub-dir  on             Command line only
+    -i   --case-sensitive  off
+    -h    --show-filename  off
+    -n      --line-number  on
+    -q            --quiet  on
+    -w             --word  on
+    -F    --fixed-strings  on
+    -p            --pause  off
+    -m        --max-count  NUMBER
+                  --color  COLOR
+                  --total  on
+    -x        --excl-file  FILE-WILD ..
+    -X         --excl-dir  DIR-WILD ..
+For example,
+  grep -nm 3 class *.cs --color black,yellow
+  dir *.cs | grep -i 2024 -
+  dir2 -sb *.cs --within 4hours | grep -n class -T -
+
+Options can be stored in envir var 'grep'.
 ```
 ## Short-Cut
 ```
