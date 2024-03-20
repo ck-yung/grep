@@ -364,7 +364,7 @@ internal static class Options
         (IParse)FilesFrom,
         (IParse)MetaMatches,
         (IParse)Show.FilenameOnly,
-        (IParse)Show.PrintIfAnyFound,
+        (IParse)Show.SummaryMaker,
         (IParse)SubDir.FileScan,
     ];
 

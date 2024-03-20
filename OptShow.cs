@@ -80,11 +80,66 @@ internal static partial class Show
             });
     #endregion
 
-    public record CountFound(string Filename, int Count, IConsolePause Pause);
+    public record MatchedFile(string Name, int Count);
+    public abstract class IMatchedSummary
+    {
+        readonly protected IConsolePause Pause;
+        public IMatchedSummary(IConsolePause pause)
+        {
+            Pause = pause;
+        }
+        public abstract Ignore Add(MatchedFile arg);
+        public abstract void Print();
+    }
+    class FakeInfoMatch(IConsolePause pause)
+        : IMatchedSummary(pause)
+    {
+        public override Ignore Add(MatchedFile arg) => Ignore.Void;
+        public override void Print() { }
+    }
+    class InfoMatched(IConsolePause pause)
+        : IMatchedSummary(pause)
+    {
+        static List<MatchedFile> Files = new();
+        public override Ignore Add(MatchedFile arg)
+        {
+            if (arg.Count > 0)
+            {
+                Files.Add(arg);
+            }
+            return Ignore.Void;
+        }
+        public override void Print()
+        {
+            var a2 = $"{GrandTotalFindingCount}".Length;
+            var fmt2 = $"{{0,{a2}}} {{1}}";
+            foreach (var file in Files)
+            {
+                var msg = string.Format(fmt2, file.Count, file.Name);
+                Console.WriteLine(msg);
+                Pause.Printed(msg.Length);
+            }
+        }
+    }
+    class InfoMatchedNameOnly(IConsolePause pause)
+        : IMatchedSummary(pause)
+    {
+        public override Ignore Add(MatchedFile arg)
+        {
+            if (arg.Count != 0)
+            {
+                Console.WriteLine(arg.Name);
+                Pause.Printed(arg.Name.Length);
+            }
+            return Ignore.Void;
+        }
+        public override void Print() { }
+    }
 
-    static public readonly IInvoke<CountFound, bool> PrintIfAnyFound =
-        new SwitchInvoker<CountFound, bool>(TextCountOnly,
-            init: (it) => it.Count > 0,
+    static public readonly IInvoke<IConsolePause, IMatchedSummary>
+        SummaryMaker = new SwitchInvoker<IConsolePause, IMatchedSummary>(
+            TextCountOnly,
+            init: (it) => new FakeInfoMatch(it),
             alterFor: true, alterPost: (flag) =>
             {
                 if (true == flag)
@@ -94,17 +149,7 @@ internal static partial class Show
                     ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
                 }
             },
-            alter: (it) =>
-            {
-                if (it.Count > 0)
-                {
-                    var msg = $"{it.Filename}:{it.Count}";
-                    Console.WriteLine(msg);
-                    it.Pause.Printed(msg.Length);
-                    return true;
-                }
-                return false;
-            });
+            alter: (it) => new InfoMatched(it));
 
     static public readonly IInvoke<string, Ignore> LogVerbose =
         new SwitchInvoker<string, Ignore>(TextQuiet,
@@ -188,17 +233,9 @@ internal static partial class Show
                     ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                     ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
 
-                    ((SwitchInvoker<CountFound, bool>)PrintIfAnyFound)
-                    .SetImplementation((it) =>
-                    {
-                        if (it.Count != 0)
-                        {
-                            Console.WriteLine(it.Filename);
-                            it.Pause.Printed(it.Filename.Length);
-                            return true;
-                        }
-                        return false;
-                    });
+                    ((SwitchInvoker<IConsolePause, IMatchedSummary>)
+                    SummaryMaker).SetImplementation((it) =>
+                    new InfoMatchedNameOnly(it));
                 }
             });
 

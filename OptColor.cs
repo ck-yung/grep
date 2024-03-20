@@ -247,16 +247,16 @@ internal static partial class Show
         },
         resolve: (opt, argsThe) =>
         {
-            if (Console.IsOutputRedirected)
-            {
-                opt.SetImplementation((_) => PrintWithoutColor.Default);
-                return;
-            }
-
             var typeThe = argsThe.First().Type;
             if (typeThe == ArgType.Never)
             {
                 opt.SetImplementation((_) => FakePrinter.Empty);
+                return;
+            }
+
+            if (Console.IsOutputRedirected)
+            {
+                opt.SetImplementation((_) => PrintWithoutColor.Default);
                 return;
             }
 
