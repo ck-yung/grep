@@ -145,8 +145,7 @@ internal static partial class Helper
             Console.WriteLine($"  {nameof(grep)} -?");
 
         Console.WriteLine($"""
-              {nameof(grep)} [OPTIONS] PATTERN          [FILE [FILE ..]]
-              {nameof(grep)} [OPTIONS] -f PATTERN-FILE  [FILE [FILE ..]]
+              {nameof(grep)} [OPTIONS] PATTERN [FILE [FILE ..]]
 
             """);
 
