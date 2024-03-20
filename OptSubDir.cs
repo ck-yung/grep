@@ -31,9 +31,9 @@ static public class SubDir
         new ParseInvoker<string, bool>(TextExclDir, help: "DIR",
             init: Always<string>.Never, resolve: (opt, argsThe) =>
             {
-                var exclMatchings = argsThe
-                .Select((it) => it.Arg)
-                .Distinct()
+                var aa = argsThe.Select((it) => it.Arg).Where((it) => it.Length>0).Distinct().ToArray();
+                Log.Debug("'{0}'<{1}<'{2}'", TextExclDir, aa.Length, string.Join(';', aa));
+                var exclMatchings = aa
                 .Select((it) => Dir.Wild.ToWildMatch(it))
                 .ToArray();
 
@@ -46,18 +46,19 @@ static public class SubDir
                 Func<string, bool> MakeMatchRegex(Regex regex)
                 => (arg) => regex.Match(arg).Success;
 
-                var exclDirPostfixMatchings = argsThe
-                .Select((it) => it.Arg)
+                var exclDirPostfixMatchings = aa
+                .Select((it) => it.StartsWith(Path.DirectorySeparatorChar)
+                ? it : Path.DirectorySeparatorChar + it)
                 .Select((it) => it.ToRegexText())
-                .Select((it) => it.TrimStart('^').TrimEnd('$'))
+                .Select((it) => it.TrimStart('^'))
                 .Distinct()
                 .Select((it) => it.MakeRegex())
                 .Select((it) => MakeMatchRegex(it))
                 .ToArray();
                 if (exclDirPostfixMatchings.Length > 0)
                 {
-                    ExclDirPostifx = (arg) =>
-                    exclDirPostfixMatchings.Any((match) => match(arg));
+                    ExclDirPostifx = (arg) => exclDirPostfixMatchings
+                    .Any((match) => match(arg));
                 }
             });
 
@@ -146,7 +147,8 @@ static public class SubDir
                     IEnumerable<MatchingDirParam> args) => args
                     .Select((it) => Dir.Scan.ListFiles(it.DirName,
                     filterDirname: (parentThe, dirName) =>
-                    false == ExclDir.Invoke(dirName))
+                    false == ExclDir.Invoke(dirName) &&
+                    false == ExclDirPostifx(parentThe))
                     .Where((it2) =>
                     {
                         var filename = Path.GetFileName(it2);
@@ -154,24 +156,19 @@ static public class SubDir
                         (false == ExclFile.Invoke(filename));
                     })
                     .Select((it2) => it.JoinFunc(it.DirName, it2)))
-                    .SelectMany((it2) => it2)
-                    .Where((it) => false == ExclDirPostifx(
-                        Path.GetDirectoryName(it) ?? string.Empty));
-
+                    .SelectMany((it2) => it2);
 
                 var rtn2 = makeFunc2(dirs
                 .Select((dir) => new MatchingDirParam(
                     DirName: dir,
                     Matching: matchingFunc,
-                    JoinFunc: makeJoinFunc(dir)
-                )));
+                    JoinFunc: makeJoinFunc(dir))));
 
                 var rtn3 = makeFunc2(map2nd
                 .Select((it) => new MatchingDirParam(
                     DirName: it.Key,
                     Matching: makeMatching(it.Value.Union(wilds2)),
-                    JoinFunc: makeJoinFunc(it.Key)
-                )));
+                    JoinFunc: makeJoinFunc(it.Key))));
 
                 return rtn2.Union(rtn3);
             });

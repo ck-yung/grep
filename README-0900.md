@@ -24,13 +24,13 @@ grep [OPTIONS] -f PATTERN-FILE  [FILE [FILE ..]]
 | -------- | ----------             | ----         | -------------------
 | ```-c``` | ```--count-only```     | ```on```     | No
 | ```-d``` | ```--sub-dir```        | ```on```     | No
-| ```-f``` | ```--pattern-file```   | PATTERN-FILE | No, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-pattern.md)
+| ```-f``` | ```--pattern-file```   | PATTERN-FILE | No, [Info](https://github.com/ck-yung/grep/blob/master/docs//info-pattern.md)
 | ```-l``` | ```--file-match```     | ```on```     | No
-| ```-T``` | ```--file-from```      | FILES-FROM   | No, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-files-from.md)
+| ```-T``` | ```--file-from```      | FILES-FROM   | No, [Info](https://github.com/ck-yung/grep/blob/master/docs//info-files-from.md)
 | ```-v``` | ```--invert-match```   | ```on```     | No
-|          | ```--color```          | COLOR        | Yes, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-color.md)
+|          | ```--color```          | COLOR        | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs//info-color.md)
 |          | ```--total```          | ```on```     | Yes
-| ```-F``` | ```--fixed-strings```  | ```on```     | Yes, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-pattern.md)
+| ```-F``` | ```--fixed-strings```  | ```on```     | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-pattern.md)
 | ```-h``` | ```--show-filename```  | ```off```    | Yes
 | ```-i``` | ```--case-sensitive``` | ```off```    | Yes
 | ```-m``` | ```--max-count```      | NUMBER       | Yes
@@ -38,8 +38,8 @@ grep [OPTIONS] -f PATTERN-FILE  [FILE [FILE ..]]
 | ```-p``` | ```--pause```          | ```off```    | Yes
 | ```-q``` | ```--quiet```          | ```on```     | Yes
 | ```-w``` | ```--word```           | ```on```     | Yes
-| ```-x``` | ```--excl-file```      | FILE         | Yes, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-excl.md)
-| ```-X``` | ```--excl-dir```       | DIR          | Yes, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-excl.md)
+| ```-x``` | ```--excl-file```      | FILE         | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-excl.md)
+| ```-X``` | ```--excl-dir```       | DIR          | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-excl.md)
 
 
 
