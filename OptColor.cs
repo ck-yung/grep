@@ -52,10 +52,9 @@ internal static partial class Show
     class PrintWithColor(
         ConsoleColor ForegroundHighlightColor,
         ConsoleColor BackgroundHighlightColor,
-        int CounterPerBatch,
-        ConsoleColor ForegroundColorBatch,
-        ConsoleColor BackgroundColorBatch
-
+        int CounterPerGroup,
+        ConsoleColor ForegroundColorGroup,
+        ConsoleColor BackgroundColorGroup
         ) : IPrintMatchedLine
     {
         static ConsoleColor DefaultForeground = Console.ForegroundColor;
@@ -69,10 +68,10 @@ internal static partial class Show
         Action IncreaseLineCount { get; set; } = () =>
         {
             int rtn = LineCount + 1;
-            if (rtn >= CounterPerBatch)
+            if (rtn >= CounterPerGroup)
             {
-                DefaultForeground = ForegroundColorBatch;
-                DefaultBackground = BackgroundColorBatch;
+                DefaultForeground = ForegroundColorGroup;
+                DefaultBackground = BackgroundColorGroup;
                 rtn = 0;
             }
             else if (rtn == 1)
@@ -97,10 +96,10 @@ internal static partial class Show
         public PrintWithColor(
             ConsoleColor ForegroundColor,
             ConsoleColor BackgroundColor,
-            int CounterPerBatch,
-            ConsoleColor ForegroundColorBatch) :
+            int CounterPerGroup,
+            ConsoleColor ForegroundColorGroup) :
             this(ForegroundColor, BackgroundColor,
-                CounterPerBatch, ForegroundColorBatch, Console.BackgroundColor)
+                CounterPerGroup, ForegroundColorGroup, Console.BackgroundColor)
         { }
 
         static ConsoleColor OldForegroundColor { get; set; } = Console.ForegroundColor;
@@ -198,7 +197,7 @@ internal static partial class Show
         Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} off ..");
 
         hint = "Assign background color by";
-        Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} COLOR,BACKGROUND-COLOR ..");
+        Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR ..");
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -206,7 +205,7 @@ internal static partial class Show
             Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} -- ..");
         }
 
-        hint = "Change color per batch by";
+        hint = "Change color per group by";
         Console.WriteLine(
             $"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR,NUMBER,COLOR ..");
         hint = "";
@@ -232,7 +231,7 @@ internal static partial class Show
     }
 
     [GeneratedRegex(
-        @"^(?<fore>\w{3,12})(\,(?<back>\w{3,12}))?(\,(?<num>\w{1,5}))?(\,(?<foreBatch>\w{3,12}))?(\,(?<backBatch>\w{3,12}))?$")]
+        @"^(?<fore>\w{3,12})(\,(?<back>\w{3,12}))?(\,(?<num>\w{1,5}))?(\,(?<foreGroup>\w{3,12}))?(\,(?<backGroup>\w{3,12}))?$")]
     private static partial Regex RegexColors();
 
     static public readonly IInvoke<Ignore, IPrintMatchedLine> PrintLineMaker = new
@@ -353,57 +352,57 @@ internal static partial class Show
                 return;
             }
 
-            if (false == int.TryParse(tmp2, out int countPerBatch))
+            if (false == int.TryParse(tmp2, out int countPerGroup))
             {
                 ConfigException.Add(typeThe, new ArgumentException(
-                    $"Count-Batch '{tmp2}' to {opt.Name} is NOT a number!"),
+                    $"Count-Per-Group '{tmp2}' to {opt.Name} is NOT a number!"),
                     option: opt);
                 return;
             }
 
-            if (countPerBatch < 2)
+            if (countPerGroup < 2)
             {
                 ConfigException.Add(typeThe, new ArgumentException(
-                    $"Count-Batch to {opt.Name} MUST be greater than 1 but {countPerBatch} is found!"),
+                    $"Count-Per-Group to {opt.Name} MUST be greater than 1 but {countPerGroup} is found!"),
                     option: opt);
                 return;
             }
-            countPerBatch += 1;
+            countPerGroup += 1;
 
-            tmp2 = matchThe.Groups["foreBatch"].Value;
+            tmp2 = matchThe.Groups["foreGroup"].Value;
             if (string.IsNullOrEmpty(tmp2))
             {
                 ConfigException.Add(typeThe, new ArgumentException(
-                    $"Foreground-Batch to {opt.Name} is required!"),
+                    $"Foreground-Group to {opt.Name} is required!"),
                     option: opt);
                 return;
             }
-            ConsoleColor foreBatch = Console.ForegroundColor;
-            if (false == TryParseToConsoleColor(tmp2, out foreBatch))
+            ConsoleColor foreGroup = Console.ForegroundColor;
+            if (false == TryParseToConsoleColor(tmp2, out foreGroup))
             {
                 ConfigException.Add(typeThe, new ArgumentException(
-                    $"Foreground-Batch '{tmp2}' to {opt.Name} is NOT color!"),
+                    $"Foreground-Group '{tmp2}' to {opt.Name} is NOT color!"),
                     option: opt);
                 return;
             }
 
-            tmp2 = matchThe.Groups["backBatch"].Value;
+            tmp2 = matchThe.Groups["backGroup"].Value;
             if (string.IsNullOrEmpty(tmp2))
             {
                 opt.SetImplementation((_) => new PrintWithColor(
-                    foreColor, backColor, countPerBatch, foreBatch));
+                    foreColor, backColor, countPerGroup, foreGroup));
                 return;
             }
-            ConsoleColor backBatch = Console.BackgroundColor;
-            if (false == TryParseToConsoleColor(tmp2, out backBatch))
+            ConsoleColor backGroup = Console.BackgroundColor;
+            if (false == TryParseToConsoleColor(tmp2, out backGroup))
             {
                 ConfigException.Add(typeThe, new ArgumentException(
-                    $"Background-Batch '{tmp2}' to {opt.Name} is NOT color!"),
+                    $"Background-Group '{tmp2}' to {opt.Name} is NOT color!"),
                     option: opt);
                 return;
             }
             opt.SetImplementation((_) => new PrintWithColor(
                 foreColor, backColor,
-                countPerBatch, foreBatch, backBatch));
+                countPerGroup, foreGroup, backGroup));
         });
 }

@@ -10,49 +10,38 @@ grep [OPTIONS] -f PATTERN-FILE  [FILE [FILE ..]]
 
 ### Examples
 ```
-grep -in syn.*ax *.md
+  grep -nsm 3 class *.cs --color black,yellow -X obj
 
-grep -in public.*class -r *.cs --excl-dir obj --excl-dir bin
-
-grep -inf regexThe.txt *.cs *.md
-
-dir2 -sb *cs | grep syn.*x -niT -
-
-```
-
-* ```grep``` supports ```FILE``` in wild card format.
-* Options can be stored in envir var ```grep```.
-
-[Link to ```dir2```](https://www.nuget.org/packages/dir2)
-
-## Options
-```
-Shortcut           Option  with           Envir
-    -f     --pattern-file  PATTERN-FILE   Command line only
-    -T       --files-from  FILES-FROM     Command line only
-    -v     --invert-match  on             Command line only
-    -l       --file-match  on             Command line only
-    -c       --count-only  on             Command line only
-    -r          --sub-dir  on             Command line only
-
-    -i   --case-sensitive  off
-    -h    --show-filename  off
-    -n      --line-number  on
-    -q            --quiet  on
-    -w             --word  on
-    -F    --fixed-strings  on
-    -p            --pause  off
-    -m        --max-count  NUMBER
-                  --color  COLOR
-                  --total  on
-    -x        --excl-file  FILE-WILD ..
-    -X         --excl-dir  DIR-WILD ..
+  dir2 -sb *.cs --within 4hours | grep -n class -T -
 ```
 
 * Read redir console input if no ```FILE``` is given, or it is -
-* Read redir console input if ```PATTERN-FILE``` is -
-* Read redir console input if ```FILES-FROM``` is -
-* Options ```--excl-file``` and ```--excl-dir``` can be multiple.
+* Options can be stored in envir var ```grep```.
+* [Link to tool ```dir2```](https://www.nuget.org/packages/dir2)
+
+## Options
+| Shortcut | for Option             | with         | Stored in Envir Var
+| -------- | ----------             | ----         | -------------------
+| ```-c``` | ```--count-only```     | ```on```     | No
+| ```-d``` | ```--sub-dir```        | ```on```     | No
+| ```-f``` | ```--pattern-file```   | PATTERN-FILE | No, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-pattern.md)
+| ```-l``` | ```--file-match```     | ```on```     | No
+| ```-T``` | ```--file-from```      | FILES-FROM   | No, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-files-from.md)
+| ```-v``` | ```--invert-match```   | ```on```     | No
+|          | ```--color```          | COLOR        | Yes, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-color.md)
+|          | ```--total```          | ```on```     | Yes
+| ```-F``` | ```--fixed-strings```  | ```on```     | Yes, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-pattern.md)
+| ```-h``` | ```--show-filename```  | ```off```    | Yes
+| ```-i``` | ```--case-sensitive``` | ```off```    | Yes
+| ```-m``` | ```--max-count```      | NUMBER       | Yes
+| ```-n``` | ```--line-number```    | ```on```     | Yes
+| ```-p``` | ```--pause```          | ```off```    | Yes
+| ```-q``` | ```--quiet```          | ```on```     | Yes
+| ```-w``` | ```--word```           | ```on```     | Yes
+| ```-x``` | ```--excl-file```      | FILE         | Yes, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-excl.md)
+| ```-X``` | ```--excl-dir```       | DIR          | Yes, [Info](https://raw.githubusercontent.com/ck-yung/grep/master/docs/info-excl.md)
+
+
 
 
 ## Demo
@@ -61,11 +50,11 @@ Shortcut           Option  with           Envir
 
 ## Known Issuses
 
-1. When using Windows Terminal, it CANNOT show black background color under the following color scheme.
+1. Under Windows Terminal, it CANNOT display black background color to the following color scheme.
 
-* Tango Light
+    * Tango Light
 
-* Solarized Light
+    * Solarized Light
 
 Yung, Chun Kau
 

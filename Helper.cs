@@ -178,7 +178,8 @@ internal static partial class Helper
 
             Console.WriteLine("Shortcut           Option  with           Envir");
             foreach (var j2 in jj2
-                .OrderBy((it) => it.EnvrParser.IsEnvir))
+                .OrderBy((it) => it.EnvrParser.IsEnvir)
+                .ThenBy((it) => it.Info.Shortcut))
             {
                 var j3 = j2.Info;
                 Console.Write($"{j2.Info.Shortcut,6}{j2.Name,19}  ");
@@ -198,8 +199,7 @@ internal static partial class Helper
             }
             Console.WriteLine("""
                 For example,
-                  grep -nm 3 class *.cs --color black,yellow
-                  dir *.cs | grep -i 2024 -
+                  grep -nsm 3 class *.cs --color black,yellow -X obj
                   dir2 -sb *.cs --within 4hours | grep -n class -T -
 
                 Options can be stored in envir var 'grep'.

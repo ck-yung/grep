@@ -38,7 +38,7 @@ internal static class Options
             new("-c", [TextCountOnly, TextOn]),
             new("-l", [TextFileMatch, TextOn]),
             new("-v", [TextInvertMatch, TextOn]),
-            new("-r", [TextSubDir, TextOn]),
+            new("-d", [TextSubDir, TextOn]),
         ];
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
