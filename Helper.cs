@@ -51,6 +51,11 @@ internal static partial class Helper
         return func(seq);
     }
 
+    static public R Invoke<T, R>(this T seq, IInvoke<T, R> opt)
+    {
+        return opt.Invoke(seq);
+    }
+
     static public T Itself<T>(T arg) => arg;
 
     const string DebugFlagText = "--debug";

@@ -95,7 +95,6 @@ class Program
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))
                 .Where((it) => it.Matches.Length > 0)
-                .Invoke(Show.MaxFound.Invoke)
                 .Select((it) =>
                 {
                     lineMarched.SetDefaultColor();
@@ -103,9 +102,10 @@ class Program
                     lenPrinted += Show.LineNumber.Invoke(it.LineNumber);
                     lenPrinted += lineMarched.Print(it);
                     pause.Printed(lenPrinted);
-                    return it;
+                    return it.Matches.Length;
                 })
-                .Count();
+                .Invoke(Show.MaxFound);
+
                 Show.AddFoundCount.Invoke(new(cntFinding));
                 return Show.PrintIfAnyFound.Invoke(
                     new(path, cntFinding, pause));

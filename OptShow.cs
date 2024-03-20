@@ -42,28 +42,40 @@ internal static partial class Show
     static public readonly IInvoke<Else<int, Ignore>, Ignore> AddFoundCount =
         new SwitchInvoker<Else<int, Ignore>, Ignore>(TextTotal,
             help: TextOn, alterFor: true,
-            init: (_) => Ignore.Void,
+            init: (it) => Ignore.Void,
             alter: (it) =>
             {
                 if (it.IsRight)
                 {
-                    if (it.Right() > 0)
+                    if (it.Right() != 0)
                     {
                         GrandTotalFileCount += 1;
                         GrandTotalFindingCount += it.Right();
                     }
+                    return Ignore.Void;
                 }
-                else
+
+                Log.Debug("GRAND: #find:{0}; #file:{1}",
+                    GrandTotalFindingCount, GrandTotalFileCount);
+                var tmp = (GrandTotalFindingCount) switch
                 {
-                    var tmp = (GrandTotalFileCount, GrandTotalFindingCount) switch
+                    0 => (GrandTotalFileCount) switch
                     {
-                        (0, 0) => "No finding is matched.",
-                        (1, 1) => "One finding is matched.",
-                        (1, _) => $"{GrandTotalFindingCount} findings in a file are matched.",
-                        _ => $"{GrandTotalFindingCount} findings in {GrandTotalFileCount} files are matched.",
-                    };
-                    Console.WriteLine(tmp);
-                }
+                        0 => "No file is matched.",
+                        _ => $"#file:{GrandTotalFileCount}, nothing is matched.",
+                    },
+                    (int cnt) when (cnt < 0) => (GrandTotalFileCount) switch
+                    {
+                        1 => "A file is matched.",
+                        _ => $"{GrandTotalFileCount} files are matched.",
+                    },
+                    _ => (GrandTotalFileCount) switch
+                    {
+                        1 => $"{GrandTotalFindingCount} finding in a file is matched.",
+                        _ => $"{GrandTotalFindingCount} finding in {GrandTotalFileCount} files are matched.",
+                    },
+                };
+                Console.WriteLine(tmp);
                 return Ignore.Void;
             });
     #endregion
@@ -107,10 +119,11 @@ internal static partial class Show
             alterFor: true, alter: Ignore<string>.Maker);
 
     static public readonly IInvoke<
-        IEnumerable<MatchResult>, IEnumerable<MatchResult>>
+        IEnumerable<int>, int>
         MaxFound = new ParseInvoker<
-            IEnumerable<MatchResult>, IEnumerable<MatchResult>>(
-            name: TextMaxCount, help: "NUMBER", init: Helper.Itself,
+            IEnumerable<int>, int>(
+            name: TextMaxCount, help: "NUMBER",
+            init: (seq) => seq.Sum(),
             extraHelp: $"For example, {nameof(grep)} {TextMaxCount} 2 ..",
             resolve: (opt, argsThe) =>
             {
@@ -121,29 +134,46 @@ internal static partial class Show
                         $"Too many values ({args[0].Arg},{args[1].Arg}) to {opt.Name}");
                 }
 
+                if (args[0].Type == ArgType.Never)
+                {
+                    Log.Debug($"{nameof(MaxFound)} is NEVER to -1.");
+                    opt.SetImplementation((seq) =>
+                    {
+                        var itr = seq.GetEnumerator();
+                        while (itr.MoveNext())
+                        {
+                            if (itr.Current > 0) return -1;
+                        }
+                        return 0;
+                    });
+                    return;
+                }
+
                 if (opt.Help.Equals(args[0].Arg,
                     StringComparison.InvariantCultureIgnoreCase))
                 {
                     throw new ArgumentException(opt.ExtraHelp);
                 }
 
-                if (int.TryParse(args[0].Arg, out var takeCount))
-                {
-                    if (takeCount > 0)
-                    {
-                        opt.SetImplementation((seq) => seq.Take(takeCount));
-                    }
-                    else
-                    {
-                        throw new ConfigException(
-                            $"Value to {opt.Name} SHOULD be greater than zero but {takeCount} is found!");
-                    }
-                }
-                else
-                {
+                if (false == int.TryParse(args[0].Arg, out int takeCount))
                     throw new ConfigException(
                         $"Value to {opt.Name} SHOULD be a number but '{args[0].Arg}' is found!");
-                }
+
+                if (1 > takeCount)
+                    throw new ConfigException(
+                        $"Value to {opt.Name} SHOULD be greater than zero but {takeCount} is found!");
+
+                opt.SetImplementation((seq) =>
+                {
+                    int sum = 0;
+                    var itr = seq.GetEnumerator();
+                    while (itr.MoveNext())
+                    {
+                        sum += itr.Current;
+                        if (sum >= takeCount) break;
+                    }
+                    return sum;
+                });
             });
 
     static public readonly IInvoke<Ignore, Ignore> FilenameOnly =
@@ -153,6 +183,7 @@ internal static partial class Show
             {
                 if (true == flag)
                 {
+                    ((IParse)MaxFound).Parse([new(true, ArgType.Never, "1")]);
                     ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
                     ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                     ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
@@ -160,7 +191,7 @@ internal static partial class Show
                     ((SwitchInvoker<CountFound, bool>)PrintIfAnyFound)
                     .SetImplementation((it) =>
                     {
-                        if (it.Count > 0)
+                        if (it.Count != 0)
                         {
                             Console.WriteLine(it.Filename);
                             it.Pause.Printed(it.Filename.Length);
