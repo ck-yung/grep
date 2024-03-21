@@ -79,19 +79,19 @@ class Program
 
         var pause = Show.PauseMaker.Invoke(Ignore.Void);
         var lineMarched = Show.PrintLineMaker.Invoke(Ignore.Void);
-        var summary = Show.SummaryMaker.Invoke(pause);
 
         (var isPatternsFromRedir, var matches, var paths) =
             Options.PatternsFrom.Invoke(args);
         Log.Debug("RunMain paths='{0}'", string.Join(",",paths));
 
-        var cntFileScanned =SubDir.FileScan.Invoke(paths)
+        var total = SubDir.FileScan.Invoke(paths)
             .Union(Options.FilesFrom.Invoke(
                 new(isPatternsFromRedir, IsArgsEmpty: paths.Length == 0)))
             .Distinct()
             .Select((path) =>
             {
                 Log.Debug($"Scan file '{path}'");
+
                 var cntFinding = Helper.ReadAllLinesFromFile(path, option: "FILE")
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))
@@ -105,21 +105,33 @@ class Program
                     pause.Printed(lenPrinted);
                     return it.Matches.Length;
                 })
-                .Invoke(Show.MaxFound);
+                .Invoke(Show.TakeSumByMax);
 
-                Show.AddFoundCount.Invoke(new(cntFinding));
-                return summary.Add(new(path, cntFinding));
+                return Show.PrintFindingCount.Invoke(new(path, cntFinding, pause));
             })
-            .Count();
+            .Aggregate(seed: Show.FindingResult.Zero, (acc, it) => acc.Add(it));
 
-        summary.Print();
-        if (cntFileScanned == 0)
+        if (total.AddCount == 0)
         {
             Show.LogVerbose.Invoke("No file is found.");
         }
         else
         {
-            Show.AddFoundCount.Invoke(new(Ignore.Void));
+            switch (total.FileCount, total.Sum)
+            {
+                case (0, 0):
+                    Console.WriteLine("No finding is matched.");
+                    break;
+                case (1, 1):
+                    Console.WriteLine("Only a finding in a file is matched.");
+                    break;
+                case (1, _):
+                    Console.WriteLine($"{total.Sum} findings in a file are matched.");
+                    break;
+                default:
+                    Console.WriteLine($"{total.Sum} findings in {total.FileCount} files are matched.");
+                    break;
+            }
         }
         return true;
     }

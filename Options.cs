@@ -16,7 +16,7 @@ internal static class Options
     public const string TextWord = "--word";
     public const string TextLineNumber = "--line-number";
     public const string TextCountOnly = "--count-only";
-    public const string TextFileMatch = "--file-match";
+    //public const string TextFileMatch = "--file-match"; ** Would be recovered
     public const string TextInvertMatch = "--invert-match";
     public const string TextPatternFile = "--pattern-file";
     public const string TextQuiet = "--quiet";
@@ -24,7 +24,7 @@ internal static class Options
     public const string TextShowFilename = "--show-filename";
     public const string TextFixedTextPattern = "--fixed-strings";
     public const string TextPause = "--pause";
-    public const string TextTotal = "--total";
+    public const string TextTotal = "--total"; // TODO ..
     public const string TextSubDir = "--sub-dir";
     public const string TextExclFile = "--excl-file";
     public const string TextExclDir = "--excl-dir";
@@ -36,7 +36,7 @@ internal static class Options
             new("-m", [TextMaxCount]),
             new("-T", [TextFilesFrom]),
             new("-c", [TextCountOnly, TextOn]),
-            new("-l", [TextFileMatch, TextOn]),
+            // new("-l", [TextFileMatch, TextOn]), ** Would be recovered
             new("-v", [TextInvertMatch, TextOn]),
             new("-d", [TextSubDir, TextOn]),
         ];
@@ -351,9 +351,8 @@ internal static class Options
         (IParse)PatternWordText,
         (IParse)ToPattern,
         (IParse)Show.PauseMaker,
-        (IParse)Show.MaxFound,
+        (IParse)Show.TakeSumByMax,
         (IParse)Show.PrintLineMaker,
-        (IParse)Show.AddFoundCount,
         (IParse)SubDir.ExclFile,
         (IParse)SubDir.ExclDir,
     ];
@@ -363,8 +362,7 @@ internal static class Options
         (IParse)PatternsFrom,
         (IParse)FilesFrom,
         (IParse)MetaMatches,
-        (IParse)Show.FilenameOnly,
-        (IParse)Show.SummaryMaker,
+        (IParse)Show.PrintFindingCount,
         (IParse)SubDir.FileScan,
     ];
 
