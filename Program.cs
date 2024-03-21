@@ -111,28 +111,7 @@ class Program
             })
             .Aggregate(seed: Show.FindingResult.Zero, (acc, it) => acc.Add(it));
 
-        if (total.AddCount == 0)
-        {
-            Show.LogVerbose.Invoke("No file is found.");
-        }
-        else
-        {
-            switch (total.FileCount, total.Sum)
-            {
-                case (0, 0):
-                    Console.WriteLine("No finding is matched.");
-                    break;
-                case (1, 1):
-                    Console.WriteLine("Only a finding in a file is matched.");
-                    break;
-                case (1, _):
-                    Console.WriteLine($"{total.Sum} findings in a file are matched.");
-                    break;
-                default:
-                    Console.WriteLine($"{total.Sum} findings in {total.FileCount} files are matched.");
-                    break;
-            }
-        }
+        Show.Total.Invoke(total);
         return true;
     }
 }

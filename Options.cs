@@ -24,7 +24,7 @@ internal static class Options
     public const string TextShowFilename = "--show-filename";
     public const string TextFixedTextPattern = "--fixed-strings";
     public const string TextPause = "--pause";
-    public const string TextTotal = "--total"; // TODO ..
+    public const string TextTotal = "--total";
     public const string TextSubDir = "--sub-dir";
     public const string TextExclFile = "--excl-file";
     public const string TextExclDir = "--excl-dir";
@@ -353,6 +353,7 @@ internal static class Options
         (IParse)Show.PauseMaker,
         (IParse)Show.TakeSumByMax,
         (IParse)Show.PrintLineMaker,
+        (IParse)Show.Total,
         (IParse)SubDir.ExclFile,
         (IParse)SubDir.ExclDir,
     ];

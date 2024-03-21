@@ -146,4 +146,34 @@ internal static partial class Show
                 }
                 return FindingResult.Zero;
             });
+
+    static public readonly IInvoke<FindingResult, Ignore> Total
+        = new SwitchInvoker<FindingResult, Ignore>(TextTotal,
+            init: Ignore<FindingResult>.Maker, alterFor: true,
+            help: "on",
+            alter: (total) =>
+            {
+                if (total.AddCount == 0)
+                {
+                    Show.LogVerbose.Invoke("No file is found.");
+                    return Ignore.Void;
+                }
+                switch (total.FileCount, total.Sum)
+                {
+                    case (0, 0):
+                        Console.WriteLine("No finding is matched.");
+                        break;
+                    case (1, 1):
+                        Console.WriteLine("Only a finding in a file is matched.");
+                        break;
+                    case (1, _):
+                        Console.WriteLine($"{total.Sum} findings in a file are matched.");
+                        break;
+                    default:
+                        Console.WriteLine(
+                            $"{total.Sum} findings in {total.FileCount} files are matched.");
+                        break;
+                }
+                return Ignore.Void;
+            });
 }
