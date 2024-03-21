@@ -353,9 +353,9 @@ internal static class Options
         (IParse)Show.PauseMaker,
         (IParse)Show.TakeSumByMax,
         (IParse)Show.PrintLineMaker,
-        (IParse)Show.Total,
         (IParse)SubDir.ExclFile,
         (IParse)SubDir.ExclDir,
+        (IParse)Show.PrintTotal,
     ];
 
     // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'
@@ -363,7 +363,7 @@ internal static class Options
         (IParse)PatternsFrom,
         (IParse)FilesFrom,
         (IParse)MetaMatches,
-        (IParse)Show.PrintFindingCount,
+        (IParse)Show.PrintMaker,
         (IParse)SubDir.FileScan,
     ];
 

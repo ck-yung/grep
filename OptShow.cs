@@ -119,61 +119,102 @@ internal static partial class Show
         }
     }
 
-    public record PathFindingParam(string Path, int Count, IConsolePause Pause);
+    public record PathFindingParam(string Path, int Count,
+        IConsolePause Pause);
 
-    static public readonly IInvoke<PathFindingParam, FindingResult>
-        PrintFindingCount = new
-        SwitchInvoker<PathFindingParam, FindingResult>(TextCountOnly,
-            init: (it) =>
+    public interface IPrintPathCount
+    {
+        FindingResult Print(PathFindingParam arg);
+        Ignore Print(Else<FindingResult, Ignore> arg);
+    }
+
+    class FakePrintPath : IPrintPathCount // ??? TODO: CHECK ???
+    {
+        public FindingResult Print(PathFindingParam arg)
+        {
+            if (arg.Count > 0) return new(arg.Count);
+            return FindingResult.Zero;
+        }
+
+        public Ignore Print(Else<FindingResult, Ignore> arg)
+        {
+            return Ignore.Void;
+        }
+    }
+    class PrintPathWithCount(bool isPrintFinding) : IPrintPathCount
+    {
+        readonly bool IsPrintFinding = isPrintFinding;
+        public FindingResult Print(PathFindingParam arg)
+        {
+            if (arg.Count > 0)
             {
-                if (it.Count > 0) return new(it.Count);
-                return FindingResult.Zero;
-            },
-            alterFor: true, alterPost: (flag) =>
+                if (true == IsPrintFinding)
+                {
+                    var msg = $"{arg.Count}\t{arg.Path}";
+                    Console.WriteLine(msg);
+                    arg.Pause.Printed(msg.Length);
+                }
+                return new(arg.Count);
+            }
+            return FindingResult.Zero;
+        }
+
+        public Ignore Print(Else<FindingResult, Ignore> arg)
+        {
+            if (true != arg.IsRight) return Ignore.Void;
+            var total = arg.Right();
+            if (total.AddCount == 0)
+            {
+                LogVerbose.Invoke("No file is found.");
+                return Ignore.Void;
+            }
+            switch (total.FileCount, total.Sum)
+            {
+                case (0, 0):
+                    Console.WriteLine("No finding is matched.");
+                    break;
+                case (1, 1):
+                    Console.WriteLine("Only a finding in a file is matched.");
+                    break;
+                case (1, _):
+                    Console.WriteLine($"{total.Sum} findings in a file are matched.");
+                    break;
+                default:
+                    Console.WriteLine(
+                        $"{total.Sum} findings in {total.FileCount} files are matched.");
+                    break;
+            }
+            return Ignore.Void;
+        }
+    }
+
+    class PrintPathWithoutCount : IPrintPathCount
+    {
+        public FindingResult Print(PathFindingParam arg)
+        {
+            return FindingResult.Zero;
+        }
+
+        public Ignore Print(Else<FindingResult, Ignore> arg)
+        {
+            return Ignore.Void;
+        }
+    }
+
+    static public readonly IInvoke<Ignore, IPrintPathCount>
+        PrintMaker = new SwitchInvoker<Ignore, IPrintPathCount>(
+            TextCountOnly, init: (_) => new PrintPathWithCount(false),
+            alterFor: true, alter: (_) => new PrintPathWithCount(true),
+            alterPost: (flag) =>
             {
                 ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
                 ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                 ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
-            },
-            alter: (it) =>
-            {
-                if (it.Count > 0)
-                {
-                    var msg = $"{it.Count}\t{it.Path}";
-                    Console.WriteLine(msg);
-                    it.Pause.Printed(msg.Length);
-                    return new(it.Count);
-                }
-                return FindingResult.Zero;
             });
 
-    static public readonly IInvoke<FindingResult, Ignore> Total
-        = new SwitchInvoker<FindingResult, Ignore>(TextTotal,
-            init: Ignore<FindingResult>.Maker, alterFor: true,
-            help: "on",
-            alter: (total) =>
-            {
-                if (total.AddCount == 0)
-                {
-                    Show.LogVerbose.Invoke("No file is found.");
-                    return Ignore.Void;
-                }
-                switch (total.FileCount, total.Sum)
-                {
-                    case (0, 0):
-                        Console.WriteLine("No finding is matched.");
-                        break;
-                    case (1, 1):
-                        Console.WriteLine("Only a finding in a file is matched.");
-                        break;
-                    case (1, _):
-                        Console.WriteLine($"{total.Sum} findings in a file are matched.");
-                        break;
-                    default:
-                        Console.WriteLine(
-                            $"{total.Sum} findings in {total.FileCount} files are matched.");
-                        break;
-                }
-                return Ignore.Void;
-            });
+    static public readonly IInvoke<FindingResult, Else<FindingResult, Ignore>>
+        PrintTotal = new
+        SwitchInvoker<FindingResult, Else<FindingResult, Ignore>>(
+            TextTotal, init: (_) => new Else<FindingResult, Ignore>(Ignore.Void),
+            alterFor: true, alter: (it) => new Else<FindingResult, Ignore>(it));
 }

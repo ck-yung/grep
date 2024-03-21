@@ -79,6 +79,7 @@ class Program
 
         var pause = Show.PauseMaker.Invoke(Ignore.Void);
         var lineMarched = Show.PrintLineMaker.Invoke(Ignore.Void);
+        var printer = Show.PrintMaker.Invoke(Ignore.Void);
 
         (var isPatternsFromRedir, var matches, var paths) =
             Options.PatternsFrom.Invoke(args);
@@ -107,11 +108,12 @@ class Program
                 })
                 .Invoke(Show.TakeSumByMax);
 
-                return Show.PrintFindingCount.Invoke(new(path, cntFinding, pause));
+                return printer.Print(new Show.PathFindingParam(path, cntFinding, pause));
             })
             .Aggregate(seed: Show.FindingResult.Zero, (acc, it) => acc.Add(it));
 
-        Show.Total.Invoke(total);
+        printer.Print(Show.PrintTotal.Invoke(total));
+
         return true;
     }
 }
