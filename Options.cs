@@ -16,7 +16,7 @@ internal static class Options
     public const string TextWord = "--word";
     public const string TextLineNumber = "--line-number";
     public const string TextCountOnly = "--count-only";
-    //public const string TextFileMatch = "--file-match"; ** Would be recovered
+    public const string TextFileMatch = "--file-match";
     public const string TextInvertMatch = "--invert-match";
     public const string TextPatternFile = "--pattern-file";
     public const string TextQuiet = "--quiet";
@@ -36,7 +36,7 @@ internal static class Options
             new("-m", [TextMaxCount]),
             new("-T", [TextFilesFrom]),
             new("-c", [TextCountOnly, TextOn]),
-            // new("-l", [TextFileMatch, TextOn]), ** Would be recovered
+            new("-l", [TextFileMatch, TextOn]),
             new("-v", [TextInvertMatch, TextOn]),
             new("-d", [TextSubDir, TextOn]),
         ];
@@ -364,6 +364,7 @@ internal static class Options
         (IParse)FilesFrom,
         (IParse)MetaMatches,
         (IParse)Show.PrintMaker,
+        (IParse)Show.MatchedFilenameOnly,
         (IParse)SubDir.FileScan,
     ];
 

@@ -128,19 +128,6 @@ internal static partial class Show
         Ignore Print(Else<FindingResult, Ignore> arg);
     }
 
-    class FakePrintPath : IPrintPathCount // ??? TODO: CHECK ???
-    {
-        public FindingResult Print(PathFindingParam arg)
-        {
-            if (arg.Count > 0) return new(arg.Count);
-            return FindingResult.Zero;
-        }
-
-        public Ignore Print(Else<FindingResult, Ignore> arg)
-        {
-            return Ignore.Void;
-        }
-    }
     class PrintPathWithCount(bool isPrintFinding) : IPrintPathCount
     {
         readonly bool IsPrintFinding = isPrintFinding;
@@ -188,23 +175,68 @@ internal static partial class Show
         }
     }
 
-    class PrintPathWithoutCount : IPrintPathCount
+    class PrintPathWithoutCount(bool isPrintFinding) : IPrintPathCount
     {
+        readonly bool IsPrintFinding = isPrintFinding;
         public FindingResult Print(PathFindingParam arg)
         {
+            if (arg.Count > 0)
+            {
+                if (true == IsPrintFinding)
+                {
+                    Console.WriteLine(arg.Path);
+                    arg.Pause.Printed(arg.Path.Length);
+                }
+                return new(arg.Count);
+            }
             return FindingResult.Zero;
         }
 
         public Ignore Print(Else<FindingResult, Ignore> arg)
         {
+            if (true != arg.IsRight) return Ignore.Void;
+            var total = arg.Right();
+            if (total.AddCount == 0)
+            {
+                LogVerbose.Invoke("No file is found.");
+                return Ignore.Void;
+            }
+            switch (total.FileCount)
+            {
+                case (0):
+                    Console.WriteLine("No finding is matched.");
+                    break;
+                case (1):
+                    Console.WriteLine("A file is matched.");
+                    break;
+                default:
+                    Console.WriteLine(
+                        $"{total.FileCount} files are matched.");
+                    break;
+            }
             return Ignore.Void;
         }
     }
 
+    static public readonly IInvoke<bool, IPrintPathCount>
+        MatchedFilenameOnly = new SwitchInvoker<bool, IPrintPathCount>(
+            TextFileMatch, alterFor: true,
+            init: (flag) => new PrintPathWithCount(flag),
+            alter: (flag) => new PrintPathWithoutCount(true),
+            alterPost: (flag) =>
+            {
+                ((IParse)TakeSumByMax).Parse("1".ToFlagedArgs());
+                ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
+                ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
+                ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
+            });
+
     static public readonly IInvoke<Ignore, IPrintPathCount>
         PrintMaker = new SwitchInvoker<Ignore, IPrintPathCount>(
-            TextCountOnly, init: (_) => new PrintPathWithCount(false),
-            alterFor: true, alter: (_) => new PrintPathWithCount(true),
+            TextCountOnly,
+            alterFor: true,
+            init: (_) => MatchedFilenameOnly.Invoke(false),
+            alter: (_) => MatchedFilenameOnly.Invoke(true),
             alterPost: (flag) =>
             {
                 ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
