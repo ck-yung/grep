@@ -148,8 +148,8 @@ internal static partial class Show
 
         public Ignore Print(Else<FindingResult, Ignore> arg)
         {
-            if (true != arg.IsRight) return Ignore.Void;
-            var total = arg.Right();
+            if (true != arg.IsFirst) return Ignore.Void;
+            var total = arg.First();
             if (total.AddCount == 0)
             {
                 LogVerbose.Invoke("No file is found.");
@@ -175,18 +175,14 @@ internal static partial class Show
         }
     }
 
-    class PrintPathWithoutCount(bool isPrintFinding) : IPrintPathCount
+    class PrintPathWithoutCount : IPrintPathCount
     {
-        readonly bool IsPrintFinding = isPrintFinding;
         public FindingResult Print(PathFindingParam arg)
         {
             if (arg.Count > 0)
             {
-                if (true == IsPrintFinding)
-                {
-                    Console.WriteLine(arg.Path);
-                    arg.Pause.Printed(arg.Path.Length);
-                }
+                Console.WriteLine(arg.Path);
+                arg.Pause.Printed(arg.Path.Length);
                 return new(arg.Count);
             }
             return FindingResult.Zero;
@@ -194,8 +190,8 @@ internal static partial class Show
 
         public Ignore Print(Else<FindingResult, Ignore> arg)
         {
-            if (true != arg.IsRight) return Ignore.Void;
-            var total = arg.Right();
+            if (true != arg.IsFirst) return Ignore.Void;
+            var total = arg.First();
             if (total.AddCount == 0)
             {
                 LogVerbose.Invoke("No file is found.");
@@ -222,7 +218,7 @@ internal static partial class Show
         MatchedFilenameOnly = new SwitchInvoker<bool, IPrintPathCount>(
             TextFileMatch, alterFor: true,
             init: (flag) => new PrintPathWithCount(flag),
-            alter: (flag) => new PrintPathWithoutCount(true),
+            alter: (flag) => new PrintPathWithoutCount(),
             alterPost: (flag) =>
             {
                 ((IParse)TakeSumByMax).Parse("1".ToFlagedArgs());

@@ -3,45 +3,38 @@
 namespace grep;
 using static grep.Options;
 
-internal class Else<R, L>
+internal class Else<F, S>
 {
-    public bool IsRight { get; init; }
-    public Func<R> Right { get; init; }
-    public Func<L> Left { get; init; }
-    public Else(R right)
+    public bool IsFirst { get; init; }
+    public Func<F> First { get; init; }
+    public Func<S> Second { get; init; }
+    public Else(F right)
     {
-        IsRight = true;
-        Right = () => right;
-        Left = () => throw new NullReferenceException(nameof(Left));
+        IsFirst = true;
+        First = () => right;
+        Second = () => throw new
+        NullReferenceException(nameof(Second));
     }
-    public Else(L left)
+    public Else(S left)
     {
-        IsRight = false;
-        Left = () => left;
-        Right = () => throw new NullReferenceException(nameof(Right));
+        IsFirst = false;
+        Second = () => left;
+        First = () => throw new
+        NullReferenceException(nameof(First));
     }
 }
 
 static public partial class MyOptions
 {
-    internal abstract class Parser : IParse
+    internal abstract class Parser(string name, string help,
+        Action<MyOptions.Parser, IEnumerable<FlagedArg>> resolve,
+        string extraHelp = "") : IParse
     {
-        public string Name { get; init; }
-
-        public string Help { get; init; }
-        public string ExtraHelp { get; init; }
+        public string Name { get; init; } = name;
+        public string Help { get; init; } = help;
+        public string ExtraHelp { get; init; } = extraHelp;
         public Action<Parser, IEnumerable<FlagedArg>> Resolve
-        { get; init; }
-
-        public Parser(string name, string help,
-            Action<Parser, IEnumerable<FlagedArg>> resolve,
-            string extraHelp = "")
-        {
-            Name = name;
-            Help = help;
-            ExtraHelp = extraHelp;
-            Resolve = resolve;
-        }
+        { get; init; } = resolve;
 
         public IEnumerable<FlagedArg> Parse(
             IEnumerable<FlagedArg> args)
@@ -86,29 +79,21 @@ static public partial class MyOptions
         }
     }
 
-    internal class SimpleParser : Parser
+    internal class SimpleParser(string name,
+        Action<MyOptions.Parser, IEnumerable<FlagedArg>> resolve,
+        string help = "", string extraHelp = "")
+        : Parser(name, help, resolve, extraHelp)
     {
-        public SimpleParser(string name,
-            Action<Parser, IEnumerable<FlagedArg>> resolve,
-            string help = "", string extraHelp = "")
-            : base(name, help, resolve, extraHelp)
-        {
-        }
     }
 
-    internal class ParseInvoker<T, R> : Parser, IInvoke<T, R>
-    {
-        protected Func<T, R> Imp { get; private set; }
-        public ParseInvoker(string name, Func<T, R> @init,
-            Action<ParseInvoker<T, R>, IEnumerable<FlagedArg>> resolve,
-            string help = "", string extraHelp = "") :
-            base(name, help,
-                resolve: (obj, args) =>
+    internal class ParseInvoker<T, R>(string name, Func<T, R> @init,
+        Action<MyOptions.ParseInvoker<T, R>, IEnumerable<FlagedArg>> resolve,
+        string help = "", string extraHelp = "") : Parser(name, help,
+            resolve: (obj, args) =>
                 resolve((ParseInvoker<T, R>)obj, args),
-                extraHelp: extraHelp)
-        {
-            Imp = @init;
-        }
+            extraHelp: extraHelp), IInvoke<T, R>
+    {
+        protected Func<T, R> Imp { get; private set; } = @init;
 
         public R Invoke(T arg)
         {
@@ -126,22 +111,15 @@ static public partial class MyOptions
         }
     }
 
-    internal class SwitchInvoker<T, R> : Parser, IInvoke<T, R>
-    {
-        protected Func<T, R> Imp { get; private set; }
-        public R Invoke(T arg)
-        {
-            return Imp(arg);
-        }
+    internal class SwitchInvoker<T, R>(string name, Func<T, R> @init,
+        bool alterFor, Func<T, R> alter,
+        Action<bool>? alterPost = null,
+        string help = "", string? extraHelp = null) :
+        Parser(name, help,
+            extraHelp : string.IsNullOrEmpty(extraHelp)
+            ? $"Value to {name} is on or off." : extraHelp,
 
-        public SwitchInvoker(string name, Func<T, R> @init,
-            bool alterFor, Func<T, R> alter,
-            Action<bool>? alterPost = null,
-            string help = "", string? extraHelp = null) :
-            base(name, help,
-                extraHelp: string.IsNullOrEmpty(extraHelp)
-                ? $"Value to {name} is on or off." : extraHelp,
-                resolve: (opt, args) =>
+            resolve: (opt, args) =>
             {
                 var argsThe = args.Distinct().Take(2).ToArray();
                 if (argsThe.Length > 1)
@@ -168,9 +146,9 @@ static public partial class MyOptions
                         $"Value '{argThe.Arg}' to '{name}' is NOT '{TextOn}' or '{TextOff}'!"));
                 }
 
-                if (flagSwitch.IsRight)
+                if (flagSwitch.IsFirst)
                 {
-                    if (alterFor == flagSwitch.Right())
+                    if (alterFor == flagSwitch.First())
                     {
                         ((SwitchInvoker<T, R>)opt).SetImplementation(alter);
                         alterPost?.Invoke(alterFor);
@@ -181,9 +159,12 @@ static public partial class MyOptions
                         alterPost?.Invoke(!alterFor);
                     }
                 }
-            })
+            }), IInvoke<T, R>
+    {
+        protected Func<T, R> Imp { get; private set; } = @init;
+        public R Invoke(T arg)
         {
-            Imp = @init;
+            return Imp(arg);
         }
 
         public bool SetImplementation(Func<T, R> impNew)
