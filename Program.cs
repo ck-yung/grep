@@ -93,7 +93,8 @@ class Program
             {
                 Log.Debug($"Scan file '{path}'");
 
-                var cntFinding = Helper.ReadAllLinesFromFile(path, option: "FILE")
+                var cntFinding = ReadAllLinesFromFile(path, option: "FILE")
+                .Select((it) => Options.TrimStart.Invoke(it))
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))
                 .Where((it) => it.Matches.Length > 0)
@@ -110,7 +111,7 @@ class Program
 
                 return printer.Print(new Show.PathFindingParam(path, cntFinding, pause));
             })
-            .Aggregate(seed: Show.FindingResult.Zero, (acc, it) => acc.Add(it));
+            .Aggregate(seed: new Show.PathFindingParam("", 0, pause), (acc, it) => acc.AddWith(it));
 
         printer.Print(Show.PrintTotal.Invoke(total));
 

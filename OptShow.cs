@@ -99,39 +99,36 @@ internal static partial class Show
             alterFor: false,
             alter: (_) => new FakePause());
 
-    public class FindingResult(int fileCount, int sum)
+    public class PathFindingParam(string path, int count,
+        IConsolePause pause)
     {
-        public FindingResult(int sum) :this(1, sum) { }
-        public int FileCount { get; private set; } = fileCount;
-        public int Sum { get; private set; } = sum;
+        public string Path { get; init; } = path;
+        public int Count { get; private set; } = count;
+        public IConsolePause Pause { get; init; } = pause;
         public int AddCount { get; private set; } = 0;
-
-        static public readonly FindingResult Zero = new(0, 0);
-        public FindingResult Add(FindingResult other)
+        public int FileCount { get; private set; } = 0;
+        public PathFindingParam AddWith(PathFindingParam other)
         {
-            AddCount += 1;
-            if (other.Sum > 0)
+            AddCount++;
+            if (other.Count > 0)
             {
-                FileCount += 1;
-                Sum += other.Sum;
+                FileCount++;
+                Count += other.Count;
             }
             return this;
         }
     }
 
-    public record PathFindingParam(string Path, int Count,
-        IConsolePause Pause);
-
     public interface IPrintPathCount
     {
-        FindingResult Print(PathFindingParam arg);
-        Ignore Print(Else<FindingResult, Ignore> arg);
+        PathFindingParam Print(PathFindingParam arg);
+        Ignore Print(Else<PathFindingParam, Ignore> arg);
     }
 
     class PrintPathWithCount(bool isPrintFinding) : IPrintPathCount
     {
         readonly bool IsPrintFinding = isPrintFinding;
-        public FindingResult Print(PathFindingParam arg)
+        public PathFindingParam Print(PathFindingParam arg)
         {
             if (arg.Count > 0)
             {
@@ -141,12 +138,11 @@ internal static partial class Show
                     Console.WriteLine(msg);
                     arg.Pause.Printed(msg.Length);
                 }
-                return new(arg.Count);
             }
-            return FindingResult.Zero;
+            return arg;
         }
 
-        public Ignore Print(Else<FindingResult, Ignore> arg)
+        public Ignore Print(Else<PathFindingParam, Ignore> arg)
         {
             if (true != arg.IsFirst) return Ignore.Void;
             var total = arg.First();
@@ -155,7 +151,7 @@ internal static partial class Show
                 LogVerbose.Invoke("No file is found.");
                 return Ignore.Void;
             }
-            switch (total.FileCount, total.Sum)
+            switch (total.FileCount, total.Count)
             {
                 case (0, 0):
                     Console.WriteLine("No finding is matched.");
@@ -164,11 +160,11 @@ internal static partial class Show
                     Console.WriteLine("Only a finding in a file is matched.");
                     break;
                 case (1, _):
-                    Console.WriteLine($"{total.Sum} findings in a file are matched.");
+                    Console.WriteLine($"{total.Count} findings in a file are matched.");
                     break;
                 default:
                     Console.WriteLine(
-                        $"{total.Sum} findings in {total.FileCount} files are matched.");
+                        $"{total.Count} findings in {total.FileCount} files are matched.");
                     break;
             }
             return Ignore.Void;
@@ -177,18 +173,18 @@ internal static partial class Show
 
     class PrintPathWithoutCount : IPrintPathCount
     {
-        public FindingResult Print(PathFindingParam arg)
+        public PathFindingParam Print(PathFindingParam arg)
         {
             if (arg.Count > 0)
             {
                 Console.WriteLine(arg.Path);
                 arg.Pause.Printed(arg.Path.Length);
-                return new(arg.Count);
+                Log.Debug($"new> FindingResult(sum:{0}) [2]", arg.Count);
             }
-            return FindingResult.Zero;
+            return arg;
         }
 
-        public Ignore Print(Else<FindingResult, Ignore> arg)
+        public Ignore Print(Else<PathFindingParam, Ignore> arg)
         {
             if (true != arg.IsFirst) return Ignore.Void;
             var total = arg.First();
@@ -240,9 +236,9 @@ internal static partial class Show
                 ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
             });
 
-    static public readonly IInvoke<FindingResult, Else<FindingResult, Ignore>>
+    static public readonly IInvoke<PathFindingParam, Else<PathFindingParam, Ignore>>
         PrintTotal = new
-        SwitchInvoker<FindingResult, Else<FindingResult, Ignore>>(
-            TextTotal, init: (_) => new Else<FindingResult, Ignore>(Ignore.Void),
-            alterFor: true, alter: (it) => new Else<FindingResult, Ignore>(it));
+        SwitchInvoker<PathFindingParam, Else<PathFindingParam, Ignore>>(
+            TextTotal, init: (_) => new Else<PathFindingParam, Ignore>(Ignore.Void),
+            alterFor: true, alter: (it) => new Else<PathFindingParam, Ignore>(it));
 }

@@ -28,6 +28,7 @@ internal static class Options
     public const string TextSubDir = "--sub-dir";
     public const string TextExclFile = "--excl-file";
     public const string TextExclDir = "--excl-dir";
+    public const string TextTrimStart = "--trim-start";
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
         NonEnvirShortCuts =
@@ -343,6 +344,10 @@ internal static class Options
                 .Where((it) => it.Length > 0));
             });
 
+    public static readonly IInvoke<string, string> TrimStart = new
+        SwitchInvoker<string, string>(TextTrimStart, help: "on",
+        init: Helper.Itself, alterFor: true, alter: (it) => it.TrimStart());
+
     public static readonly IParse[] Parsers = [
         (IParse)ToRegex,
         (IParse)Show.Filename,
@@ -356,6 +361,7 @@ internal static class Options
         (IParse)SubDir.ExclFile,
         (IParse)SubDir.ExclDir,
         (IParse)Show.PrintTotal,
+        (IParse)TrimStart,
     ];
 
     // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'
