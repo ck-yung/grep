@@ -47,10 +47,9 @@ static public class SubDir
                 => (arg) => regex.Match(arg).Success;
 
                 var exclDirPostfixMatchings = aa
-                .Select((it) => it.StartsWith(Path.DirectorySeparatorChar)
-                ? it : Path.DirectorySeparatorChar + it)
                 .Select((it) => it.ToRegexText())
-                .Select((it) => it.TrimStart('^'))
+                .Select((it) => it.TrimStart('^').TrimEnd('$'))
+                .Select((it) => @"\b"+ it + @"\b")
                 .Distinct()
                 .Select((it) => it.MakeRegex())
                 .Select((it) => MakeMatchRegex(it))
