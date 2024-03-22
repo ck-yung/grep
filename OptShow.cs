@@ -1,6 +1,5 @@
 ﻿using static grep.MyOptions;
 using static grep.Options;
-
 namespace grep;
 
 internal static partial class Show
@@ -119,6 +118,32 @@ internal static partial class Show
         }
     }
 
+    static Ignore PrintTotalOnly(PathFindingParam total)
+    {
+        if (total.AddCount == 0)
+        {
+            LogVerbose.Invoke("No file is found.");
+            return Ignore.Void;
+        }
+        switch (total.FileCount, total.Count)
+        {
+            case (0, 0):
+                Console.WriteLine("No finding is matched.");
+                break;
+            case (1, 1):
+                Console.WriteLine("Only a finding in a file is matched.");
+                break;
+            case (1, _):
+                Console.WriteLine($"{total.Count} findings in a file are matched.");
+                break;
+            default:
+                Console.WriteLine(
+                    $"{total.Count} findings in {total.FileCount} files are matched.");
+                break;
+        }
+        return Ignore.Void;
+    }
+
     public interface IPrintPathCount
     {
         PathFindingParam Print(PathFindingParam arg);
@@ -152,30 +177,7 @@ internal static partial class Show
                }
                 return Ignore.Void;
             }
-
-            var total = arg.First();
-            if (total.AddCount == 0)
-            {
-                LogVerbose.Invoke("No file is found.");
-                return Ignore.Void;
-            }
-            switch (total.FileCount, total.Count)
-            {
-                case (0, 0):
-                    Console.WriteLine("No finding is matched.");
-                    break;
-                case (1, 1):
-                    Console.WriteLine("Only a finding in a file is matched.");
-                    break;
-                case (1, _):
-                    Console.WriteLine($"{total.Count} findings in a file are matched.");
-                    break;
-                default:
-                    Console.WriteLine(
-                        $"{total.Count} findings in {total.FileCount} files are matched.");
-                    break;
-            }
-            return Ignore.Void;
+            return PrintTotalOnly(arg.First());
         }
     }
 
@@ -252,9 +254,71 @@ internal static partial class Show
                 ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
             });
 
+    class PrintPathTotalOnly : IPrintPathCount
+    {
+        public PathFindingParam Print(PathFindingParam arg) => arg;
+
+        public Ignore TotalPrint(Else<PathFindingParam, int> arg)
+        {
+            if (true != arg.IsFirst)
+            {
+                if (0 == arg.Second())
+                {
+                    LogVerbose.Invoke("No file is found.");
+                }
+                return Ignore.Void;
+            }
+            return PrintTotalOnly(arg.First());
+        }
+    }
+
     static public readonly IInvoke<PathFindingParam, Else<PathFindingParam, int>>
-        PrintTotal = new
-        SwitchInvoker<PathFindingParam, Else<PathFindingParam, int>>(
-            TextTotal, init: (it) => new Else<PathFindingParam, int>(it.AddCount),
-            alterFor: true, alter: (it) => new Else<PathFindingParam, int>(it));
+        PrintTotal = new ParseInvoker<PathFindingParam, Else<PathFindingParam, int>>(
+            TextTotal, help: "on | off | only",
+            init: (it) => new Else<PathFindingParam, int>(it.AddCount),
+            resolve: (opt, argsThe) =>
+            {
+                var aa = argsThe
+                .Where((it) => it.Arg.Length > 0)
+                .Distinct()
+                .Take(2)
+                .ToArray();
+                if (aa.Length > 1)
+                {
+                    ConfigException.Add(aa[0].Type,
+                        new ConfigException(
+                            $"Too many values ('{aa[0].Arg}','{aa[1].Arg}') to {opt.Name}"));
+                    return;
+                }
+                switch (aa[0].Arg.ToLower())
+                {
+                    case TextOff:
+                        opt.SetImplementation((it) => new Else<PathFindingParam, int>(it.AddCount));
+                        break;
+                    case TextOn:
+                        opt.SetImplementation((it) => new Else<PathFindingParam, int>(it));
+                        break;
+                    case "only":
+                        var typeThe = aa[0].Type;
+                        if (typeThe == ArgType.CommandLine)
+                        {
+                            ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
+                            ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
+                            ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
+                            opt.SetImplementation((it) => new Else<PathFindingParam, int>(it));
+                        }
+                        else
+                        {
+                            ConfigException.Add(typeThe,
+                                new ConfigException(
+                                    $"'{aa[0].Arg}' is ignored to {opt.Name}"));
+                        }
+                        break;
+                    default:
+                        ConfigException.Add(aa[0].Type,
+                            new ConfigException(
+                                $"Value '{aa[0].Arg}' is unknown to {opt.Name}"));
+                        break;
+                }
+            });
 }

@@ -235,7 +235,7 @@ internal static partial class Show
     private static partial Regex RegexColors();
 
     static public readonly IInvoke<Ignore, IPrintMatchedLine> PrintLineMaker = new
-        ParseInvoker<Ignore, IPrintMatchedLine>(TextColor, help: "COLOR",
+        ParseInvoker<Ignore, IPrintMatchedLine>(TextColor, help: "COLOR | -",
         extraHelp: $"For help, please run: {nameof(grep)} {TextColor} -",
         init: (_) =>
         {

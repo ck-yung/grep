@@ -345,7 +345,7 @@ internal static class Options
             });
 
     public static readonly IInvoke<string, string> TrimStart = new
-        SwitchInvoker<string, string>(TextTrimStart, help: "on",
+        SwitchInvoker<string, string>(TextTrimStart, help: "on | off",
         init: Helper.Itself, alterFor: true, alter: (it) => it.TrimStart());
 
     public static readonly IParse[] Parsers = [
