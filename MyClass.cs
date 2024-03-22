@@ -113,6 +113,7 @@ static public partial class MyOptions
 
     internal class SwitchInvoker<T, R>(string name, Func<T, R> @init,
         bool alterFor, Func<T, R> alter,
+        Action? alterPre = null,
         Action<bool>? alterPost = null,
         string help = "", string? extraHelp = null) :
         Parser(name, help,
@@ -148,6 +149,7 @@ static public partial class MyOptions
 
                 if (flagSwitch.IsFirst)
                 {
+                    alterPre?.Invoke();
                     if (alterFor == flagSwitch.First())
                     {
                         ((SwitchInvoker<T, R>)opt).SetImplementation(alter);

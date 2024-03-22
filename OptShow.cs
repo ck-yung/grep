@@ -104,21 +104,27 @@ internal static partial class Show
         public string Path { get; init; } = path;
         public int Count { get; private set; } = count;
         public IConsolePause Pause { get; init; } = pause;
+    }
+
+    public class TotalPathFindingParam
+    {
+        public int Count { get; private set; } = 0;
         public int AddCount { get; private set; } = 0;
         public int FileCount { get; private set; } = 0;
-        public PathFindingParam AddWith(PathFindingParam other)
+        public TotalPathFindingParam AddWith(PathFindingParam other)
         {
             AddCount++;
             if (other.Count > 0)
             {
                 FileCount++;
                 Count += other.Count;
+                FileFinding.PrintFile(other);
             }
             return this;
         }
     }
 
-    static Ignore PrintTotalOnly(PathFindingParam total)
+    static Ignore PrintTotalWithFindingCount(TotalPathFindingParam total)
     {
         if (total.AddCount == 0)
         {
@@ -144,138 +150,105 @@ internal static partial class Show
         return Ignore.Void;
     }
 
-    public interface IPrintPathCount
+    static Ignore PrintTotalWithoutFindingCount(TotalPathFindingParam total)
     {
-        PathFindingParam Print(PathFindingParam arg);
-        Ignore TotalPrint(Else<PathFindingParam, int> arg);
-    }
-
-    class PrintPathWithCount(bool isPrintFinding) : IPrintPathCount
-    {
-        readonly bool IsPrintFinding = isPrintFinding;
-        public PathFindingParam Print(PathFindingParam arg)
+        if (total.AddCount == 0)
         {
-            if (arg.Count > 0)
-            {
-                if (true == IsPrintFinding)
-                {
-                    var msg = $"{arg.Count}\t{arg.Path}";
-                    Console.WriteLine(msg);
-                    arg.Pause.Printed(msg.Length);
-                }
-            }
-            return arg;
-        }
-
-        public Ignore TotalPrint(Else<PathFindingParam, int> arg)
-        {
-            if (true != arg.IsFirst)
-            {
-                if (0 == arg.Second())
-                {
-                    LogVerbose.Invoke("No file is found.");
-               }
-                return Ignore.Void;
-            }
-            return PrintTotalOnly(arg.First());
-        }
-    }
-
-    class PrintPathWithoutCount : IPrintPathCount
-    {
-        public PathFindingParam Print(PathFindingParam arg)
-        {
-            if (arg.Count > 0)
-            {
-                Console.WriteLine(arg.Path);
-                arg.Pause.Printed(arg.Path.Length);
-                Log.Debug($"new> FindingResult(sum:{0}) [2]", arg.Count);
-            }
-            return arg;
-        }
-
-        public Ignore TotalPrint(Else<PathFindingParam, int> arg)
-        {
-            if (true != arg.IsFirst)
-            {
-                if (0 == arg.Second())
-                {
-                    LogVerbose.Invoke("No file is found.");
-                }
-                return Ignore.Void;
-            }
-
-            var total = arg.First();
-            if (total.AddCount == 0)
-            {
-                LogVerbose.Invoke("No file is found.");
-                return Ignore.Void;
-            }
-            switch (total.FileCount)
-            {
-                case (0):
-                    Console.WriteLine("No finding is matched.");
-                    break;
-                case (1):
-                    Console.WriteLine("A file is matched.");
-                    break;
-                default:
-                    Console.WriteLine(
-                        $"{total.FileCount} files are matched.");
-                    break;
-            }
+            LogVerbose.Invoke("No file is found.");
             return Ignore.Void;
         }
-    }
-
-    static public readonly IInvoke<bool, IPrintPathCount>
-        MatchedFilenameOnly = new SwitchInvoker<bool, IPrintPathCount>(
-            TextFileMatch, alterFor: true,
-            init: (flag) => new PrintPathWithCount(flag),
-            alter: (flag) => new PrintPathWithoutCount(),
-            alterPost: (flag) =>
-            {
-                ((IParse)TakeSumByMax).Parse("1".ToFlagedArgs());
-                ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
-                ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
-                ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
-            });
-
-    static public readonly IInvoke<Ignore, IPrintPathCount>
-        PrintMaker = new SwitchInvoker<Ignore, IPrintPathCount>(
-            TextCountOnly,
-            alterFor: true,
-            init: (_) => MatchedFilenameOnly.Invoke(false),
-            alter: (_) => MatchedFilenameOnly.Invoke(true),
-            alterPost: (flag) =>
-            {
-                ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
-                ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
-                ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
-            });
-
-    class PrintPathTotalOnly : IPrintPathCount
-    {
-        public PathFindingParam Print(PathFindingParam arg) => arg;
-
-        public Ignore TotalPrint(Else<PathFindingParam, int> arg)
+        switch (total.FileCount)
         {
-            if (true != arg.IsFirst)
-            {
-                if (0 == arg.Second())
-                {
-                    LogVerbose.Invoke("No file is found.");
-                }
-                return Ignore.Void;
-            }
-            return PrintTotalOnly(arg.First());
+            case (0):
+                Console.WriteLine("No finding is matched.");
+                break;
+            case (1):
+                Console.WriteLine("Only a file is matched.");
+                break;
+            default:
+                Console.WriteLine(
+                    $"{total.FileCount} files are matched.");
+                break;
         }
+        return Ignore.Void;
     }
 
-    static public readonly IInvoke<PathFindingParam, Else<PathFindingParam, int>>
-        PrintTotal = new ParseInvoker<PathFindingParam, Else<PathFindingParam, int>>(
+    static Func<TotalPathFindingParam, Ignore> PrintTotalImpl { get; set; }
+    = PrintTotalWithFindingCount;
+
+    record FileFindingFeature(string Option,
+        Func<PathFindingParam, PathFindingParam> PrintFile);
+
+    static FileFindingFeature FileFinding { get; set; } =
+        new("", Helper.Itself<PathFindingParam>);
+
+    static public readonly IInvoke<Ignore, Ignore> MatchedFilenameOnly =
+        new SwitchInvoker<Ignore, Ignore>(TextFileMatch, alterFor: true,
+            init: Ignore.Maker, alter: (_) =>
+            {
+                return Ignore.Void;
+            },
+            alterPre: () =>
+            {
+                if (false == string.IsNullOrEmpty(FileFinding.Option))
+                {
+                    throw new ArgumentException(
+                        $"Options '{TextFileMatch}' and '{FileFinding.Option}' can NOT both be set 'on'");
+                }
+                FileFinding = new(TextFileMatch, (it) =>
+                {
+                    Console.WriteLine(it.Path);
+                    it.Pause.Printed(it.Path.Length);
+                    return it;
+                });
+                PrintTotalImpl = (it) => PrintTotalWithoutFindingCount(it);
+            },
+            alterPost: (flag) =>
+            {
+                if (flag)
+                {
+                    ((IParse)TakeSumByMax).Parse("1".ToFlagedArgs());
+                    ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
+                    ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
+                    ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
+                }
+            });
+
+    static public readonly IInvoke<Ignore, Ignore> MatchedFilenameWithCount =
+        new SwitchInvoker<Ignore, Ignore>(TextCountOnly, alterFor: true,
+            init: Ignore.Maker, alter: (_) =>
+            {
+                return Ignore.Void;
+            },
+            alterPre: () =>
+            {
+                if (false == string.IsNullOrEmpty(FileFinding.Option))
+                {
+                    throw new ArgumentException(
+                        $"Options '{TextCountOnly}' and '{FileFinding.Option}' can NOT both be set 'on'");
+                }
+                FileFinding = new(TextCountOnly, (it) =>
+                {
+                    var msg = $"{it.Count}\t{it.Path}";
+                    Console.WriteLine(msg);
+                    it.Pause.Printed(msg.Length);
+                    return it;
+                });
+            },
+            alterPost: (flag) =>
+            {
+                if (flag)
+                {
+                    ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
+                    ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
+                    ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
+                }
+            });
+
+    static public readonly IInvoke<TotalPathFindingParam, Ignore> PrintTotal =
+        new ParseInvoker<TotalPathFindingParam, Ignore>(
             TextTotal, help: "on | off | only",
-            init: (it) => new Else<PathFindingParam, int>(it.AddCount),
+            init: (it) => Ignore.Void,
             resolve: (opt, argsThe) =>
             {
                 var aa = argsThe
@@ -293,19 +266,25 @@ internal static partial class Show
                 switch (aa[0].Arg.ToLower())
                 {
                     case TextOff:
-                        opt.SetImplementation((it) => new Else<PathFindingParam, int>(it.AddCount));
+                        opt.SetImplementation((_) => Ignore.Void);
                         break;
                     case TextOn:
-                        opt.SetImplementation((it) => new Else<PathFindingParam, int>(it));
+                        opt.SetImplementation((it) => PrintTotalImpl(it));
                         break;
                     case "only":
                         var typeThe = aa[0].Type;
                         if (typeThe == ArgType.CommandLine)
                         {
+                            if (false == string.IsNullOrEmpty(FileFinding.Option))
+                            {
+                                throw new ArgumentException(
+                                    $"Value 'only' to '{TextTotal}', and, 'on' to '{FileFinding.Option}' can NOT both be set.");
+                            }
                             ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
                             ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                             ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
-                            opt.SetImplementation((it) => new Else<PathFindingParam, int>(it));
+                            FileFinding = new(TextTotal, Helper.Itself);
+                            opt.SetImplementation((it) => PrintTotalWithFindingCount(it));
                         }
                         else
                         {

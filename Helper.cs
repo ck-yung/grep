@@ -98,26 +98,38 @@ internal static partial class Helper
     public static IEnumerable<string> ReadAllLinesFromFile(
         string path, string option)
     {
-        if ("-" == path)
+        static IEnumerable<string> ReadLinesFrom(StreamReader inpFs)
         {
-            foreach (var line in ReadAllLinesFromConsole(option))
-                yield return line;
-        }
-        else
-        {
-            if (true != File.Exists(path))
-            {
-                Show.LogVerbose.Invoke($"File '{path}' to {option} is NOT found.");
-                yield break;
-            }
-
-            var inpFs = File.OpenText(path);
             string? lineThe;
             while (null != (lineThe = inpFs.ReadLine()))
             {
                 yield return lineThe;
             }
             inpFs.Close();
+        }
+
+        if ("-" == path)
+        {
+            return ReadAllLinesFromConsole(option);
+        }
+        else
+        {
+            try
+            {
+                if (true != File.Exists(path))
+                {
+                    ConfigException.Add(ArgType.CommandLine,
+                        new FileNotFoundException($"'{path}' to {option}"));
+                    return [];
+                }
+                StreamReader inpFs = File.OpenText(path);
+                return ReadLinesFrom(inpFs);
+            }
+            catch (Exception ee)
+            {
+                ConfigException.Add(ArgType.CommandLine, ee);
+                return [];
+            }
         }
     }
 

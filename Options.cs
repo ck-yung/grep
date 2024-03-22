@@ -369,7 +369,7 @@ internal static class Options
         (IParse)PatternsFrom,
         (IParse)FilesFrom,
         (IParse)MetaMatches,
-        (IParse)Show.PrintMaker,
+        (IParse)Show.MatchedFilenameWithCount,
         (IParse)Show.MatchedFilenameOnly,
         (IParse)SubDir.FileScan,
     ];
@@ -377,8 +377,8 @@ internal static class Options
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args,
         IEnumerable<IParse> extraParsers)
     {
-        return Parsers
-            .Union(extraParsers)
+        return extraParsers
+            .Union(Parsers)
             .Aggregate(seed: args, func: (acc, it) => it.Parse(acc));
     }
 }
