@@ -113,7 +113,7 @@ class Program
             })
             .Aggregate(seed: new Show.PathFindingParam("", 0, pause), (acc, it) => acc.AddWith(it));
 
-        printer.Print(Show.PrintTotal.Invoke(total));
+        printer.TotalPrint(Show.PrintTotal.Invoke(total));
 
         return true;
     }

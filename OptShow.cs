@@ -122,7 +122,7 @@ internal static partial class Show
     public interface IPrintPathCount
     {
         PathFindingParam Print(PathFindingParam arg);
-        Ignore Print(Else<PathFindingParam, Ignore> arg);
+        Ignore TotalPrint(Else<PathFindingParam, int> arg);
     }
 
     class PrintPathWithCount(bool isPrintFinding) : IPrintPathCount
@@ -142,9 +142,17 @@ internal static partial class Show
             return arg;
         }
 
-        public Ignore Print(Else<PathFindingParam, Ignore> arg)
+        public Ignore TotalPrint(Else<PathFindingParam, int> arg)
         {
-            if (true != arg.IsFirst) return Ignore.Void;
+            if (true != arg.IsFirst)
+            {
+                if (0 == arg.Second())
+                {
+                    LogVerbose.Invoke("No file is found.");
+               }
+                return Ignore.Void;
+            }
+
             var total = arg.First();
             if (total.AddCount == 0)
             {
@@ -184,9 +192,17 @@ internal static partial class Show
             return arg;
         }
 
-        public Ignore Print(Else<PathFindingParam, Ignore> arg)
+        public Ignore TotalPrint(Else<PathFindingParam, int> arg)
         {
-            if (true != arg.IsFirst) return Ignore.Void;
+            if (true != arg.IsFirst)
+            {
+                if (0 == arg.Second())
+                {
+                    LogVerbose.Invoke("No file is found.");
+                }
+                return Ignore.Void;
+            }
+
             var total = arg.First();
             if (total.AddCount == 0)
             {
@@ -236,9 +252,9 @@ internal static partial class Show
                 ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
             });
 
-    static public readonly IInvoke<PathFindingParam, Else<PathFindingParam, Ignore>>
+    static public readonly IInvoke<PathFindingParam, Else<PathFindingParam, int>>
         PrintTotal = new
-        SwitchInvoker<PathFindingParam, Else<PathFindingParam, Ignore>>(
-            TextTotal, init: (_) => new Else<PathFindingParam, Ignore>(Ignore.Void),
-            alterFor: true, alter: (it) => new Else<PathFindingParam, Ignore>(it));
+        SwitchInvoker<PathFindingParam, Else<PathFindingParam, int>>(
+            TextTotal, init: (it) => new Else<PathFindingParam, int>(it.AddCount),
+            alterFor: true, alter: (it) => new Else<PathFindingParam, int>(it));
 }

@@ -16,12 +16,6 @@ class Ignore<T>
     public static Func<T, Ignore> Maker = (_) => Ignore.Void;
 }
 
-class Always<T>
-{
-    public static Func<T, bool> True = (_) => true;
-    public static Func<T, bool> Never = (_) => false;
-}
-
 public record Match(int Index, int Length)
 {
     public static readonly Match[] ZeroOne = [new Match(0, 0)];
@@ -228,32 +222,33 @@ internal static partial class Helper
         return false;
     }
 
-    public static string[] FromWildCard(this string arg)
+    public static IEnumerable<string> FromWildCard(this string arg)
     {
         if (File.Exists(arg)) return [arg];
         if ("-" == arg) return ["-"];
         var a2 = Path.GetDirectoryName(arg);
         var pathThe = string.IsNullOrEmpty(a2) ? "." : a2;
-        var wildThe = Path.GetFileName(arg) ?? ":";
+        Func<string, string> getName = (pathThe == ".")
+            ? (it) => it[2..] : Helper.Itself;
+        var wildMatch = Dir.Wild.ToWildMatch(Path.GetFileName(arg));
         try
         {
-            var aa = Directory.GetFiles(pathThe, searchPattern: wildThe);
-            if (aa.Length > 0)
-            {
-                return aa
-                    .Select((it) => it.StartsWith("." + Path.DirectorySeparatorChar)
-                    ? it[2..] : it)
-                    .Where((it) =>
-                    {
-                        var filename = Path.GetFileName(it);
-                        return true != SubDir.ExclFile.Invoke(filename);
-                    })
-                    .ToArray();
-            }
+            return Dir.Scan.SimpleListFiles(pathThe)
+                .Where((it) =>
+                {
+                    var filename = Path.GetFileName(it);
+                    return wildMatch(filename) &&
+                    false == SubDir.ExclFile.Invoke(filename);
+                })
+                .Select((it) => getName(it));
+                ;
         }
-        catch { }
-        Show.LogVerbose.Invoke($"File '{arg}' is NOT found!");
-        return [];
+        catch (Exception ee)
+        {
+            Show.LogVerbose.Invoke($"File '{arg}' is NOT found!");
+            Log.Debug("{0}>{1}>{2}", nameof(FromWildCard), arg, ee);
+            return [];
+        }
     }
 
     static private string Blank<T>(T _) { return ""; }
@@ -326,6 +321,22 @@ internal static class Log
         else
         {
             msg = String.Format(format, args);
+        }
+        DebugWithString(msg);
+    }
+
+    public static void Debug(string[] arrayOfString, string format, params object[] args)
+    {
+        if (true != DebugFlag) return;
+        string msg;
+        msg = String.Format(format, args);
+        if (arrayOfString?.Length > 0)
+        {
+            msg += " '" + string.Join(";", arrayOfString) + "'";
+        }
+        else
+        {
+            msg += format + " *empty-array*";
         }
         DebugWithString(msg);
     }

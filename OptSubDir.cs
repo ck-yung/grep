@@ -3,6 +3,7 @@ using static grep.MyOptions;
 using static grep.Options;
 using static Dir.Wild;
 using System.Text.RegularExpressions;
+using Dir;
 
 namespace grep;
 
@@ -10,7 +11,7 @@ static public class SubDir
 {
     static public readonly IInvoke<string, bool> ExclFile =
         new ParseInvoker<string, bool>(TextExclFile, help: "FILE",
-            init: Always<string>.Never, resolve: (opt, argsThe) =>
+            init: AllStrings.Never, resolve: (opt, argsThe) =>
             {
                 var exclMatchings = argsThe
                 .Select((it) => it.Arg)
@@ -25,14 +26,14 @@ static public class SubDir
                 }
             });
 
-    static Func<string, bool> ExclDirPostifx = Always<string>.Never;
+    static Func<string, bool> ExclDirPostifx = AllStrings.Never;
 
     static public readonly IInvoke<string, bool> ExclDir =
         new ParseInvoker<string, bool>(TextExclDir, help: "DIR",
-            init: Always<string>.Never, resolve: (opt, argsThe) =>
+            init: AllStrings.Never, resolve: (opt, argsThe) =>
             {
                 var aa = argsThe.Select((it) => it.Arg).Where((it) => it.Length>0).Distinct().ToArray();
-                Log.Debug("'{0}'<{1}<'{2}'", TextExclDir, aa.Length, string.Join(';', aa));
+                Log.Debug(aa, "{0}<init<", TextExclDir);
                 var exclMatchings = aa
                 .Select((it) => Dir.Wild.ToWildMatch(it))
                 .ToArray();
@@ -47,9 +48,7 @@ static public class SubDir
                 => (arg) => regex.Match(arg).Success;
 
                 var exclDirPostfixMatchings = aa
-                .Select((it) => it.ToRegexText())
-                .Select((it) => it.TrimStart('^').TrimEnd('$'))
-                .Select((it) => @"\b"+ it + @"\b")
+                .Select((it) => it.ToRegexBoundaryText())
                 .Distinct()
                 .Select((it) => it.MakeRegex())
                 .Select((it) => MakeMatchRegex(it))
@@ -112,7 +111,7 @@ static public class SubDir
                     }
                 }
 
-                if (false == dirs.Any() && false == map2nd.Any())
+                if (false == dirs.Any() && map2nd.IsEmpty)
                 {
                     dirs = ["."];
                 }
@@ -122,7 +121,7 @@ static public class SubDir
                     if (false == patterns.Any())
                     {
                         Log.Debug($"{nameof(makeMatching)} patterns is EMTPY");
-                        return Always<string>.True;
+                        return Dir.AllStrings.True;
                     }
 
                     var regexes = patterns
