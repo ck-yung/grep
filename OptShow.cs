@@ -193,9 +193,9 @@ internal static partial class Show
                 if (false == string.IsNullOrEmpty(FileFinding.Option))
                 {
                     throw new ArgumentException(
-                        $"Options '{TextFileMatch}' and '{FileFinding.Option}' can NOT both be set 'on'");
+                        $"Options '{TextFileMatch} on' and '{FileFinding.Option}' can NOT both be set.");
                 }
-                FileFinding = new(TextFileMatch, (it) =>
+                FileFinding = new(TextFileMatch + " on", (it) =>
                 {
                     Console.WriteLine(it.Path);
                     it.Pause.Printed(it.Path.Length);
@@ -225,9 +225,9 @@ internal static partial class Show
                 if (false == string.IsNullOrEmpty(FileFinding.Option))
                 {
                     throw new ArgumentException(
-                        $"Options '{TextCountOnly}' and '{FileFinding.Option}' can NOT both be set 'on'");
+                        $"Options '{TextCountOnly} on' and '{FileFinding.Option}' can NOT both be set.");
                 }
-                FileFinding = new(TextCountOnly, (it) =>
+                FileFinding = new(TextCountOnly + " on", (it) =>
                 {
                     var msg = $"{it.Count}\t{it.Path}";
                     Console.WriteLine(msg);
@@ -278,12 +278,12 @@ internal static partial class Show
                             if (false == string.IsNullOrEmpty(FileFinding.Option))
                             {
                                 throw new ArgumentException(
-                                    $"Value 'only' to '{TextTotal}', and, 'on' to '{FileFinding.Option}' can NOT both be set.");
+                                    $"Options '{TextTotal} only' and '{FileFinding.Option}' can NOT both be set.");
                             }
                             ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
                             ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                             ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
-                            FileFinding = new(TextTotal, Helper.Itself);
+                            FileFinding = new(TextTotal + " only", Helper.Itself);
                             opt.SetImplementation((it) => PrintTotalWithFindingCount(it));
                         }
                         else

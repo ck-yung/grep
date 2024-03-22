@@ -377,8 +377,8 @@ internal static class Options
     static public IEnumerable<FlagedArg> Resolve(this IEnumerable<FlagedArg> args,
         IEnumerable<IParse> extraParsers)
     {
-        return extraParsers
-            .Union(Parsers)
+        return Parsers
+            .Union(extraParsers)
             .Aggregate(seed: args, func: (acc, it) => it.Parse(acc));
     }
 }
