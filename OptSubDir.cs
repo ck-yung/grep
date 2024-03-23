@@ -146,27 +146,17 @@ static public class SubDir
                     .Select((it) => Dir.Scan.ListFiles(it.DirName,
                     filterDirname: (parentThe, dirName) =>
                     {
-                        var b2 = ExclDir.Invoke(dirName);
-                        var b3 = ExclDirPostifx(parentThe);
-                        var rtn = (false == b2) && (false == b3);
-                        if (false == rtn)
-                        {
-                            Log.Debug("ExclDir:'{0}','{1}'", parentThe, dirName);
-                        }
-                        return rtn;
+                        var b2 = false == ExclDir.Invoke(dirName);
+                        var b3 = false == ExclDirPostifx(
+                            Path.Combine(parentThe, dirName));
+                        return b2 && b3;
                     })
-
                     .Where((it2) =>
                     {
                         var filename = Path.GetFileName(it2);
                         var b2 = it.Matching(filename);
                         var b3 = false == ExclFile.Invoke(filename);
-                        var rtn = b2 && b3;
-                        if (false == b3)
-                        {
-                            Log.Debug("ExclFile:'{0}'", it2);
-                        }
-                        return rtn;
+                        return b2 && b3;
                     })
                     .Select((it2) => it.JoinFunc(it.DirName, it2)))
                     .SelectMany((it2) => it2);
