@@ -260,10 +260,6 @@ internal static partial class Show
             }
 
             var args = argsThe.Select((it) => it.Arg)
-            .Where((it) => false == it.Equals("auto",
-            StringComparison.InvariantCultureIgnoreCase))
-            .Where((it) => false == it.Equals("never",
-            StringComparison.InvariantCultureIgnoreCase))
             .Distinct().Take(2).ToArray();
             if (args.Length > 1)
             {

@@ -83,7 +83,7 @@ class Program
             return PrintSyntax(isDetailed: true);
         }
 
-        args = args.ToFlagedArgs(ArgType.CommandLine,
+        args = Options.SkipArgs.Invoke(args).ToFlagedArgs(ArgType.CommandLine,
             Options.ShortCuts, Options.NonEnvirShortCuts)
             .Resolve(Options.NonEnvirParsers)
             .Select((it) => it.Arg)
@@ -96,7 +96,7 @@ class Program
             Options.PatternsFrom.Invoke(args);
         Log.Debug(paths, nameof(RunMain));
 
-        var infoTotal = SubDir.FileScan.Invoke(paths)
+        var infoTotal = SubDir.FileScan.Invoke(Options.SplitFileByComma.Invoke(paths))
             .Union(Options.FilesFrom.Invoke(
                 new(isPatternsFromRedir, IsArgsEmpty: paths.Length == 0)))
             .Distinct(Options.FilenameCaseSentive.Invoke(Ignore.Void))

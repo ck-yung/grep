@@ -3,7 +3,6 @@ using static grep.MyOptions;
 using static grep.Options;
 using static Dir.Wild;
 using System.Text.RegularExpressions;
-using Dir;
 
 namespace grep;
 
@@ -11,11 +10,10 @@ static public class SubDir
 {
     static public readonly IInvoke<string, bool> ExclFile =
         new ParseInvoker<string, bool>(TextExclFile, help: "FILE",
-            init: AllStrings.Never, resolve: (opt, argsThe) =>
+            init: Dir.AllStrings.Never, resolve: (opt, argsThe) =>
             {
-                var exclMatchings = argsThe
-                .Select((it) => it.Arg)
-                .Distinct()
+                var exclMatchings = SplitFileByComma.Invoke(
+                argsThe.Select((it) => it.Arg))
                 .Select((it) => Dir.Wild.ToWildMatch(it))
                 .ToArray();
 
@@ -26,14 +24,16 @@ static public class SubDir
                 }
             });
 
-    static Func<string, bool> ExclDirPostifx = AllStrings.Never;
+    static Func<string, bool> ExclDirPostifx = Dir.AllStrings.Never;
 
     static public readonly IInvoke<string, bool> ExclDir =
         new ParseInvoker<string, bool>(TextExclDir, help: "DIR",
-            init: AllStrings.Never, resolve: (opt, argsThe) =>
+            init: Dir.AllStrings.Never, resolve: (opt, argsThe) =>
             {
-                var aa = argsThe.Select((it) => it.Arg).Where((it) => it.Length>0).Distinct().ToArray();
-                Log.Debug(aa, "{0}<init<", TextExclDir);
+                var aa = SplitFileByComma.Invoke(
+                    argsThe.Select((it) => it.Arg))
+                .ToArray();
+
                 var exclMatchings = aa
                 .Select((it) => Dir.Wild.ToWildMatch(it))
                 .ToArray();
@@ -49,10 +49,10 @@ static public class SubDir
 
                 var exclDirPostfixMatchings = aa
                 .Select((it) => it.ToRegexBoundaryText())
-                .Distinct()
                 .Select((it) => it.MakeRegex())
                 .Select((it) => MakeMatchRegex(it))
                 .ToArray();
+
                 if (exclDirPostfixMatchings.Length > 0)
                 {
                     ExclDirPostifx = (arg) => exclDirPostfixMatchings
@@ -63,8 +63,8 @@ static public class SubDir
     record MatchingDirParam(string DirName,
         Func<string,bool> Matching, Func<string, string, string> JoinFunc);
 
-    static public readonly IInvoke<string[], IEnumerable<string>>
-        FileScan = new SwitchInvoker<string[], IEnumerable<string>>(
+    static public readonly IInvoke<IEnumerable<string>, IEnumerable<string>>
+        FileScan = new SwitchInvoker<IEnumerable<string>, IEnumerable<string>>(
             TextSubDir, alterFor: true,
             init: (paths) => paths
             .Select((it) => it.FromWildCard())
@@ -145,13 +145,28 @@ static public class SubDir
                     IEnumerable<MatchingDirParam> args) => args
                     .Select((it) => Dir.Scan.ListFiles(it.DirName,
                     filterDirname: (parentThe, dirName) =>
-                    false == ExclDir.Invoke(dirName) &&
-                    false == ExclDirPostifx(parentThe))
+                    {
+                        var b2 = ExclDir.Invoke(dirName);
+                        var b3 = ExclDirPostifx(parentThe);
+                        var rtn = (false == b2) && (false == b3);
+                        if (false == rtn)
+                        {
+                            Log.Debug("ExclDir:'{0}','{1}'", parentThe, dirName);
+                        }
+                        return rtn;
+                    })
+
                     .Where((it2) =>
                     {
                         var filename = Path.GetFileName(it2);
-                        return it.Matching(filename) &&
-                        (false == ExclFile.Invoke(filename));
+                        var b2 = it.Matching(filename);
+                        var b3 = false == ExclFile.Invoke(filename);
+                        var rtn = b2 && b3;
+                        if (false == b3)
+                        {
+                            Log.Debug("ExclFile:'{0}'", it2);
+                        }
+                        return rtn;
                     })
                     .Select((it2) => it.JoinFunc(it.DirName, it2)))
                     .SelectMany((it2) => it2);

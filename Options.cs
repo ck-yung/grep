@@ -367,7 +367,7 @@ internal static class Options
         = new ParseInvoker<FilesFromParam, IEnumerable<string>>(
             TextFilesFrom, help: "FILES-FROM",
             extraHelp: $"For example, {nameof(grep)} {TextFilesFrom} cs-file.txt ..{hintOfFile}",
-             init: (arg) =>
+            init: (arg) =>
              {
                  if (arg.IsPatternFromRedirConsole) return [];
                  if (arg.IsArgsEmpty && Console.IsInputRedirected)
@@ -409,6 +409,34 @@ internal static class Options
             init: (_) => StringComparer.InvariantCultureIgnoreCase,
             alter: (_) => StringComparer.InvariantCulture);
 
+    public static readonly IInvoke<IEnumerable<string>, IEnumerable<string>>
+        SkipArgs = new ParseInvoker<IEnumerable<string>, IEnumerable<string>>(
+            Helper.TextSkipArg, help: "TEXT", init: Helper.Itself,
+            resolve: (opt, argsThe) =>
+            {
+                var exclTexts = argsThe
+                .Select((it) => it.Arg)
+                .Where((it) => it.Length > 0)
+                .Distinct()
+                .ToArray();
+                Log.Debug(exclTexts, "{0}:found", Helper.TextSkipArg);
+                if (exclTexts.Length == 0) return;
+                opt.SetImplementation(
+                    (seq) =>
+                    seq.Where((it) =>
+                    exclTexts.All((it2) => it != it2)));
+            });
+
+    public static readonly IInvoke<IEnumerable<string>, IEnumerable<string>>
+        SplitFileByComma = new SwitchInvoker<IEnumerable<string>, IEnumerable<string>>(
+            Helper.TextSplitFileByComma, help: HintOnOff, init: Helper.Itself,
+            alterFor: true,
+            alter: (seq) => seq
+            .Select((it) => it.Split(','))
+            .SelectMany((it) => it)
+            .Where((it) => 0 < it.Length)
+            .Distinct());
+
     public static readonly IParse[] Parsers = [
         (IParse)ToRegex,
         (IParse)Show.Filename,
@@ -424,6 +452,8 @@ internal static class Options
         (IParse)Show.PrintTotal,
         (IParse)TrimStart,
         (IParse)FilenameCaseSentive,
+        (IParse)SkipArgs,
+        (IParse)SplitFileByComma,
     ];
 
     // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'

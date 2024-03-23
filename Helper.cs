@@ -165,6 +165,8 @@ internal static partial class Helper
     }
 
     public const string TextMapShortcut = "--map-shortcut";
+    public const string TextSkipArg = "--skip-arg";
+    public const string TextSplitFileByComma = "--split-file-by-comma";
 
     public static bool PrintSyntax(bool isDetailed = false)
     {
