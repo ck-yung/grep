@@ -125,7 +125,7 @@ internal static partial class Show
         switch (total.MatchedFileCount, total.Count)
         {
             case (0, 0):
-                Console.WriteLine("No finding is matched.");
+                Console.WriteLine($"No finding is matched for '{Pattern.First}'.");
                 break;
             case (1, 1):
                 Console.WriteLine("Only a finding in a file is matched.");
@@ -151,7 +151,7 @@ internal static partial class Show
         switch (total.MatchedFileCount)
         {
             case (0):
-                Console.WriteLine("No finding is matched.");
+                Console.WriteLine($"No finding is matched for '{Pattern.First}'.");
                 break;
             case (1):
                 Console.WriteLine("Only a file is matched.");

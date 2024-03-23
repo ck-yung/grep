@@ -323,10 +323,15 @@ internal static partial class Helper
 
 class Pattern
 {
+    public static string First { get; private set; } = "";
     public readonly Func<string, Match[]> Matches;
 
     public Pattern(string pattern)
     {
+        if (string.IsNullOrEmpty(First))
+        {
+            First = pattern;
+        }
         Matches = (line) => Options.MetaMatches.Invoke(
         Options.TextFindAllIndexOf(line, pattern)
         .Select((it) => new Match(it, pattern.Length)));
@@ -334,6 +339,10 @@ class Pattern
 
     public Pattern(RegX.Regex regex)
     {
+        if (string.IsNullOrEmpty(First))
+        {
+            First = regex.ToString();
+        }
         Matches = (line) => Options.MetaMatches.Invoke(
             regex.Matches(line)
             .OfType<RegX.Match>()
