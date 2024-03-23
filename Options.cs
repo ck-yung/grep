@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using static grep.MyOptions;
 using RegX = System.Text.RegularExpressions;
@@ -58,12 +58,53 @@ internal static class Options
             new("-X", [TextExclDir]),
         ];
 
+    static Dictionary<string, string> MappedShortcut = new();
+
     public static IEnumerable<FlagedArg> ToFlagedArgs(
         this IEnumerable<string> args, ArgType type,
         IEnumerable<KeyValuePair<string, string[]>> shortcuts,
         IEnumerable<KeyValuePair<string, string[]>> extraShortcuts)
     {
-        var itrThe = args.GetEnumerator();
+        IEnumerable<string> StoreMappedShortcut()
+        {
+            var itrThe = args.GetEnumerator();
+            while (itrThe.MoveNext())
+            {
+                var current = itrThe.Current;
+                if (current == Helper.TextMappedShortcut)
+                {
+                    if (itrThe.MoveNext())
+                    {
+                        current = itrThe.Current;
+                        if (current.Length!=3 || current[1]!='=')
+                        {
+                            throw new ArgumentException(
+                                $"{type} Value to '{Helper.TextMappedShortcut}' SHOULD be in format of 'a=b'");
+                        }
+                        if (current[0] == current[2])
+                        {
+                            throw new ArgumentException(
+                                $"{type} Value to '{Helper.TextMappedShortcut}' SHOULD NOT be in format of '{current}'");
+                        }
+                        Log.Debug("* MappedShortcut '-{1}' by '-{0}'", current[0], current[2]);
+                        MappedShortcut[$"-{current[0]}"] = $"-{current[2]}";
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"""
+                            {type} Missing value to '{Helper.TextMappedShortcut}'
+                            For example, {Helper.TextMappedShortcut} s=d
+                            """);
+                    }
+                }
+                else
+                {
+                    yield return current;
+                }
+            }
+        }
+
+        var itrThe = StoreMappedShortcut().ToArray().AsEnumerable().GetEnumerator();
         IEnumerable<string> SeparateCombiningShortcut()
         {
             while (itrThe.MoveNext())
@@ -100,11 +141,17 @@ internal static class Options
                 it.Key, it.Value)))
             .ToImmutableDictionary((it) => it.Key, (it) => it.Value);
 
+        var arg2 = "";
         foreach (var arg in SeparateCombiningShortcut())
         {
             if (arg.Length == 2 && arg[0] == '-')
             {
-                if (mapShortcuts.TryGetValue(arg, out var expands))
+                arg2 = arg;
+                if (MappedShortcut.TryGetValue(arg, out var arg3))
+                {
+                    arg2 = arg3;
+                }
+                if (mapShortcuts.TryGetValue(arg2, out var expands))
                 {
                     foreach (var expand in expands)
                     {

@@ -147,6 +147,8 @@ internal static partial class Helper
         public static readonly InfoShortcut Empty = new("", []);
     }
 
+    public const string TextMappedShortcut = "--mapped-shortcut";
+
     public static bool PrintSyntax(bool isDetailed = false)
     {
         Console.WriteLine("Syntax:");
@@ -171,7 +173,12 @@ internal static partial class Helper
             var bb = Options.Parsers
                 .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(true, it)))
                 .Union(Options.NonEnvirParsers
-                .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))));
+                .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))))
+                .Union([new KeyValuePair<string, EnvrParser>(
+                    TextMappedShortcut,
+                    new(IsEnvir: true, Parser: new NullParser(
+                        TextMappedShortcut, help: "a=b")))])
+                ;
             var cc = Options.ShortCuts
                 .Union(Options.NonEnvirShortCuts);
             var jj2 = bb.GroupJoin(cc, (b2) => b2.Key, (c2) => (c2.Value.Length > 0) ? c2.Value[0] : "?",
@@ -206,12 +213,14 @@ internal static partial class Helper
                 }
                 Console.WriteLine();
             }
+
             Console.WriteLine("""
                 For example,
                   grep -nsm 3 class *.cs --color black,yellow -X obj
                   dir2 -sb *.cs --within 4hours | grep -n class -T -
 
                 Options can be stored in envir var 'grep'.
+                https://github.com/ck-yung/grep/blob/master/README.md
                 """);
         }
         return false;

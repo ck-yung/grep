@@ -21,6 +21,15 @@ public interface IParse
         IEnumerable<FlagedArg> args);
 }
 
+public class NullParser(string name,
+    string? help = "", string? extraHelp = "") : IParse
+{
+    public string Name => name;
+    public string Help => help ?? "";
+    public string ExtraHelp => extraHelp ?? "";
+    public IEnumerable<FlagedArg> Parse(IEnumerable<FlagedArg> _) => [];
+}
+
 public interface IInvoke<T, R>
 {
     R Invoke(T arg);
