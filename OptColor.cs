@@ -259,7 +259,12 @@ internal static partial class Show
                 return;
             }
 
-            var args = argsThe.Select((it) => it.Arg).Distinct().Take(2).ToArray();
+            var args = argsThe.Select((it) => it.Arg)
+            .Where((it) => false == it.Equals("auto",
+            StringComparison.InvariantCultureIgnoreCase))
+            .Where((it) => false == it.Equals("never",
+            StringComparison.InvariantCultureIgnoreCase))
+            .Distinct().Take(2).ToArray();
             if (args.Length > 1)
             {
                 ConfigException.Add(typeThe, new ArgumentException(
@@ -267,6 +272,8 @@ internal static partial class Show
                     option: opt);
                 return;
             }
+
+            if (args.Length == 0) return;
 
             var argThe = args[0];
             if (opt.Help.Equals(argThe, StringComparison.InvariantCultureIgnoreCase)

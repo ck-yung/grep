@@ -77,6 +77,23 @@ internal static partial class Helper
             .Where((it) => it.Length > 0);
     }
 
+    static internal IEnumerable<string> GetEnvirVar(string value,
+        string @for)
+    {
+        var itrThe = SplitEnvirVar(value).GetEnumerator();
+        while (itrThe.MoveNext())
+        {
+            var current = itrThe.Current;
+            if (current.Equals(@for))
+            {
+                if (itrThe.MoveNext())
+                {
+                    yield return itrThe.Current;
+                }
+            }
+        }
+    }
+
     static string? LastOptionReadConsole = null;
     public static IEnumerable<string> ReadAllLinesFromConsole(string option)
     {
@@ -147,7 +164,7 @@ internal static partial class Helper
         public static readonly InfoShortcut Empty = new("", []);
     }
 
-    public const string TextMappedShortcut = "--mapped-shortcut";
+    public const string TextMapShortcut = "--map-shortcut";
 
     public static bool PrintSyntax(bool isDetailed = false)
     {
@@ -160,6 +177,31 @@ internal static partial class Helper
 
             """);
 
+        var aa = GetEnvirVar(Environment.GetEnvironmentVariable(
+            nameof(grep)) ?? "", TextMapShortcut);
+        if (aa.Any())
+        {
+            static string Decode(string arg)
+            {
+                if (arg.Length == 3 && arg[1] == '=')
+                {
+                    return $"-{arg[0]} => -{arg[2]}";
+                }
+                return "";
+            }
+
+            Console.WriteLine("Current shortcut mapping:");
+            foreach (var a2 in aa)
+            {
+                var a3 = Decode(a2);
+                if (false == string.IsNullOrEmpty(a3))
+                {
+                    Console.WriteLine($"\t{a3}");
+                }
+            }
+            Console.WriteLine();
+        }
+
         if (false == isDetailed)
         {
             Console.WriteLine("""
@@ -167,54 +209,53 @@ internal static partial class Helper
 
                 https://github.com/ck-yung/grep/blob/master/README.md
                 """);
+            return false;
         }
-        else
-        {
-            var bb = Options.Parsers
-                .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(true, it)))
-                .Union(Options.NonEnvirParsers
-                .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))))
-                .Union([new KeyValuePair<string, EnvrParser>(
-                    TextMappedShortcut,
+
+        var bb = Options.Parsers
+            .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(true, it)))
+            .Union(Options.NonEnvirParsers
+            .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))))
+            .Union([new KeyValuePair<string, EnvrParser>(TextMapShortcut,
                     new(IsEnvir: true, Parser: new NullParser(
-                        TextMappedShortcut, help: "a=b")))])
-                ;
-            var cc = Options.ShortCuts
-                .Union(Options.NonEnvirShortCuts);
-            var jj2 = bb.GroupJoin(cc, (b2) => b2.Key, (c2) => (c2.Value.Length > 0) ? c2.Value[0] : "?",
-                (b2, cc2) => new
-                {
-                    Name = b2.Key,
-                    EnvrParser = b2.Value,
-                    Info = cc2.Any()
-                    ? new InfoShortcut(cc2.First().Key, cc2.First().Value.Skip(1).ToArray())
-                    : InfoShortcut.Empty,
-                });
-
-            Console.WriteLine("Shortcut                 Option  with           Envir");
-            foreach (var j2 in jj2
-                .OrderBy((it) => it.EnvrParser.IsEnvir)
-                .ThenBy((it) => it.Info.Shortcut)
-                .ThenBy((it) => it.Name))
+                        TextMapShortcut, help: "a=b")))])
+            ;
+        var cc = Options.ShortCuts
+            .Union(Options.NonEnvirShortCuts);
+        var jj2 = bb.GroupJoin(cc, (b2) => b2.Key, (c2) => (c2.Value.Length > 0) ? c2.Value[0] : "?",
+            (b2, cc2) => new
             {
-                var j3 = j2.Info;
-                Console.Write($"{j2.Info.Shortcut,6}{j2.Name,25}  ");
+                Name = b2.Key,
+                EnvrParser = b2.Value,
+                Info = cc2.Any()
+                ? new InfoShortcut(cc2.First().Key, cc2.First().Value.Skip(1).ToArray())
+                : InfoShortcut.Empty,
+            });
 
-                var a2 = j3.Expands.Length == 0
-                    ? j2.EnvrParser.Parser.Help : j3.Expands[0];
+        Console.WriteLine("Shortcut                 Option  with           Envir");
+        foreach (var j2 in jj2
+            .OrderBy((it) => it.EnvrParser.IsEnvir)
+            .ThenBy((it) => it.Info.Shortcut)
+            .ThenBy((it) => it.Name))
+        {
+            var j3 = j2.Info;
+            Console.Write($"{j2.Info.Shortcut,6}{j2.Name,25}  ");
 
-                if (j2.EnvrParser.IsEnvir)
-                {
-                    Console.Write(a2);
-                }
-                else
-                {
-                    Console.Write($"{a2,-14} Command line only");
-                }
-                Console.WriteLine();
+            var a2 = j3.Expands.Length == 0
+                ? j2.EnvrParser.Parser.Help : j3.Expands[0];
+
+            if (j2.EnvrParser.IsEnvir)
+            {
+                Console.Write(a2);
             }
+            else
+            {
+                Console.Write($"{a2,-14} Command line only");
+            }
+            Console.WriteLine();
+        }
 
-            Console.WriteLine("""
+        Console.WriteLine("""
                 For example,
                   grep -nsm 3 class *.cs --color black,yellow -X obj
                   dir2 -sb *.cs --within 4hours | grep -n class -T -
@@ -222,7 +263,6 @@ internal static partial class Helper
                 Options can be stored in envir var 'grep'.
                 https://github.com/ck-yung/grep/blob/master/README.md
                 """);
-        }
         return false;
     }
 

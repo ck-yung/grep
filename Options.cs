@@ -71,7 +71,7 @@ internal static class Options
             while (itrThe.MoveNext())
             {
                 var current = itrThe.Current;
-                if (current == Helper.TextMappedShortcut)
+                if (current == Helper.TextMapShortcut)
                 {
                     if (itrThe.MoveNext())
                     {
@@ -79,12 +79,12 @@ internal static class Options
                         if (current.Length!=3 || current[1]!='=')
                         {
                             throw new ArgumentException(
-                                $"{type} Value to '{Helper.TextMappedShortcut}' SHOULD be in format of 'a=b'");
+                                $"{type} Value to '{Helper.TextMapShortcut}' SHOULD be in format of 'a=b'");
                         }
                         if (current[0] == current[2])
                         {
                             throw new ArgumentException(
-                                $"{type} Value to '{Helper.TextMappedShortcut}' SHOULD NOT be in format of '{current}'");
+                                $"{type} Value to '{Helper.TextMapShortcut}' SHOULD NOT be in format of '{current}'");
                         }
                         Log.Debug("* MappedShortcut '-{1}' by '-{0}'", current[0], current[2]);
                         MappedShortcut[$"-{current[0]}"] = $"-{current[2]}";
@@ -92,8 +92,8 @@ internal static class Options
                     else
                     {
                         throw new ArgumentException($"""
-                            {type} Missing value to '{Helper.TextMappedShortcut}'
-                            For example, {Helper.TextMappedShortcut} s=d
+                            {type} Missing value to '{Helper.TextMapShortcut}'
+                            For example, {Helper.TextMapShortcut} s=d
                             """);
                     }
                 }

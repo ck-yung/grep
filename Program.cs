@@ -44,7 +44,7 @@ class Program
         if (envUnknown.Length > 0)
         {
             Show.LogVerbose.Invoke(
-                $"'{string.Join(' ', envUnknown)}' is known to envir '{nameof(grep)}'.");
+                $"'{string.Join(' ', envUnknown)}' is unknown to envir '{nameof(grep)}'.");
         }
 
         foreach (var infoError in ConfigException.GetErrors())
