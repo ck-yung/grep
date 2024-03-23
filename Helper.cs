@@ -184,13 +184,14 @@ internal static partial class Helper
                     : InfoShortcut.Empty,
                 });
 
-            Console.WriteLine("Shortcut           Option  with           Envir");
+            Console.WriteLine("Shortcut                 Option  with           Envir");
             foreach (var j2 in jj2
                 .OrderBy((it) => it.EnvrParser.IsEnvir)
-                .ThenBy((it) => it.Info.Shortcut))
+                .ThenBy((it) => it.Info.Shortcut)
+                .ThenBy((it) => it.Name))
             {
                 var j3 = j2.Info;
-                Console.Write($"{j2.Info.Shortcut,6}{j2.Name,19}  ");
+                Console.Write($"{j2.Info.Shortcut,6}{j2.Name,25}  ");
 
                 var a2 = j3.Expands.Length == 0
                     ? j2.EnvrParser.Parser.Help : j3.Expands[0];

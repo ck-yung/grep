@@ -9,6 +9,7 @@ internal static class Options
 {
     public const string TextOff = "off";
     public const string TextOn = "on";
+    public const string HintOnOff = "on | off";
 
     public const string TextColor = "--color";
     public const string TextFilesFrom = "--files-from";
@@ -29,6 +30,7 @@ internal static class Options
     public const string TextExclFile = "--excl-file";
     public const string TextExclDir = "--excl-dir";
     public const string TextTrimStart = "--trim-start";
+    public const string TextFilenameCaseSensitive = "--filename-case-sensitive";
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
         NonEnvirShortCuts =
@@ -351,8 +353,14 @@ internal static class Options
             });
 
     public static readonly IInvoke<string, string> TrimStart = new
-        SwitchInvoker<string, string>(TextTrimStart, help: "on | off",
+        SwitchInvoker<string, string>(TextTrimStart, help: HintOnOff,
         init: Helper.Itself, alterFor: true, alter: (it) => it.TrimStart());
+
+    public static readonly IInvoke<Ignore, StringComparer>
+        FilenameCaseSentive = new SwitchInvoker<Ignore, StringComparer>(
+            TextFilenameCaseSensitive, help: HintOnOff, alterFor: true,
+            init: (_) => StringComparer.InvariantCultureIgnoreCase,
+            alter: (_) => StringComparer.InvariantCulture);
 
     public static readonly IParse[] Parsers = [
         (IParse)ToRegex,
@@ -368,6 +376,7 @@ internal static class Options
         (IParse)SubDir.ExclDir,
         (IParse)Show.PrintTotal,
         (IParse)TrimStart,
+        (IParse)FilenameCaseSentive,
     ];
 
     // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'

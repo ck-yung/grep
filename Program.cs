@@ -99,7 +99,7 @@ class Program
         var infoTotal = SubDir.FileScan.Invoke(paths)
             .Union(Options.FilesFrom.Invoke(
                 new(isPatternsFromRedir, IsArgsEmpty: paths.Length == 0)))
-            .Distinct()
+            .Distinct(Options.FilenameCaseSentive.Invoke(Ignore.Void))
             .Select((path) =>
             {
                 Log.Debug($"Scan file '{path}'");
