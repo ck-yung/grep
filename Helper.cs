@@ -25,6 +25,9 @@ public record MatchResult(int LineNumber, string Line, Match[] Matches);
 
 internal static partial class Helper
 {
+    public const string ShortcutConsoleInput = "-";
+    public static bool IsShortcutConsoleInput(string arg) => arg == "-";
+
     static public bool IsNumber(this char arg)
     {
         if ('0' <= arg && arg <= '9') return true;
@@ -108,7 +111,7 @@ internal static partial class Helper
             inpFs.Close();
         }
 
-        if ("-" == path)
+        if (IsShortcutConsoleInput(path))
         {
             return ReadAllLinesFromConsole(option);
         }
@@ -237,7 +240,7 @@ internal static partial class Helper
     public static IEnumerable<string> FromWildCard(this string arg)
     {
         if (File.Exists(arg)) return [arg];
-        if ("-" == arg) return ["-"];
+        if (IsShortcutConsoleInput(arg)) return [ShortcutConsoleInput];
         var a2 = Path.GetDirectoryName(arg);
         var pathThe = string.IsNullOrEmpty(a2) ? "." : a2;
         Func<string, string> getName = (pathThe == ".")

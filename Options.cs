@@ -299,12 +299,18 @@ internal static class Options
                 .Select((it) => it.Matches)
                 .ToArray();
 
+                if (patternFuncs.Length == 0)
+                {
+                    throw new ConfigException("No pattern is found.");
+                }
+
                 Match[] matchFunc(string line) => patternFuncs
                 .Select((matches) => matches(line))
                 .FirstOrDefault((it) => it.Length > 0)
                 ?? [];
 
-                opt.SetImplementation((args) => new("-" == fileThe, matchFunc, args));
+                opt.SetImplementation((args) =>
+                new(Helper.IsShortcutConsoleInput(fileThe), matchFunc, args));
             });
 
     public record FilesFromParam(bool IsPatternFromRedirConsole, bool IsArgsEmpty);

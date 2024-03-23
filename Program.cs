@@ -51,8 +51,20 @@ class Program
         {
             var envrThe = infoError.Type == ArgType.CommandLine
                 ? "Command line" : $"Envir '{nameof(grep)}'";
-            Show.LogVerbose.Invoke(
-                $"{envrThe}: {infoError.Error.Message}");
+            var errType = infoError.Error.GetType().ToString()
+                .Replace("grep.ConfigException", "")
+                .Replace("System.", "")
+                .Replace("Exception", "");
+            if (string.IsNullOrEmpty(errType))
+            {
+                Show.LogVerbose.Invoke(
+                    $"{envrThe}: {infoError.Error.Message}");
+            }
+            else
+            {
+                Show.LogVerbose.Invoke(
+                    $"{envrThe}: ({errType}) {infoError.Error.Message}");
+            }
             if (false == string.IsNullOrEmpty(infoError.Option?.ExtraHelp))
             {
                 Show.LogVerbose.Invoke(infoError.Option.ExtraHelp);
@@ -82,9 +94,9 @@ class Program
 
         (var isPatternsFromRedir, var matches, var paths) =
             Options.PatternsFrom.Invoke(args);
-        Log.Debug("RunMain paths='{0}'", string.Join(",",paths));
+        Log.Debug(paths, nameof(RunMain));
 
-        var total = SubDir.FileScan.Invoke(paths)
+        var infoTotal = SubDir.FileScan.Invoke(paths)
             .Union(Options.FilesFrom.Invoke(
                 new(isPatternsFromRedir, IsArgsEmpty: paths.Length == 0)))
             .Distinct()
@@ -108,12 +120,12 @@ class Program
                 })
                 .Invoke(Show.TakeSumByMax);
 
-                return new Show.PathFindingParam(path, cntFinding, pause);
+                return (path, cntFinding);
             })
-            .Aggregate(seed: new Show.TotalPathFindingParam(),
+            .Aggregate(seed: new Show.InfoTotal(pause),
             (acc, it) => acc.AddWith(it));
 
-        Show.PrintTotal.Invoke(total);
+        Show.PrintTotal.Invoke(infoTotal);
 
         return true;
     }

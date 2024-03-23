@@ -219,13 +219,13 @@ internal static partial class Show
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Console.WriteLine($"""
-                        set {nameof(grep)}={TextColor} red,darkyellow,9,black,gray
+                        set {nameof(grep)}={TextColor} white,darkred,5,black,yellow
                         """);
         }
         else
         {
             Console.WriteLine($"""
-                        export {nameof(grep)}="{TextColor} red,darkyellow,9,black,gray"
+                        export {nameof(grep)}="{TextColor} white,darkred,5,black,yellow"
                         """);
         }
     }
