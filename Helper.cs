@@ -310,7 +310,6 @@ internal static partial class Helper
                     false == SubDir.ExclFile.Invoke(filename);
                 })
                 .Select((it) => getName(it));
-                ;
         }
         catch (Exception ee)
         {
@@ -516,7 +515,7 @@ class ConsolePause : IConsolePause
             Console.Write("\r");
             if (inp.KeyChar == 'q' || inp.KeyChar == 'Q')
             {
-                throw new ConfigException("Aborted");
+                throw new NoMessageException();
             }
             Auto();
             Counter = 0;

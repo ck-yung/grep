@@ -24,6 +24,7 @@ class Program
 
             RunMain(args);
         }
+        catch (NoMessageException) { }
         catch (ConfigException ce)
         {
             Console.ResetColor();

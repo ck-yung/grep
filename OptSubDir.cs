@@ -67,7 +67,15 @@ static public class SubDir
         FileScan = new SwitchInvoker<IEnumerable<string>, IEnumerable<string>>(
             TextSubDir, alterFor: true,
             init: (paths) => paths
-            .Select((it) => it.FromWildCard())
+            .Select((it) =>
+            {
+                var aa = it.FromWildCard().ToArray();
+                if (1 > aa.Length)
+                {
+                    Show.LogVerbose.Invoke($"No file is matched to '{it}'");
+                }
+                return aa;
+            })
             .SelectMany((it) => it),
             alter: (wilds) =>
             {

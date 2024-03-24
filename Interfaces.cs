@@ -63,3 +63,5 @@ internal class ConfigException(string message) : Exception(message)
             extraHelp);
     }
 }
+
+internal class NoMessageException : Exception;
