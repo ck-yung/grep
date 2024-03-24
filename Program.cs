@@ -89,7 +89,10 @@ class Program
             .Select((it) => it.Arg)
             .ToArray();
 
-        var pause = Show.PauseMaker.Invoke(Ignore.Void);
+        var pause = Show.MatchedFilenameWithCount.Invoke(
+            Show.MatchedFilenameOnly.Invoke(
+            Show.PauseMaker.Invoke(Ignore.Void)));
+
         var lineMarched = Show.PrintLineMaker.Invoke(Ignore.Void);
 
         (var isPatternsFromRedir, var matches, var paths) =
@@ -120,9 +123,9 @@ class Program
                 })
                 .Invoke(Show.TakeSumByMax);
 
-                return (path, cntFinding);
+                return Show.FindingReport.Make(path, cntFinding);
             })
-            .Aggregate(seed: new Show.InfoTotal(pause),
+            .Aggregate(seed: new Show.InfoTotal(),
             (acc, it) => acc.AddWith(it));
 
         Show.PrintTotal.Invoke(infoTotal);

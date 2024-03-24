@@ -89,27 +89,25 @@ internal static partial class Show
             {
                 if (Console.IsInputRedirected || Console.IsOutputRedirected)
                 {
-                    return new FakePause();
+                    return FakePause.Null;
                 }
                 return new ConsolePause();
             },
             alterFor: false,
-            alter: (_) => new FakePause());
+            alter: (_) => FakePause.Null);
 
-    public class InfoTotal(IConsolePause pause)
+    public class InfoTotal
     {
         public int Count { get; private set; } = 0;
         public int AddCount { get; private set; } = 0;
         public int MatchedFileCount { get; private set; } = 0;
-        public InfoTotal AddWith((string Path, int Count) arg)
+        public InfoTotal AddWith(FileFinding arg)
         {
             AddCount++;
             if (arg.Count > 0)
             {
                 MatchedFileCount++;
                 Count += arg.Count;
-                var lenPrinted = FileFinding.PrintInfo(arg);
-                pause.Printed(lenPrinted);
             }
             return this;
         }
@@ -135,14 +133,14 @@ internal static partial class Show
         switch (total.MatchedFileCount, total.Count)
         {
             case (1, 1):
-                Console.WriteLine("Only a finding in a file is matched.");
+                Console.WriteLine("Total: Only a finding is matched.");
                 break;
             case (1, _):
-                Console.WriteLine($"{total.Count} findings in a file are matched.");
+                Console.WriteLine($"Total: {total.Count} findings in a file are matched.");
                 break;
             default:
                 Console.WriteLine(
-                    $"{total.Count} findings in {total.MatchedFileCount} files are matched.");
+                    $"Total: {total.Count} findings in {total.MatchedFileCount} files are matched.");
                 break;
         }
         return Ignore.Void;
@@ -151,15 +149,15 @@ internal static partial class Show
     static Ignore PrintTotalWithoutFindingCount(InfoTotal total)
     {
         if (IsNoneMatched(total)) return Ignore.Void;
-        switch (total.MatchedFileCount)
+        if (1 == total.MatchedFileCount)
         {
-            case 1:
-                Console.WriteLine("Only a file is matched.");
-                break;
-            default:
-                Console.WriteLine(
-                    $"{total.MatchedFileCount} files are matched.");
-                break;
+            Console.WriteLine("Total: Only a file is matched.");
+        }
+        else
+        {
+            Console.WriteLine(
+                $"Total: {total.MatchedFileCount} files are matched.");
+
         }
         return Ignore.Void;
     }
@@ -167,77 +165,71 @@ internal static partial class Show
     static Func<InfoTotal, Ignore> PrintTotalRelatedWithCount
     { get; set; } = PrintTotalWithFindingCount;
 
-    static class FileFinding
+    internal record FileFinding(string Path, int Count);
+
+    public static class FindingReport
     {
-        public static string Option { get; set; } = "";
-        public static Func<(string Path, int Count), int> PrintInfo = (_) => 0;
-        public static void Assign(string option,
-            Func<(string Path, int Count), int> printInfo)
+        static IConsolePause Pause { get; set; } = FakePause.Null;
+        static Action<string, int, IConsolePause> Prepare = (_, _, _) =>{};
+        public static FileFinding Make(string path, int count)
         {
-            if (false == string.IsNullOrEmpty(Option))
+            Prepare(path, count, Pause);
+            return new(path, count);
+        }
+
+        public static string AssignedBy { get; private set; } = "";
+        public static IConsolePause Assign(string by, IConsolePause pause,
+            Action<string, int, IConsolePause> prepare)
+        {
+            if (false == string.IsNullOrEmpty(AssignedBy))
             {
                 throw new ArgumentException(
-                    $"Options '{Option} on' and '{option}' can NOT both be set.");
+                    $"Options '{AssignedBy}' and '{by}' can NOT both be set.");
             }
-            Option = option;
-            PrintInfo = printInfo;
+            AssignedBy = by;
+            Pause = pause;
+            Prepare = prepare;
+            return pause;
         }
     }
 
-    static public readonly IInvoke<Ignore, Ignore> MatchedFilenameOnly =
-        new SwitchInvoker<Ignore, Ignore>(TextFileMatch, alterFor: true,
-            init: Ignore.Maker, alter: (_) =>
+    static public readonly IInvoke<IConsolePause, IConsolePause> MatchedFilenameOnly =
+        new SwitchInvoker<IConsolePause, IConsolePause>(TextFileMatch, alterFor: true,
+            init: Helper.Itself, alter: (it) =>
             {
-                return Ignore.Void;
-            },
-            alterPre: () =>
-            {
-                FileFinding.Assign(TextFileMatch + " on", printInfo: (it) =>
-                {
-                    Console.WriteLine(it.Path);
-                    return it.Path.Length;
-                });
-                PrintTotalRelatedWithCount = (it) => PrintTotalWithoutFindingCount(it);
-            },
-            alterPost: (flag) =>
-            {
-                if (flag)
-                {
-                    ((IParse)TakeSumByMax).Parse("1".ToFlagedArgs());
-                    ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
-                    ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
-                    ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
-                }
+                ((IParse)TakeSumByMax).Parse("1".ToFlagedArgs());
+                ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
+                ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
+                ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
+                PrintTotalRelatedWithCount =
+                (it) => PrintTotalWithoutFindingCount(it);
+                return FindingReport.Assign(TextFileMatch + " on",
+                    pause: it, prepare: (path, count, pause) =>
+                    {
+                        if (0 < count)
+                        {
+                            Console.WriteLine(path);
+                            pause.Printed(path.Length);
+                        }
+                    });
             });
 
-    static public readonly IInvoke<Ignore, Ignore> MatchedFilenameWithCount =
-        new SwitchInvoker<Ignore, Ignore>(TextCountOnly, alterFor: true,
-            init: Ignore.Maker, alter: (_) =>
+    static public readonly IInvoke<IConsolePause, IConsolePause> MatchedFilenameWithCount =
+        new SwitchInvoker<IConsolePause, IConsolePause>(TextCountOnly, alterFor: true,
+            init: Helper.Itself, alter: (it) =>
             {
-                return Ignore.Void;
-            },
-            alterPre: () =>
-            {
-                if (false == string.IsNullOrEmpty(FileFinding.Option))
-                {
-                    throw new ArgumentException(
-                        $"Options '{TextCountOnly} on' and '{FileFinding.Option}' can NOT both be set.");
-                }
-                FileFinding.Assign(TextCountOnly + " on", printInfo: (it) =>
-                {
-                    var msg = $"{it.Count}\t{it.Path}";
-                    Console.WriteLine(msg);
-                    return msg.Length;
-                });
-            },
-            alterPost: (flag) =>
-            {
-                if (flag)
-                {
-                    ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
-                    ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
-                    ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
-                }
+                ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
+                ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
+                ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);
+                PrintTotalRelatedWithCount =
+                (it) => PrintTotalWithFindingCount(it);
+                return FindingReport.Assign(TextCountOnly + " on",
+                    pause: it, prepare: (path, count, pause) =>
+                    {
+                        var msg = $"{count}\t{path}";
+                        Console.WriteLine(msg);
+                        pause.Printed(msg.Length);
+                    });
             });
 
     static public readonly IInvoke<InfoTotal, Ignore> PrintTotal =
@@ -279,7 +271,8 @@ internal static partial class Show
                                     $"'{aa[0].Arg}' is ignored to {opt.Name}"));
                             return;
                         }
-                        FileFinding.Assign(TextTotal + " only", printInfo: (_) => 0);
+                        FindingReport.Assign(TextTotal + " only",
+                            pause: FakePause.Null, prepare: (path, count, pause) => { });
                         ((IParse)Filename).Parse(TextOff.ToFlagedArgs());
                         ((IParse)LineNumber).Parse(TextOff.ToFlagedArgs());
                         ((IParse?)PrintLineMaker)?.Parse([FlagedArg.Never]);

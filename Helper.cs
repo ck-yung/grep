@@ -429,11 +429,13 @@ interface IConsolePause
 
 class FakePause: IConsolePause
 {
+    private FakePause() { }
     public void Disable() { }
     public void Auto() { }
     public bool Assign(int limit) { return false; }
     public void Printed(int length) { }
     public void IncreaseCounter(int length) { }
+    static public readonly FakePause Null = new();
 }
 
 class ConsolePause : IConsolePause
