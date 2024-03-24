@@ -115,18 +115,25 @@ internal static partial class Show
         }
     }
 
-    static Ignore PrintTotalWithFindingCount(InfoTotal total)
+    static bool IsNoneMatched(InfoTotal total)
     {
-        if (total.AddCount == 0)
+        if (0 == total.AddCount)
         {
             LogVerbose.Invoke("No file is found.");
-            return Ignore.Void;
+            return true;
         }
+        if (0 == total.MatchedFileCount)
+        {
+            LogVerbose.Invoke($"No finding is matched for '{Pattern.First}'.");
+            return true;
+        }
+        return false;
+    }
+    static Ignore PrintTotalWithFindingCount(InfoTotal total)
+    {
+        if (IsNoneMatched(total)) return Ignore.Void;
         switch (total.MatchedFileCount, total.Count)
         {
-            case (0, 0):
-                Console.WriteLine($"No finding is matched for '{Pattern.First}'.");
-                break;
             case (1, 1):
                 Console.WriteLine("Only a finding in a file is matched.");
                 break;
@@ -143,17 +150,10 @@ internal static partial class Show
 
     static Ignore PrintTotalWithoutFindingCount(InfoTotal total)
     {
-        if (total.AddCount == 0)
-        {
-            LogVerbose.Invoke("No file is found.");
-            return Ignore.Void;
-        }
+        if (IsNoneMatched(total)) return Ignore.Void;
         switch (total.MatchedFileCount)
         {
-            case (0):
-                Console.WriteLine($"No finding is matched for '{Pattern.First}'.");
-                break;
-            case (1):
+            case 1:
                 Console.WriteLine("Only a file is matched.");
                 break;
             default:
@@ -243,12 +243,9 @@ internal static partial class Show
     static public readonly IInvoke<InfoTotal, Ignore> PrintTotal =
         new ParseInvoker<InfoTotal, Ignore>(
             TextTotal, help: "on | off | only",
-            init: (it) =>
+            init: (total) =>
             {
-                if (it.AddCount == 0)
-                {
-                    LogVerbose.Invoke("No file is found.");
-                }
+                IsNoneMatched(total);
                 return Ignore.Void;
             },
             resolve: (opt, argsThe) =>
