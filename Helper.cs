@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Text;
 using RegX = System.Text.RegularExpressions;
 
 namespace grep;
@@ -170,11 +171,12 @@ internal static partial class Helper
 
     public static bool PrintSyntax(bool isDetailed = false)
     {
-        Console.WriteLine("Syntax:");
+        var pause = new ConsolePause();
+        pause.WriteLine("Syntax:");
         if (false == isDetailed)
-            Console.WriteLine($"  {nameof(grep)} -?");
+            pause.WriteLine($"  {nameof(grep)} -?");
 
-        Console.WriteLine($"""
+        pause.WriteLines($"""
               {nameof(grep)} [OPTIONS] PATTERN [FILE [FILE ..]]
 
             """);
@@ -192,21 +194,21 @@ internal static partial class Helper
                 return "";
             }
 
-            Console.WriteLine("Current shortcut mapping:");
+            pause.WriteLine("Current shortcut mapping:");
             foreach (var a2 in aa)
             {
                 var a3 = Decode(a2);
                 if (false == string.IsNullOrEmpty(a3))
                 {
-                    Console.WriteLine($"\t{a3}");
+                    pause.WriteLine($"\t{a3}");
                 }
             }
-            Console.WriteLine();
+            pause.WriteLine();
         }
 
         if (false == isDetailed)
         {
-            Console.WriteLine("""
+            pause.WriteLines("""
                 Read redir console input if FILE is -
 
                 https://github.com/ck-yung/grep/blob/master/README.md
@@ -241,23 +243,23 @@ internal static partial class Helper
             .ThenBy((it) => it.Name))
         {
             var j3 = j2.Info;
-            Console.Write($"{j2.Info.Shortcut,6}{j2.Name,25}  ");
+            var msg = new StringBuilder($"{j2.Info.Shortcut,6}{j2.Name,25}  ");
 
             var a2 = j3.Expands.Length == 0
                 ? j2.EnvrParser.Parser.Help : j3.Expands[0];
 
             if (j2.EnvrParser.IsEnvir)
             {
-                Console.Write(a2);
+                msg.Append(a2);
             }
             else
             {
-                Console.Write($"{a2,-14} Command line only");
+                msg.Append($"{a2,-14} Command line only");
             }
-            Console.WriteLine();
+            pause.WriteLine(msg.ToString());
         }
 
-        Console.WriteLine("""
+        pause.WriteLines("""
                 For example,
                   grep -nsm 3 class *.cs --color black,yellow -X obj
                   dir2 -sb *.cs --within 4hours | grep -n class -T -
@@ -458,13 +460,13 @@ class ConsolePause : IConsolePause
             Disable();
             return;
         }
-        MaxLineNumber = Console.WindowHeight - 1;
-        if (MaxLineNumber < 2)
+        MaxLineNumber = Console.WindowHeight - 2;
+        if (MaxLineNumber < 3)
         {
             MaxLineNumber = 2;
             Increase = FakeInc;
         }
-        MaxLineLength = Console.WindowWidth - 1;
+        MaxLineLength = Console.WindowWidth - 2;
     }
 
     public bool Assign(int limit)
@@ -518,6 +520,27 @@ class ConsolePause : IConsolePause
             }
             Auto();
             Counter = 0;
+        }
+    }
+
+    public void WriteLine(string text)
+    {
+        Console.WriteLine(text);
+        Printed(text.Length);
+    }
+
+    public void WriteLine()
+    {
+        Console.WriteLine();
+        Printed(1);
+    }
+
+    public void WriteLines(string text)
+    {
+        foreach (var line in text.Split(Environment.NewLine))
+        {
+            Console.WriteLine(line);
+            Printed((0 == line.Length) ? 1 : line.Length);
         }
     }
 }
