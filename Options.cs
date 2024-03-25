@@ -506,6 +506,19 @@ internal static partial class Options
         (IParse)Show.MaxReportFileNotFound,
     ];
 
+    public static readonly IParse[] ParsersForShortHelp = [
+        (IParse)ToRegex,
+        (IParse)Show.Filename,
+        (IParse)Show.LineNumber,
+        (IParse)PatternWordText,
+        (IParse)ToPattern,
+        (IParse)Show.TakeSumByMax,
+        (IParse)Show.PrintLineMaker,
+        (IParse)SubDir.ExclFile,
+        (IParse)SubDir.ExclDir,
+        (IParse)Show.PrintTotal,
+    ];
+
     // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'
     public static readonly IParse[] NonEnvirParsers = [
         (IParse)PatternsFrom,

@@ -84,6 +84,11 @@ class Program
             return PrintSyntax(isDetailed: true);
         }
 
+        if (args.Any((it) => it == "-??"))
+        {
+            return PrintSyntax(isDetailed: true, isShortHelp: false);
+        }
+
         args = Options.SkipArgs.Invoke(args).ToFlagedArgs(ArgType.CommandLine,
             Options.ShortCuts, Options.NonEnvirShortCuts)
             .Resolve(Options.NonEnvirParsers)

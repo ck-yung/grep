@@ -169,12 +169,14 @@ internal static partial class Helper
         public static readonly InfoShortcut Empty = new("", []);
     }
 
-    public static bool PrintSyntax(bool isDetailed = false)
+    public static bool PrintSyntax(bool isDetailed = false, bool isShortHelp = true)
     {
         var pause = new ConsolePause();
         pause.WriteLine("Syntax:");
         if (false == isDetailed)
             pause.WriteLine($"  {nameof(grep)} -?");
+        else if (isShortHelp)
+            pause.WriteLine($"  {nameof(grep)} -??");
 
         pause.WriteLines($"""
               {nameof(grep)} [OPTIONS] PATTERN [FILE [FILE ..]]
@@ -216,7 +218,8 @@ internal static partial class Helper
             return false;
         }
 
-        var bb = Options.Parsers
+        var parsers = (isShortHelp) ? Options.ParsersForShortHelp : Options.Parsers;
+        var bb = parsers
             .Select((it) => new EnvrParser(true, it))
             .Union(Options.NonEnvirParsers
             .Select((it) => new EnvrParser(false, it)))
@@ -260,14 +263,17 @@ internal static partial class Helper
             pause.WriteLine(msg.ToString());
         }
 
-        pause.WriteLines("""
+        if (isShortHelp)
+        {
+            pause.WriteLines("""
                 For example,
                   grep -nsm 3 class *.cs --color black,yellow -X obj
                   dir2 -sb *.cs --within 4hours | grep -n class -T -
 
                 Options can be stored in envir var 'grep'.
-                https://github.com/ck-yung/grep/blob/master/README.md
                 """);
+        }
+        pause.WriteLine("https://github.com/ck-yung/grep/blob/master/README.md");
         return false;
     }
 
