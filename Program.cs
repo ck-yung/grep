@@ -75,6 +75,7 @@ class Program
 
     static bool RunMain(string[] args)
     {
+        args = Options.SkipArgs.Invoke(args).ToArray();
         if (args.Length == 0) return PrintSyntax();
 
         if (args.Any((it) => it == "--version")) return PrintVersion();
@@ -89,7 +90,7 @@ class Program
             return PrintSyntax(isDetailed: true, isShortHelp: false);
         }
 
-        args = Options.SkipArgs.Invoke(args).ToFlagedArgs(ArgType.CommandLine,
+        args = args.ToFlagedArgs(ArgType.CommandLine,
             Options.ShortCuts, Options.NonEnvirShortCuts)
             .Resolve(Options.NonEnvirParsers)
             .Select((it) => it.Arg)

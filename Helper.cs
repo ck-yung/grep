@@ -172,6 +172,7 @@ internal static partial class Helper
     public static bool PrintSyntax(bool isDetailed = false, bool isShortHelp = true)
     {
         var pause = new ConsolePause();
+        const string ReadMeUrl = "https://github.com/ck-yung/grep/blob/master/README.md";
         pause.WriteLine("Syntax:");
         if (false == isDetailed)
             pause.WriteLine($"  {nameof(grep)} -?");
@@ -205,16 +206,11 @@ internal static partial class Helper
                     pause.WriteLine($"\t{a3}");
                 }
             }
-            pause.WriteLine();
         }
 
         if (false == isDetailed)
         {
-            pause.WriteLines("""
-                Read redir console input if FILE is -
-
-                https://github.com/ck-yung/grep/blob/master/README.md
-                """);
+            pause.WriteLine(ReadMeUrl);
             return false;
         }
 
@@ -273,7 +269,7 @@ internal static partial class Helper
                 Options can be stored in envir var 'grep'.
                 """);
         }
-        pause.WriteLine("https://github.com/ck-yung/grep/blob/master/README.md");
+        pause.WriteLine(ReadMeUrl);
         return false;
     }
 
