@@ -69,8 +69,8 @@ static public class SubDir
             init: (paths) => paths
             .Select((it) =>
             {
-                var aa = it.FromWildCard().ToArray();
-                if (1 > aa.Length)
+                var aa = it.FromWildCard();
+                if (false == aa.Any())
                 {
                     Show.LogVerbose.Invoke($"No file is matched to '{it}'");
                 }

@@ -79,18 +79,36 @@ internal static partial class Options
                     if (itrThe.MoveNext())
                     {
                         current = itrThe.Current;
-                        if (current.Length!=3 || current[1]!='=')
+                        if ((current.Length < 2) || (current[1]!='='))
                         {
-                            throw new ArgumentException(
-                                $"{type} Value to '{TextMapShortcut}' SHOULD be in format of 'a=b'");
+                            ConfigException.Add(type, new ArgumentException(
+                                $"Unknown value '{current}' to {TextMapShortcut}"));
+                            continue;
                         }
-                        if (current[0] == current[2])
+                        switch (current.Length)
                         {
-                            throw new ArgumentException(
-                                $"{type} Value to '{TextMapShortcut}' SHOULD NOT be in format of '{current}'");
+                            case 2:
+                                Log.Debug("* MappedShortcut: Remove '-{0}'", current[0]);
+                                MappedShortcut.Remove($"-{current[0]}");
+                                break;
+                            case 3:
+                                if (current[0] != current[2])
+                                {
+                                    Log.Debug(
+                                        "* MappedShortcut: Add '-{1}' to '-{0}'", current[0], current[2]);
+                                    MappedShortcut[$"-{current[0]}"] = $"-{current[2]}";
+                                }
+                                else
+                                {
+                                    Log.Debug(
+                                        "* MappedShortcut: Skip '-{0}' self assignment", current[0]);
+                                }
+                                break;
+                            default:
+                                ConfigException.Add(type, new ArgumentException(
+                                    $"Unknown format of value '{current}' to {TextMapShortcut}"));
+                                break;
                         }
-                        Log.Debug("* MappedShortcut '-{1}' by '-{0}'", current[0], current[2]);
-                        MappedShortcut[$"-{current[0]}"] = $"-{current[2]}";
                     }
                     else
                     {
