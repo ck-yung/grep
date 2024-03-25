@@ -1,11 +1,11 @@
 using System.Collections.Immutable;
-using System.Diagnostics;
+using System.Text.RegularExpressions;
 using static grep.MyOptions;
 using RegX = System.Text.RegularExpressions;
 
 namespace grep;
 
-internal static class Options
+internal static partial class Options
 {
     public const string TextOff = "off";
     public const string TextOn = "on";
@@ -31,6 +31,9 @@ internal static class Options
     public const string TextExclDir = "--excl-dir";
     public const string TextTrimStart = "--trim-start";
     public const string TextFilenameCaseSensitive = "--filename-case-sensitive";
+    public const string TextMapShortcut = "--map-shortcut";
+    public const string TextSkipArg = "--skip-arg";
+    public const string TextSplitFileByComma = "--split-file-by-comma";
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
         NonEnvirShortCuts =
@@ -58,7 +61,7 @@ internal static class Options
             new("-X", [TextExclDir]),
         ];
 
-    static Dictionary<string, string> MappedShortcut = new();
+    static readonly Dictionary<string, string> MappedShortcut = [];
 
     public static IEnumerable<FlagedArg> ToFlagedArgs(
         this IEnumerable<string> args, ArgType type,
@@ -71,7 +74,7 @@ internal static class Options
             while (itrThe.MoveNext())
             {
                 var current = itrThe.Current;
-                if (current == Helper.TextMapShortcut)
+                if (current == TextMapShortcut)
                 {
                     if (itrThe.MoveNext())
                     {
@@ -79,12 +82,12 @@ internal static class Options
                         if (current.Length!=3 || current[1]!='=')
                         {
                             throw new ArgumentException(
-                                $"{type} Value to '{Helper.TextMapShortcut}' SHOULD be in format of 'a=b'");
+                                $"{type} Value to '{TextMapShortcut}' SHOULD be in format of 'a=b'");
                         }
                         if (current[0] == current[2])
                         {
                             throw new ArgumentException(
-                                $"{type} Value to '{Helper.TextMapShortcut}' SHOULD NOT be in format of '{current}'");
+                                $"{type} Value to '{TextMapShortcut}' SHOULD NOT be in format of '{current}'");
                         }
                         Log.Debug("* MappedShortcut '-{1}' by '-{0}'", current[0], current[2]);
                         MappedShortcut[$"-{current[0]}"] = $"-{current[2]}";
@@ -92,8 +95,8 @@ internal static class Options
                     else
                     {
                         throw new ArgumentException($"""
-                            {type} Missing value to '{Helper.TextMapShortcut}'
-                            For example, {Helper.TextMapShortcut} s=d
+                            {type} Missing value to '{TextMapShortcut}'
+                            For example, {TextMapShortcut} s=d
                             """);
                     }
                 }
@@ -409,9 +412,17 @@ internal static class Options
             init: (_) => StringComparer.InvariantCultureIgnoreCase,
             alter: (_) => StringComparer.InvariantCulture);
 
+    static IEnumerable<string> AutoSkipArgs(IEnumerable<string> seq)
+    {
+        var r2 = RegexColotAuto();
+        return seq
+        .Where((it) => false == r2.IsMatch(it));
+    }
+
     public static readonly IInvoke<IEnumerable<string>, IEnumerable<string>>
         SkipArgs = new ParseInvoker<IEnumerable<string>, IEnumerable<string>>(
-            Helper.TextSkipArg, help: "TEXT", init: Helper.Itself,
+            TextSkipArg, help: "auto | off | TEXT",
+            init: (seq) => AutoSkipArgs(seq),
             resolve: (opt, argsThe) =>
             {
                 var exclTexts = argsThe
@@ -419,19 +430,38 @@ internal static class Options
                 .Where((it) => it.Length > 0)
                 .Distinct()
                 .ToArray();
-                Log.Debug(exclTexts, "{0}:found", Helper.TextSkipArg);
                 if (exclTexts.Length == 0) return;
+                if (exclTexts.Length == 1)
+                {
+                    Log.Debug("{0}:found '{1}}'", TextSkipArg, exclTexts[0]);
+                    switch (exclTexts[0].ToLower())
+                    {
+                        case "auto":
+                            opt.SetImplementation((seq) => AutoSkipArgs(seq));
+                            break;
+                        case "off":
+                            opt.SetImplementation((seq) => seq);
+                            break;
+                        default:opt.SetImplementation((seq)
+                            => seq.Where((it) => false == it.Equals(exclTexts[0],
+                            StringComparison.InvariantCulture)));
+                            break;
+                    }
+                    return;
+                }
+                Log.Debug(exclTexts, "{0}:found", TextSkipArg);
                 opt.SetImplementation(
                     (seq) =>
                     seq.Where((it) =>
-                    exclTexts.All((it2) => it != it2)));
+                    exclTexts.All((it2) => it.Equals(it2,
+                    StringComparison.InvariantCultureIgnoreCase))));
             });
 
     public static readonly IInvoke<IEnumerable<string>, IEnumerable<string>>
         SplitFileByComma = new SwitchInvoker<IEnumerable<string>, IEnumerable<string>>(
-            Helper.TextSplitFileByComma, help: HintOnOff, init: Helper.Itself,
-            alterFor: true,
-            alter: (seq) => seq
+            TextSplitFileByComma, help: HintOnOff,
+            alterFor: false, alter: Helper.Itself,
+            init: (seq) => seq
             .Select((it) => it.Split(','))
             .SelectMany((it) => it)
             .Where((it) => 0 < it.Length)
@@ -473,4 +503,7 @@ internal static class Options
             .Union(extraParsers)
             .Aggregate(seed: args, func: (acc, it) => it.Parse(acc));
     }
+
+    [GeneratedRegex(@"\-\-color.*=.*\bauto")]
+    private static partial Regex RegexColotAuto();
 }

@@ -165,10 +165,6 @@ internal static partial class Helper
         public static readonly InfoShortcut Empty = new("", []);
     }
 
-    public const string TextMapShortcut = "--map-shortcut";
-    public const string TextSkipArg = "--skip-arg";
-    public const string TextSplitFileByComma = "--split-file-by-comma";
-
     public static bool PrintSyntax(bool isDetailed = false)
     {
         var pause = new ConsolePause();
@@ -182,7 +178,7 @@ internal static partial class Helper
             """);
 
         var aa = GetEnvirVar(Environment.GetEnvironmentVariable(
-            nameof(grep)) ?? "", TextMapShortcut);
+            nameof(grep)) ?? "", Options.TextMapShortcut);
         if (aa.Any())
         {
             static string Decode(string arg)
@@ -220,9 +216,9 @@ internal static partial class Helper
             .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(true, it)))
             .Union(Options.NonEnvirParsers
             .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))))
-            .Union([new KeyValuePair<string, EnvrParser>(TextMapShortcut,
+            .Union([new KeyValuePair<string, EnvrParser>(Options.TextMapShortcut,
                     new(IsEnvir: true, Parser: new NullParser(
-                        TextMapShortcut, help: "a=b")))])
+                        Options.TextMapShortcut, help: "a=b")))])
             ;
         var cc = Options.ShortCuts
             .Union(Options.NonEnvirShortCuts);
