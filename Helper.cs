@@ -139,8 +139,12 @@ internal static partial class Helper
             {
                 if (true != File.Exists(path))
                 {
-                    ConfigException.Add(ArgType.CommandLine,
-                        new FileNotFoundException($"'{path}' to {option}"));
+                    Show.CountReportFileNotFound -= 1;
+                    if (0 <= Show.CountReportFileNotFound)
+                    {
+                        ConfigException.Add(ArgType.CommandLine,
+                            new FileNotFoundException($"'{path}' of '{option}'"));
+                    }
                     return [];
                 }
                 StreamReader inpFs = File.OpenText(path);
@@ -213,20 +217,21 @@ internal static partial class Helper
         }
 
         var bb = Options.Parsers
-            .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(true, it)))
+            .Select((it) => new EnvrParser(true, it))
             .Union(Options.NonEnvirParsers
-            .Select((it) => new KeyValuePair<string, EnvrParser>(it.Name, new(false, it))))
-            .Union([new KeyValuePair<string, EnvrParser>(Options.TextMapShortcut,
-                    new(IsEnvir: true, Parser: new NullParser(
-                        Options.TextMapShortcut, help: "a=b")))])
+            .Select((it) => new EnvrParser(false, it)))
+            .Union([new EnvrParser(IsEnvir: true, Parser: new NullParser(
+                        Options.TextMapShortcut, help: "a=b"))])
             ;
         var cc = Options.ShortCuts
             .Union(Options.NonEnvirShortCuts);
-        var jj2 = bb.GroupJoin(cc, (b2) => b2.Key, (c2) => (c2.Value.Length > 0) ? c2.Value[0] : "?",
+        var jj2 = bb.GroupJoin(cc,
+            (b2) => b2.Parser.Name,
+            (c2) => (c2.Value.Length > 0) ? c2.Value[0] : "?",
             (b2, cc2) => new
             {
-                Name = b2.Key,
-                EnvrParser = b2.Value,
+                b2.IsEnvir,
+                b2.Parser,
                 Info = cc2.Any()
                 ? new InfoShortcut(cc2.First().Key, cc2.First().Value.Skip(1).ToArray())
                 : InfoShortcut.Empty,
@@ -234,17 +239,17 @@ internal static partial class Helper
 
         Console.WriteLine("Shortcut                 Option  with           Envir");
         foreach (var j2 in jj2
-            .OrderBy((it) => it.EnvrParser.IsEnvir)
+            .OrderBy((it) => it.IsEnvir)
             .ThenBy((it) => it.Info.Shortcut)
-            .ThenBy((it) => it.Name))
+            .ThenBy((it) => it.Parser.Name))
         {
             var j3 = j2.Info;
-            var msg = new StringBuilder($"{j2.Info.Shortcut,6}{j2.Name,25}  ");
+            var msg = new StringBuilder($"{j2.Info.Shortcut,6}{j2.Parser.Name,25}  ");
 
             var a2 = j3.Expands.Length == 0
-                ? j2.EnvrParser.Parser.Help : j3.Expands[0];
+                ? j2.Parser.Help : j3.Expands[0];
 
-            if (j2.EnvrParser.IsEnvir)
+            if (j2.IsEnvir)
             {
                 msg.Append(a2);
             }

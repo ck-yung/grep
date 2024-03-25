@@ -51,7 +51,7 @@ class Program
         foreach (var infoError in ConfigException.GetErrors())
         {
             var envrThe = infoError.Type == ArgType.CommandLine
-                ? "Command line" : $"Envir '{nameof(grep)}'";
+                ? string.Empty : $"Envir '{nameof(grep)}': ";
             var errType = infoError.Error.GetType().ToString()
                 .Replace("grep.ConfigException", "")
                 .Replace("System.", "")
@@ -59,12 +59,12 @@ class Program
             if (string.IsNullOrEmpty(errType))
             {
                 Show.LogVerbose.Invoke(
-                    $"{envrThe}: {infoError.Error.Message}");
+                    $"{envrThe}{infoError.Error.Message}");
             }
             else
             {
                 Show.LogVerbose.Invoke(
-                    $"{envrThe}: ({errType}) {infoError.Error.Message}");
+                    $"{envrThe}({errType}) {infoError.Error.Message}");
             }
             if (false == string.IsNullOrEmpty(infoError.Option?.ExtraHelp))
             {
@@ -100,7 +100,8 @@ class Program
             Options.PatternsFrom.Invoke(args);
         Log.Debug(paths, nameof(RunMain));
 
-        var infoTotal = SubDir.FileScan.Invoke(Options.SplitFileByComma.Invoke(paths))
+        var infoTotal = SubDir.FileScan.Invoke((ArgType.CommandLine,
+            Options.SplitFileByComma.Invoke(paths)))
             .Union(Options.FilesFrom.Invoke(
                 new(isPatternsFromRedir, IsArgsEmpty: paths.Length == 0)))
             .Distinct(Options.FilenameCaseSentive.Invoke(Ignore.Void))
@@ -108,7 +109,7 @@ class Program
             {
                 Log.Debug($"Scan file '{path}'");
 
-                var cntFinding = ReadAllLinesFromFile(path, option: "FILE")
+                var cntFinding = ReadAllLinesFromFile(path, option: "FILES-FROM")
                 .Select((it) => Options.TrimStart.Invoke(it))
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))

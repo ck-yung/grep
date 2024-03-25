@@ -285,4 +285,42 @@ internal static partial class Show
                         break;
                 }
             });
+
+    public static int CountReportFileNotFound = 3;
+    public static int CountReportFileNotMatched = 3;
+    static public readonly IInvoke<Ignore, Ignore> MaxReportFileNotFound =
+        new ParseInvoker<Ignore, Ignore>(
+            TextMaxReportFileNotFound, help: "NUMBER | off",
+            init: Ignore.Maker,
+            resolve: (opt, argsThe) =>
+            {
+                var aa = argsThe
+                .Where((it) => it.Arg.Length > 0)
+                .Distinct()
+                .Take(2)
+                .ToArray();
+                if (aa.Length > 1)
+                {
+                    ConfigException.Add(aa[0].Type,
+                        new ConfigException(
+                            $"Too many values ('{aa[0].Arg}','{aa[1].Arg}') to {opt.Name}"));
+                    return;
+                }
+                if (TextOff.Equals(aa[0].Arg, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    CountReportFileNotFound = int.MaxValue;
+                    CountReportFileNotMatched = int.MaxValue;
+                }
+                else if (int.TryParse(aa[0].Arg, out var maxThe))
+                {
+                    CountReportFileNotFound = maxThe;
+                    CountReportFileNotMatched = maxThe;
+                }
+                else
+                {
+                    ConfigException.Add(aa[0].Type,
+                        new ConfigException(
+                            $"Value to {opt.Name} MUST be a number but '{aa[0].Arg}' is found."));
+                }
+            });
 }

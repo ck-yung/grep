@@ -34,6 +34,7 @@ internal static partial class Options
     public const string TextMapShortcut = "--map-shortcut";
     public const string TextSkipArg = "--skip-arg";
     public const string TextSplitFileByComma = "--split-file-by-comma";
+    public const string TextMaxReportFileNotFound = "--max-file-not-found";
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
         NonEnvirShortCuts =
@@ -502,6 +503,7 @@ internal static partial class Options
         (IParse)FilenameCaseSentive,
         (IParse)SkipArgs,
         (IParse)SplitFileByComma,
+        (IParse)Show.MaxReportFileNotFound,
     ];
 
     // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'

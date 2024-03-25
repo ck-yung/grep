@@ -63,23 +63,29 @@ static public class SubDir
     record MatchingDirParam(string DirName,
         Func<string,bool> Matching, Func<string, string, string> JoinFunc);
 
-    static public readonly IInvoke<IEnumerable<string>, IEnumerable<string>>
-        FileScan = new SwitchInvoker<IEnumerable<string>, IEnumerable<string>>(
+    static public readonly IInvoke<(ArgType, IEnumerable<string>), IEnumerable<string>>
+        FileScan = new SwitchInvoker<(ArgType, IEnumerable<string>), IEnumerable<string>>(
             TextSubDir, alterFor: true,
-            init: (paths) => paths
-            .Select((it) =>
+            init: (arg) => arg.Item2
+            .Select((path) =>
             {
-                var aa = it.FromWildCard();
+                var aa = path.FromWildCard();
                 if (false == aa.Any())
                 {
-                    Show.LogVerbose.Invoke($"No file is matched to '{it}'");
+                    Show.CountReportFileNotMatched -= 1;
+                    if (0 <= Show.CountReportFileNotMatched)
+                    {
+                        ConfigException.Add(arg.Item1,
+                            new FileNotFoundException(
+                                $"No file is matched to '{path}'"));
+                    }
                 }
                 return aa;
             })
             .SelectMany((it) => it),
-            alter: (wilds) =>
+            alter: (argThe) =>
             {
-                var map1st = wilds
+                var map1st = argThe.Item2
                 .GroupBy((it) => Directory.Exists(it))
                 .ToImmutableDictionary((grp) => grp.Key,
                 (grp) => grp.Select((it) => it));
