@@ -269,7 +269,7 @@ internal static partial class Helper
                 Options can be stored in envir var 'grep'.
                 """);
         }
-        pause.WriteLine(ReadMeUrl);
+        Console.WriteLine(ReadMeUrl);
         return false;
     }
 

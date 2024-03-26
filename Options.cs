@@ -1,3 +1,4 @@
+using Dir;
 using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using static grep.MyOptions;
@@ -35,6 +36,7 @@ internal static partial class Options
     public const string TextSkipArg = "--skip-arg";
     public const string TextSplitFileByComma = "--split-file-by-comma";
     public const string TextMaxReportFileNotFound = "--max-file-not-found";
+    public const string TextSearch = "--search";
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
         NonEnvirShortCuts =
@@ -45,7 +47,8 @@ internal static partial class Options
             new("-c", [TextCountOnly, TextOn]),
             new("-l", [TextFileMatch, TextOn]),
             new("-v", [TextInvertMatch, TextOn]),
-            new("-d", [TextSubDir, TextOn]),
+            new("-r", [TextSubDir, TextOn]),
+            new("-e", [TextSearch]),
         ];
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
@@ -326,12 +329,45 @@ internal static partial class Options
     public record PatternsFromResult(bool IsFromRedirConsole,
         Func<string, Match[]> Matches, string[] Args);
 
+    static internal readonly IInvoke<Ignore, IEnumerable<string>> SearchFor = new
+        ParseInvoker<Ignore, IEnumerable<string>>(TextSearch, help: "PATTERN",
+        init: (_) =>
+        {
+            Log.Debug("No {0} is assigned", TextSearch);
+            return [];
+        },
+        resolve: (opt, args) =>
+        {
+            Log.Debug("Assign of {0}", TextSearch);
+            opt.SetImplementation((_) => args
+            .Select((it) => it.Arg)
+            .Where((it) => it.Length > 0));
+        });
+
+    /// <summary>
+    /// The parsing of 'SearchFor' MUST be called before 'PatternsFrom'.
+    /// </summary>
     static public readonly IInvoke<string[], PatternsFromResult>
         PatternsFrom = new ParseInvoker<string[], PatternsFromResult>(
             TextPatternFile, help: "PATTERN-FILE",
             extraHelp: $"For example, {nameof(grep)} {TextPatternFile} regex.txt ..{hintOfFile}",
             init: (args) =>
             {
+                var searchFor = SearchFor.Invoke(Ignore.Void)
+                .Select((it) => ToPattern.Invoke(new(IsFirstCmdLineArg: false, it)))
+                .ToArray()
+                ;
+                Log.Debug("For {2}, Length of {0} is {1}", TextSearch, searchFor.Length, TextPatternFile);
+                if (0 < searchFor.Length)
+                {
+                    return new(
+                        false,
+                        (string line) => searchFor
+                        .Select((it) => it.Matches(line))
+                        .FirstOrDefault((it) => it.Length > 0) ?? [],
+                        args);
+                }
+
                 Pattern pattern;
                 switch (args.Length)
                 {
@@ -364,24 +400,26 @@ internal static partial class Options
 
                 var patternFuncs = Helper.ReadAllLinesFromFile(fileThe, opt.Name)
                 .Select((it) => it.Trim())
-                .Where((it) => it.Length > 0)
+                .Where((it) => it.Length > 0);
+
+                if (false == patternFuncs.Any())
+                {
+                    throw new ConfigException($"No pattern is found from '{fileThe}'");
+                }
+
+                var matchFunc = patternFuncs
+                .Union(SearchFor.Invoke(Ignore.Void))
                 .Distinct()
                 .Select((it) => ToPattern.Invoke(new(false, it)))
                 .Select((it) => it.Matches)
                 .ToArray();
 
-                if (patternFuncs.Length == 0)
-                {
-                    throw new ConfigException("No pattern is found.");
-                }
-
-                Match[] matchFunc(string line) => patternFuncs
-                .Select((matches) => matches(line))
-                .FirstOrDefault((it) => it.Length > 0)
-                ?? [];
-
                 opt.SetImplementation((args) =>
-                new(Helper.IsShortcutConsoleInput(fileThe), matchFunc, args));
+                new(Helper.IsShortcutConsoleInput(fileThe),
+                (string line) => matchFunc
+                .Select((match) => match(line))
+                .FirstOrDefault((it) => it.Length > 0) ?? [],
+                args));
             });
 
     public record FilesFromParam(bool IsPatternFromRedirConsole, bool IsArgsEmpty);
@@ -510,17 +548,15 @@ internal static partial class Options
         (IParse)ToRegex,
         (IParse)Show.Filename,
         (IParse)Show.LineNumber,
-        (IParse)PatternWordText,
-        (IParse)ToPattern,
         (IParse)Show.TakeSumByMax,
         (IParse)Show.PrintLineMaker,
         (IParse)SubDir.ExclFile,
         (IParse)SubDir.ExclDir,
-        (IParse)Show.PrintTotal,
     ];
 
     // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'
     public static readonly IParse[] NonEnvirParsers = [
+        (IParse)SearchFor,
         (IParse)PatternsFrom,
         (IParse)FilesFrom,
         (IParse)MetaMatches,

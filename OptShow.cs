@@ -127,6 +127,7 @@ internal static partial class Show
         }
         return false;
     }
+
     static Ignore PrintTotalWithFindingCount(InfoTotal total)
     {
         if (IsNoneMatched(total)) return Ignore.Void;
