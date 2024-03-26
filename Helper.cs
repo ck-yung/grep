@@ -61,7 +61,8 @@ internal static partial class Helper
     {
         var envir = Environment.GetEnvironmentVariable(name);
         if (string.IsNullOrEmpty(envir)) return String.Empty;
-        if (envir.Contains(DebugFlagText))
+        if (envir.Contains(DebugFlagText) ||
+            System.Diagnostics.Debugger.IsAttached)
         {
             Log.DebugFlag = true;
             Log.Debug("Debug log is enabled.");
@@ -184,27 +185,12 @@ internal static partial class Helper
 
             """);
 
-        var aa = GetEnvirVar(Environment.GetEnvironmentVariable(
-            nameof(grep)) ?? "", Options.TextMapShortcut);
-        if (aa.Any())
+        if (isDetailed && (0 < Options.MappedShortcut.Count))
         {
-            static string Decode(string arg)
-            {
-                if (arg.Length == 3 && arg[1] == '=')
-                {
-                    return $"-{arg[0]} => -{arg[2]}";
-                }
-                return "";
-            }
-
             pause.WriteLine("Current shortcut mapping:");
-            foreach (var a2 in aa)
+            foreach (var m2 in Options.MappedShortcut)
             {
-                var a3 = Decode(a2);
-                if (false == string.IsNullOrEmpty(a3))
-                {
-                    pause.WriteLine($"\t{a3}");
-                }
+                pause.WriteLine($"\t{m2.Key} = {m2.Value}");
             }
         }
 

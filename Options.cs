@@ -65,7 +65,11 @@ internal static partial class Options
             new("-X", [TextExclDir]),
         ];
 
-    static readonly Dictionary<string, string> MappedShortcut = [];
+    public static ImmutableDictionary<string, string> MappedShortcut
+    {
+        get => MappedShortcutImp.ToImmutableDictionary();
+    }
+    static readonly Dictionary<string, string> MappedShortcutImp = [];
 
     public static IEnumerable<FlagedArg> ToFlagedArgs(
         this IEnumerable<string> args, ArgType type,
@@ -83,35 +87,14 @@ internal static partial class Options
                     if (itrThe.MoveNext())
                     {
                         current = itrThe.Current;
-                        if ((current.Length < 2) || (current[1]!='='))
+                        foreach (var a2 in current
+                            .Split(',')
+                            .Select((it) => it.Trim())
+                            .Where((it) => it.Length == 3)
+                            .Where((it) => (it[1] == '=')
+                            && (it[0] != it[2])))
                         {
-                            ConfigException.Add(type, new ArgumentException(
-                                $"Unknown value '{current}' to {TextMapShortcut}"));
-                            continue;
-                        }
-                        switch (current.Length)
-                        {
-                            case 2:
-                                Log.Debug("* MappedShortcut: Remove '-{0}'", current[0]);
-                                MappedShortcut.Remove($"-{current[0]}");
-                                break;
-                            case 3:
-                                if (current[0] != current[2])
-                                {
-                                    Log.Debug(
-                                        "* MappedShortcut: Add '-{1}' to '-{0}'", current[0], current[2]);
-                                    MappedShortcut[$"-{current[0]}"] = $"-{current[2]}";
-                                }
-                                else
-                                {
-                                    Log.Debug(
-                                        "* MappedShortcut: Skip '-{0}' self assignment", current[0]);
-                                }
-                                break;
-                            default:
-                                ConfigException.Add(type, new ArgumentException(
-                                    $"Unknown format of value '{current}' to {TextMapShortcut}"));
-                                break;
+                            MappedShortcutImp[$"-{a2[0]}"] = $"-{a2[2]}";
                         }
                     }
                     else
@@ -129,7 +112,9 @@ internal static partial class Options
             }
         }
 
-        var itrThe = StoreMappedShortcut().ToArray().AsEnumerable().GetEnumerator();
+        var itrThe = (ArgType.Environment != type)
+            ? args.GetEnumerator()
+            : StoreMappedShortcut().GetEnumerator();
         IEnumerable<string> SeparateCombiningShortcut()
         {
             while (itrThe.MoveNext())
@@ -172,7 +157,7 @@ internal static partial class Options
             if (arg.Length == 2 && arg[0] == '-')
             {
                 arg2 = arg;
-                if (MappedShortcut.TryGetValue(arg, out var arg3))
+                if (MappedShortcutImp.TryGetValue(arg, out var arg3))
                 {
                     arg2 = arg3;
                 }
