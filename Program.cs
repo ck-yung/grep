@@ -114,7 +114,7 @@ class Program
             .Select((path) =>
             {
                 Log.Debug($"Scan file '{path}'");
-
+                var nameParam = new Show.FilenameParam(path, pause, lineMarched);
                 var cntFinding = ReadAllLinesFromFile(path, option: "FILES-FROM")
                 .Select((it) => Options.TrimStart.Invoke(it))
                 .Select((line, lineNumber)
@@ -123,7 +123,7 @@ class Program
                 .Select((it) =>
                 {
                     lineMarched.SetDefaultColor();
-                    var lenPrinted = Show.Filename.Invoke(path);
+                    var lenPrinted = Show.Filename.Invoke(nameParam);
                     lenPrinted += Show.LineNumber.Invoke(it.LineNumber);
                     lenPrinted += lineMarched.Print(it);
                     pause.Printed(lenPrinted);

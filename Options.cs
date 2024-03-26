@@ -531,7 +531,6 @@ internal static partial class Options
 
     public static readonly IParse[] ParsersForShortHelp = [
         (IParse)ToRegex,
-        (IParse)Show.Filename,
         (IParse)Show.LineNumber,
         (IParse)Show.TakeSumByMax,
         (IParse)Show.PrintLineMaker,

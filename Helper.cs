@@ -206,7 +206,7 @@ internal static partial class Helper
             .Union(Options.NonEnvirParsers
             .Select((it) => new EnvrParser(false, it)))
             .Union([new EnvrParser(IsEnvir: true, Parser: new NullParser(
-                        Options.TextMapShortcut, help: "a=b"))])
+                        Options.TextMapShortcut, help: "a=b[,x=y ..]   Envir only"))])
             ;
         var cc = Options.ShortCuts
             .Union(Options.NonEnvirShortCuts);

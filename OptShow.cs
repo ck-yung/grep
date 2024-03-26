@@ -1,19 +1,64 @@
 ﻿using static grep.MyOptions;
 using static grep.Options;
+using static grep.Show;
 namespace grep;
 
 internal static partial class Show
 {
-    static public readonly IInvoke<string, int> Filename =
-        new SwitchInvoker<string, int>(TextShowFilename,
-            init: (filename) =>
+    static string LastPrintFilename = Environment.NewLine;
+    public record FilenameParam(string Filename,
+        IConsolePause Pause, IPrintMatchedLine PrintMatchedLine);
+    static int AutoPrintFilename(FilenameParam arg)
+    {
+        if (Helper.IsShortcutConsoleInput(arg.Filename)) return 0;
+        if (arg.Filename == LastPrintFilename) return 0;
+        LastPrintFilename = arg.Filename;
+        var msg = $"> {arg.Filename}:";
+        arg.PrintMatchedLine.Print(new(1, msg, Match.ZeroOne));
+        arg.Pause.Printed(msg.Length);
+        arg.PrintMatchedLine.SetDefaultColor();
+        return 0;
+    }
+    static public readonly IInvoke<FilenameParam, int> Filename =
+        new ParseInvoker<FilenameParam, int>(TextShowFilename,
+            help: "auto | off | on",
+            init: (filename) => AutoPrintFilename(filename),
+            resolve: (opt, argsThe) =>
             {
-                if (Helper.IsShortcutConsoleInput(filename)) return 0;
-                var msg = $"{filename}:";
-                Console.Write(msg);
-                return msg.Length;
-            },
-            alterFor: false, alter: (_) => 0);
+                var aa = argsThe
+                .Where((it) => 0 < it.Arg.Length)
+                .DistinctBy((it) => it.Arg)
+                .Take(2)
+                .ToArray();
+                if (1 < aa.Length)
+                {
+                    ConfigException.Add(aa[0].Type, new ArgumentException(
+                        $"Too many values ({aa[0].Arg},{aa[1].Arg}) to {opt.Name}"));
+                    return;
+                }
+                switch (aa[0].Arg)
+                {
+                    case "off":
+                        opt.SetImplementation((arg) => 0);
+                        break;
+                    case "auto":
+                        opt.SetImplementation((arg) => AutoPrintFilename(arg));
+                        break;
+                    case "on":
+                        opt.SetImplementation((arg) =>
+                        {
+                            if (Helper.IsShortcutConsoleInput(arg.Filename)) return 0;
+                            var msg = $"{arg.Filename}:";
+                            Console.Write(msg);
+                            return msg.Length;
+                        });
+                        break;
+                    default:
+                        ConfigException.Add(aa[0].Type, new ArgumentException(
+                            $"Value to {opt.Name} SHOULD be one of 'auto','on', or, 'off', but '{aa[0].Arg}' is found!"));
+                        break;
+                }
+            });
 
     /// <summary>
     /// Invoke(string) return
