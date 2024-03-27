@@ -1,4 +1,4 @@
-# grep/c#
+ grep/c#
 **v0.9.0.0**
 
 Inspired by GNU ```grep```
@@ -27,7 +27,6 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 | ```-r``` | ```--sub-dir```        | ```on```     |           | No
 | ```-v``` | ```--invert-match```   | ```on```     |           | No
 |          | ```--color```          |              | COLOR     | Yes, [Link](https://github.com/ck-yung/grep/blob/master/docs/info-color.md)
-|          | ```--color```          |              | -         | No, it shows help for color setting.
 |          | ```--map-shortcut```   |              | a=b[,x=y] | Stored only in the envir [Link](https://github.com/ck-yung/grep/blob/master/docs/info-map-shortcut.md)
 | ```-i``` | ```--case-sensitive``` | ```off```    |           | Yes
 | ```-m``` | ```--max-count```      |              | NUMBER    | Yes
@@ -97,7 +96,8 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 | Win       | ```set grep=--map-shortcut s=r,Q=q; -X obj,bin;``` |
 | bash      | ```export grep="--map-shortcut s=r,Q=q; -X obj,bin;"``` |
 
-Then the following command will read each ```*.cs``` file on each sub-directory excluing ```obj``` and ``bin```.
+Then the following command will read each ```*.cs``` file on each sub-directory excluing ```obj``` and ```bin```.
+
 ```grep -s using ,*.cs```
 
 ## Known Issuses

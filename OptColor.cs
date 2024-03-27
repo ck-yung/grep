@@ -262,8 +262,7 @@ internal static partial class Show
                 return;
             }
 
-            var args = argsThe.Select((it) => it.Arg)
-            .Distinct().Take(2).ToArray();
+            var args = argsThe.Distinct().Take(2).ToArray();
             if (args.Length > 1)
             {
                 ConfigException.Add(typeThe, new ArgumentException(
@@ -274,12 +273,21 @@ internal static partial class Show
 
             if (args.Length == 0) return;
 
-            var argThe = args[0];
+            var argThe = args[0].Arg;
             if (argThe.Equals("color", StringComparison.InvariantCultureIgnoreCase)
             || ("-" == argThe))
             {
-                ShowColorHelp();
-                Environment.Exit(0);
+                if (args[0].Type == ArgType.CommandLine)
+                {
+                    ShowColorHelp();
+                    Environment.Exit(0);
+                }
+                else
+                {
+                    ConfigException.Add(args[0].Type, new ArgumentException(
+                        "Help of color is ignored."));
+                    return;
+                }
             }
 
             if (TextOff.Equals(argThe,

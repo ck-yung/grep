@@ -5,24 +5,30 @@ namespace grep;
 
 internal static partial class Show
 {
-    static string LastPrintFilename = Environment.NewLine;
     public record FilenameParam(string Filename,
         IConsolePause Pause, IPrintMatchedLine PrintMatchedLine);
-    static int AutoPrintFilename(FilenameParam arg)
+
+    public static class AutoFilename
     {
-        if (Helper.IsShortcutConsoleInput(arg.Filename)) return 0;
-        if (arg.Filename == LastPrintFilename) return 0;
-        LastPrintFilename = arg.Filename;
-        var msg = $"> {arg.Filename}:";
-        arg.PrintMatchedLine.Print(new(1, msg, Match.ZeroOne));
-        arg.Pause.Printed(msg.Length);
-        arg.PrintMatchedLine.SetDefaultColor();
-        return 0;
+        static public string LastPrintFilename
+        { get; private set; } = "";
+        static public int Print(FilenameParam arg)
+        {
+            if (Helper.IsShortcutConsoleInput(arg.Filename)) return 0;
+            if (arg.Filename == LastPrintFilename) return 0;
+            LastPrintFilename = arg.Filename;
+            var msg = $"> {arg.Filename}:";
+            arg.PrintMatchedLine.Print(new(1, msg, Match.ZeroOne));
+            arg.Pause.Printed(msg.Length);
+            arg.PrintMatchedLine.SetDefaultColor();
+            return 0;
+        }
     }
+
     static public readonly IInvoke<FilenameParam, int> Filename =
         new ParseInvoker<FilenameParam, int>(TextShowFilename,
             help: "auto | off | on",
-            init: (filename) => AutoPrintFilename(filename),
+            init: (filename) => AutoFilename.Print(filename),
             resolve: (opt, argsThe) =>
             {
                 var aa = argsThe
@@ -42,7 +48,7 @@ internal static partial class Show
                         opt.SetImplementation((arg) => 0);
                         break;
                     case "auto":
-                        opt.SetImplementation((arg) => AutoPrintFilename(arg));
+                        opt.SetImplementation((arg) => AutoFilename.Print(arg));
                         break;
                     case "on":
                         opt.SetImplementation((arg) =>

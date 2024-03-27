@@ -507,15 +507,24 @@ class ConsolePause : IConsolePause
         Counter = Increase(Counter, incNumber);
         if (Counter >= MaxLineNumber)
         {
+            var fname = Path.GetFileName(Show.AutoFilename.LastPrintFilename) ?? "";
+            var path = Path.GetDirectoryName(Show.AutoFilename.LastPrintFilename) ?? "";
+            string a2 = (path.Length) switch
+            {
+                < 9 => Show.AutoFilename.LastPrintFilename,
+                _ => $"{path[..8]}.. {fname}",
+            };
             Console.ResetColor();
-            Console.Write("Press any key (q to quit) ");
+            var msg = $"Press any key (q to quit) {a2} ";
+            Console.Write(msg);
             var inp = Console.ReadKey();
             Console.Write("\r");
-            //nsole.Write("Press any key (q to quit) 12");
-            Console.Write("                            ");
+            var msg2 = new String(' ', msg.Length+1);
+            Console.Write(msg2);
             Console.Write("\r");
             if (inp.KeyChar == 'q' || inp.KeyChar == 'Q')
             {
+                Console.Write(Show.AutoFilename.LastPrintFilename);
                 throw new NoMessageException();
             }
             Auto();
