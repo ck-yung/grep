@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Text;
 using RegX = System.Text.RegularExpressions;
 
 namespace grep;
@@ -201,55 +200,68 @@ internal static partial class Helper
         }
 
         var parsers = (isShortHelp) ? Options.ParsersForShortHelp : Options.Parsers;
+        var parsersNoEnvir = (isShortHelp)
+            ? Options.NonEnvirParsersForShortHelp : Options.NonEnvirParsers;
         var bb = parsers
             .Select((it) => new EnvrParser(true, it))
-            .Union(Options.NonEnvirParsers
+            .Union(parsersNoEnvir
             .Select((it) => new EnvrParser(false, it)))
             .Union([new EnvrParser(IsEnvir: true, Parser: new NullParser(
-                        Options.TextMapShortcut, help: "a=b[,x=y ..]   Envir only"))])
-            ;
+                        Options.TextMapShortcut, help: "a=b[,x=y ..]   Envir only"))]);
+
         var cc = Options.ShortCuts
             .Union(Options.NonEnvirShortCuts);
-        var jj2 = bb.GroupJoin(cc,
-            (b2) => b2.Parser.Name,
-            (c2) => (c2.Value.Length > 0) ? c2.Value[0] : "?",
-            (b2, cc2) => new
-            {
-                b2.IsEnvir,
-                b2.Parser,
-                Info = cc2.Any()
-                ? new InfoShortcut(cc2.First().Key, cc2.First().Value.Skip(1).ToArray())
-                : InfoShortcut.Empty,
-            });
 
+        var qry2 =
+            from b2 in bb
+            join c2 in cc on b2.Parser.Name
+            equals (c2.Value.Length > 0 ? c2.Value[0] : "?")
+            into Shortcuts
+            select new
+            {
+                EnvirParser = b2,
+                ShortCuts = Shortcuts.ToArray(),
+            };
         Console.WriteLine("Shortcut                 Option  with           Envir");
-        foreach (var j2 in jj2
-            .OrderBy((it) => it.IsEnvir)
-            .ThenBy((it) => it.Info.Shortcut)
-            .ThenBy((it) => it.Parser.Name))
+        foreach (var b2 in qry2
+            .OrderBy((it) => it.EnvirParser.IsEnvir)
+            .ThenBy((it) => (it.ShortCuts.Length>0) ? it.ShortCuts[0].Key : ""))
         {
-            var j3 = j2.Info;
-            var msg = new StringBuilder($"{j2.Info.Shortcut,6}{j2.Parser.Name,25}  ");
-
-            var a2 = j3.Expands.Length == 0
-                ? j2.Parser.Help : j3.Expands[0];
-
-            if (j2.IsEnvir)
+            foreach (var c2 in b2.ShortCuts.OrderBy((it) => it.Key))
             {
-                msg.Append(a2);
+                Console.Write($"{c2.Key,6}{b2.EnvirParser.Parser.Name,25}  ");
+                var a2 = c2.Value.Length > 1 ? c2.Value[1] : b2.EnvirParser.Parser.Help;
+                if (b2.EnvirParser.IsEnvir)
+                {
+                    Console.Write(a2);
+                }
+                else
+                {
+                    Console.Write($"{a2,-14} Command line only");
+                }
+                pause.WriteLine();
             }
-            else
+            if (b2.ShortCuts.Length == 0)
             {
-                msg.Append($"{a2,-14} Command line only");
+                var a2 = "";
+                Console.Write($"{a2,6}{b2.EnvirParser.Parser.Name,25}  ");
+                a2 = b2.EnvirParser.Parser.Help;
+                if (b2.EnvirParser.IsEnvir)
+                {
+                    Console.Write(a2);
+                }
+                else
+                {
+                    Console.Write($"{a2,-14} Command line only");
+                }
+                pause.WriteLine();
             }
-            pause.WriteLine(msg.ToString());
         }
-
         if (isShortHelp)
         {
             pause.WriteLines("""
                 For example,
-                  grep -nsm 3 class *.cs --color black,yellow -X obj
+                  grep -nm 3 class *.cs --color black,yellow -rX obj,bin
                   dir2 -sb *.cs --within 4hours | grep -n class -T -
 
                 Options can be stored in envir var 'grep'.

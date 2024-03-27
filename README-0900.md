@@ -1,60 +1,114 @@
-# grep
+# grep/c#
 **v0.9.0.0**
+
+Inspired by GNU ```grep```
 
 ## Syntax:
 ```
 grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 
-grep [OPTIONS] -f PATTERN-FILE  [FILE [FILE ..]]
 ```
 
 ### Examples
 ```
-  grep -nsm 3 class *.cs --color black,yellow -X obj
+  grep -nm 3 class *.cs --color black,yellow -X obj,bin
 
   dir2 -sb *.cs --within 4hours | grep -n class -T -
 ```
 
-* Read redir console input if no ```FILE``` is given, or it is -
-* Options can be stored in envir var ```grep```.
+* Options can be stored in envir var ```grep```. [Link](https://github.com/ck-yung/grep/blob/master/docs/info-envir.md)
 * [Link to tool ```dir2```](https://www.nuget.org/packages/dir2)
 
-## Options
-| Shortcut | for Option             | with         | Stored in Envir Var
-| -------- | ----------             | ----         | -------------------
-| ```-c``` | ```--count-only```     | ```on```     | No
-| ```-d``` | ```--sub-dir```        | ```on```     | No
-| ```-f``` | ```--pattern-file```   | PATTERN-FILE | No, [Info](https://github.com/ck-yung/grep/blob/master/docs//info-pattern.md)
-| ```-l``` | ```--file-match```     | ```on```     | No
-| ```-T``` | ```--file-from```      | FILES-FROM   | No, [Info](https://github.com/ck-yung/grep/blob/master/docs//info-files-from.md)
-| ```-v``` | ```--invert-match```   | ```on```     | No
-|          | ```--color```          | COLOR        | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs//info-color.md)
-|          | ```--total```          | ```on```     | Yes
-| ```-F``` | ```--fixed-strings```  | ```on```     | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-pattern.md)
-| ```-h``` | ```--show-filename```  | ```off```    | Yes
-| ```-i``` | ```--case-sensitive``` | ```off```    | Yes
-| ```-m``` | ```--max-count```      | NUMBER       | Yes
-| ```-n``` | ```--line-number```    | ```on```     | Yes
-| ```-p``` | ```--pause```          | ```off```    | Yes
-| ```-q``` | ```--quiet```          | ```on```     | Yes
-| ```-w``` | ```--word```           | ```on```     | Yes
-| ```-x``` | ```--excl-file```      | FILE         | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-excl.md)
-| ```-X``` | ```--excl-dir```       | DIR          | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-excl.md)
+## Common Options
+| Shortcut | for Option             | with         | Required  | Can be stored in Envir ```grep```?
+| -------- | ----------             | ----         | --------  | ----------------------------------
+| ```-c``` | ```--count-only```     | ```on```     |           | No
+| ```-l``` | ```--file-match```     | ```on```     |           | No
+| ```-r``` | ```--sub-dir```        | ```on```     |           | No
+| ```-v``` | ```--invert-match```   | ```on```     |           | No
+|          | ```--color```          |              | COLOR     | Yes, [Link](https://github.com/ck-yung/grep/blob/master/docs/info-color.md)
+|          | ```--color```          |              | -         | No, it shows help for color setting.
+|          | ```--map-shortcut```   |              | a=b[,x=y] | Stored only in the envir [Link](https://github.com/ck-yung/grep/blob/master/docs/info-map-shortcut.md)
+| ```-i``` | ```--case-sensitive``` | ```off```    |           | Yes
+| ```-m``` | ```--max-count```      |              | NUMBER    | Yes
+| ```-n``` | ```--line-number```    | ```on```     |           | Yes
+| ```-w``` | ```--word```           | ```on```     |           | Yes
+| ```-x``` | ```--excl-file```      |              | FILE      | Yes, [Link](https://github.com/ck-yung/grep/blob/master/docs/info-excl.md)
+| ```-X``` | ```--excl-dir```       |              | DIR       | Yes, [Link](https://github.com/ck-yung/grep/blob/master/docs/info-excl.md)
 
-
-
+[List of All Options](https://github.com/ck-yung/grep/blob/master/docs/info-all-options.md)
 
 ## Demo
 
 ![Color Feature](https://raw.githubusercontent.com/ck-yung/grep/master/images/help.gif)
 
+## Major Bug Fix to v0.0.2
+
+* "Word search" now properly shows "the beginning of a line" and "the end of a line".
+
+## Major Imporvement to v0.0.2
+
+* Command line parameter ```FILE``` now can be a wild-card (e.g. ```*.cs```) and including a path (e.g. ```zip2\*.cs```).
+
+* A color option ```--color``` is added for highlight background and group highlight.
+
+* An option ```--search``` (```-e```) is added for multiple patterns.
+
+* An option ```--sub-dir``` (```-r```) is added for recursivly reading files under directories.
+
+* An option ```--fixed-strings``` (```-F```) is added. That is, ```c++ -F``` is same to ```c\+\+```
+
+* An option ```--max-count``` (```-m```) is added for max finding count. The reporting finding count could be more than the number if the last find matched line contains several findings.
+
+* Some options can be stored in environment variable ```grep```. For example,
+
+| OS/Shell  | Environement Setting |
+| --------  | -------------------- |
+| Win       | ```set grep= -ni; --color red,yellow,9,black,gray;``` |
+| bash      | ```export grep=" -ni; --color red,yellow,9,black,gray;"``` |
+
+* Any leading spaces will be ignored.
+* Semi-comma is an optional separator just for friendly reading.
+
+## Major Differences to GNU ```grep```
+
+* Excluding filenames can be combined by comma. e.g. ```-x test*.cs,demo*.cs```.
+
+* Excluding directories can be combined by comma. e.g. ```-X bin,obj,packag*```.
+
+* GNU option ```--include=GLOB``` is NOT provided. And wild-card parameters can be leading by a comma, e.g. ```,*.cs``` and ```,*.cs,*.py```.
+
+* The above feature of comma-combining can be turn-off by option ```--split-file-by-comma off```.
+
+* Directory separator can be included in excluding directory. e.g. ```-X obj\re*e```.
+
+* Pause option ```--pause``` is added with default value ```on```.
+
+* The default value of option ```--show-filename``` is ```auto```. It prints the filename just before the first matching has been found.
+
+* An option ```--total``` is added for grand total sum reporting. ```--total only``` prints the grand total sum line only.
+
+* An option ```--trim-start``` is added for removal of leading spaces of a matched line.
+
+* An option ```--map-shortcut``` can be defined by environement variable ```grep``` to change shortcut setting. For example:
+
+| OS/Shell  | Environement Setting |
+| --------  | -------------------- |
+| Win       | ```set grep=--map-shortcut s=r,Q=q; -X obj,bin;``` |
+| bash      | ```export grep="--map-shortcut s=r,Q=q; -X obj,bin;"``` |
+
+Then the following command will read each ```*.cs``` file on each sub-directory excluing ```obj``` and ``bin```.
+```grep -s using ,*.cs```
+
 ## Known Issuses
 
-1. Under Windows Terminal, it CANNOT display black background color to the following color scheme.
+Under Windows Terminal, the program CANNOT display black background color to the following color scheme.
 
-    * Tango Light
+    * One Half Light
 
     * Solarized Light
+
+    * Tango Light
 
 Yung, Chun Kau
 

@@ -151,7 +151,9 @@ internal static partial class Show
 
     static void ShowColorHelp()
     {
+        var pause = PauseMaker.Invoke(Ignore.Void);
         Console.WriteLine($"Syntax: {nameof(grep)} {TextColor} COLOR ..");
+        pause.Printed(10);
 
         static void switchBackgroundColor(bool isBlack, ConsoleColor arg)
         {
@@ -178,7 +180,6 @@ internal static partial class Show
             Console.Write(" Blackground ");
         }
 
-        Console.WriteLine($"where COLOR is one of the following:");
         foreach (ConsoleColor cr2 in Enum.GetValues(typeof(ConsoleColor)))
         {
             Console.Write($"\t{cr2,-12}");
@@ -189,44 +190,52 @@ internal static partial class Show
             switchForegroundColor(cr2);
             Console.ResetColor();
             Console.WriteLine();
+            pause.Printed(10);
         }
         Console.WriteLine();
+        pause.Printed(10);
 
         // ........-123456789012345678901234567890
         var hint = "Disable the feature by";
-        Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} off ..");
-
+        Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} off");
+        pause.Printed(10);
         hint = "Assign background color by";
-        Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR ..");
-
+        Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR");
+        pause.Printed(10);
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             hint = "Invert colors by";
-            Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} -- ..");
+            Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} --");
+            pause.Printed(10);
         }
 
         hint = "Change color per group by";
         Console.WriteLine(
-            $"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR,NUMBER,COLOR ..");
+            $"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR,NUMBER,COLOR");
+        pause.Printed(10);
         hint = "";
         Console.WriteLine(
-            $"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR,NUMBER,COLOR,COLOR ..");
-
+            $"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR,NUMBER,COLOR,COLOR");
+        pause.Printed(10);
         Console.WriteLine($"""
 
                         Option can be stored by envir var '{nameof(grep)}', for example
                         """);
+        pause.Printed(10);
+        pause.Printed(10);
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Console.WriteLine($"""
                         set {nameof(grep)}={TextColor} white,darkred,5,black,yellow
                         """);
+            pause.Printed(10);
         }
         else
         {
             Console.WriteLine($"""
                         export {nameof(grep)}="{TextColor} white,darkred,5,black,yellow"
                         """);
+            pause.Printed(10);
         }
     }
 
@@ -253,12 +262,6 @@ internal static partial class Show
                 return;
             }
 
-            if (Console.IsOutputRedirected)
-            {
-                opt.SetImplementation((_) => PrintWithoutColor.Default);
-                return;
-            }
-
             var args = argsThe.Select((it) => it.Arg)
             .Distinct().Take(2).ToArray();
             if (args.Length > 1)
@@ -272,7 +275,7 @@ internal static partial class Show
             if (args.Length == 0) return;
 
             var argThe = args[0];
-            if (opt.Help.Equals(argThe, StringComparison.InvariantCultureIgnoreCase)
+            if (argThe.Equals("color", StringComparison.InvariantCultureIgnoreCase)
             || ("-" == argThe))
             {
                 ShowColorHelp();
@@ -281,6 +284,12 @@ internal static partial class Show
 
             if (TextOff.Equals(argThe,
                 StringComparison.InvariantCultureIgnoreCase))
+            {
+                opt.SetImplementation((_) => PrintWithoutColor.Default);
+                return;
+            }
+
+            if (Console.IsOutputRedirected)
             {
                 opt.SetImplementation((_) => PrintWithoutColor.Default);
                 return;

@@ -56,6 +56,7 @@ internal static partial class Options
         [
             new("-F", [TextFixedTextPattern, TextOn]),
             new("-h", [TextShowFilename, TextOff]),
+            new("-H", [TextShowFilename, TextOn]),
             new("-i", [TextCaseSensitive, TextOff]),
             new("-n", [TextLineNumber, TextOn]),
             new("-p", [TextPause, TextOff]),
@@ -529,8 +530,20 @@ internal static partial class Options
         (IParse)Show.MaxReportFileNotFound,
     ];
 
+    // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'
+    public static readonly IParse[] NonEnvirParsers = [
+        (IParse)SearchFor,
+        (IParse)PatternsFrom,
+        (IParse)FilesFrom,
+        (IParse)MetaMatches,
+        (IParse)Show.MatchedFilenameWithCount,
+        (IParse)Show.MatchedFilenameOnly,
+        (IParse)SubDir.FileScan,
+    ];
+
     public static readonly IParse[] ParsersForShortHelp = [
         (IParse)ToRegex,
+        (IParse)PatternWordText,
         (IParse)Show.LineNumber,
         (IParse)Show.TakeSumByMax,
         (IParse)Show.PrintLineMaker,
@@ -538,11 +551,7 @@ internal static partial class Options
         (IParse)SubDir.ExclDir,
     ];
 
-    // The position of 'PatternsFrom' MUST be prior to 'FilesFrom'
-    public static readonly IParse[] NonEnvirParsers = [
-        (IParse)SearchFor,
-        (IParse)PatternsFrom,
-        (IParse)FilesFrom,
+    public static readonly IParse[] NonEnvirParsersForShortHelp = [
         (IParse)MetaMatches,
         (IParse)Show.MatchedFilenameWithCount,
         (IParse)Show.MatchedFilenameOnly,
