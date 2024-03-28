@@ -524,7 +524,8 @@ class ConsolePause : IConsolePause
             Console.Write("\r");
             if (inp.KeyChar == 'q' || inp.KeyChar == 'Q')
             {
-                Console.Write(Show.AutoFilename.LastPrintFilename);
+                Console.WriteLine(
+                    $"< {Show.AutoFilename.LastPrintFilename}");
                 throw new NoMessageException();
             }
             Auto();

@@ -50,8 +50,8 @@ class Program
 
         foreach (var infoError in ConfigException.GetErrors())
         {
-            var envrThe = infoError.Type == ArgType.CommandLine
-                ? string.Empty : $"Envir '{nameof(grep)}': ";
+            var envrThe = infoError.Type == ArgType.Environment
+                ? $"Envir '{nameof(grep)}': " : string.Empty;
             var errType = infoError.Error.GetType().ToString()
                 .Replace("grep.ConfigException", "")
                 .Replace("System.", "")
@@ -116,7 +116,7 @@ class Program
                 Log.Debug($"Scan file '{path}'");
                 var nameParam = new Show.FilenameParam(path, pause, lineMarched);
                 var cntFinding = ReadAllLinesFromFile(path, option: "FILES-FROM")
-                .Select((it) => Options.TrimStart.Invoke(it))
+                .Select((it) => Options.TrimLine.Invoke(it))
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))
                 .Where((it) => it.Matches.Length > 0)

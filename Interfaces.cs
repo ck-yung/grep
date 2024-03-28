@@ -62,6 +62,12 @@ internal class ConfigException(string message) : Exception(message)
         return new($"Missing value to '{name}'\n" +
             extraHelp);
     }
+
+    static internal void WrongValue(ArgType type, IParse opt,
+        string message)
+    {
+        Errors.Add(new Info(type, opt, new ConfigException(message)));
+    }
 }
 
 internal class NoMessageException : Exception;

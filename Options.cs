@@ -1,4 +1,3 @@
-using Dir;
 using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using static grep.MyOptions;
@@ -30,7 +29,7 @@ internal static partial class Options
     public const string TextSubDir = "--sub-dir";
     public const string TextExclFile = "--excl-file";
     public const string TextExclDir = "--excl-dir";
-    public const string TextTrimStart = "--trim-start";
+    public const string TextTrim = "--trim";
     public const string TextFilenameCaseSensitive = "--filename-case-sensitive";
     public const string TextMapShortcut = "--map-shortcut";
     public const string TextSkipArg = "--skip-arg";
@@ -445,9 +444,41 @@ internal static partial class Options
                 .Where((it) => it.Length > 0));
             });
 
-    public static readonly IInvoke<string, string> TrimStart = new
-        SwitchInvoker<string, string>(TextTrimStart, help: HintOnOff,
-        init: Helper.Itself, alterFor: true, alter: (it) => it.TrimStart());
+    public static readonly IInvoke<string, string> TrimLine = new
+        ParseInvoker<string, string>(TextTrim,
+        help: "off | start | end | both", init: Helper.Itself,
+        resolve: (opt, argsThe) =>
+        {
+            var aa = argsThe
+            .DistinctBy((it) => it.Arg.ToLower())
+            .Take(2)
+            .ToArray();
+            if (aa.Length > 1)
+            {
+                ConfigException.WrongValue(aa[0].Type, opt,
+                        $"Too many values ('{aa[0].Arg}','{aa[1].Arg}') to {opt.Name}");
+                return;
+            }
+            switch (aa[0].Arg.ToLower())
+            {
+                case "off":
+                    opt.SetImplementation(Helper.Itself);
+                    break;
+                case "start":
+                    opt.SetImplementation((it) => it.TrimStart());
+                    break;
+                case "end":
+                    opt.SetImplementation((it) => it.TrimEnd());
+                    break;
+                case "both":
+                    opt.SetImplementation((it) => it.Trim());
+                    break;
+                default:
+                    ConfigException.WrongValue(aa[0].Type, opt,
+                        $"Value '{aa[0].Arg}' to {opt.Name} is NOT one of '{opt.Help}'");
+                    break;
+            }
+        });
 
     public static readonly IInvoke<Ignore, StringComparer>
         FilenameCaseSentive = new SwitchInvoker<Ignore, StringComparer>(
@@ -523,7 +554,7 @@ internal static partial class Options
         (IParse)SubDir.ExclFile,
         (IParse)SubDir.ExclDir,
         (IParse)Show.PrintTotal,
-        (IParse)TrimStart,
+        (IParse)TrimLine,
         (IParse)FilenameCaseSentive,
         (IParse)SkipArgs,
         (IParse)SplitFileByComma,
