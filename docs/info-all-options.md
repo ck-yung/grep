@@ -30,6 +30,6 @@
 |          | ```--skip-arg```            |              | ```auto```｜```off```｜TEXT     | Yes
 |          | ```--split-file-by-comma``` |              | ```on```｜```off```            | Yes
 |          | ```--total```               |              | ```on```｜```off```｜```only``` | Yes
-|          | ```--trim-start```          |              | ```on```｜```off```            | Yes
+|          | ```--trim```                |              | ```off```｜```start```｜```end```｜```both``` | Yes
 
 [Back to README.md](https://github.com/ck-yung/grep/blob/master/docs/README.md)

@@ -339,11 +339,11 @@ class Pattern
         .Select((it) => new Match(it, pattern.Length)));
     }
 
-    public Pattern(RegX.Regex regex)
+    public Pattern(RegX.Regex regex, string raw)
     {
         if (string.IsNullOrEmpty(First))
         {
-            First = regex.ToString();
+            First = raw;
         }
         Matches = (line) => Options.MetaMatches.Invoke(
             regex.Matches(line)
@@ -525,7 +525,9 @@ class ConsolePause : IConsolePause
             if (inp.KeyChar == 'q' || inp.KeyChar == 'Q')
             {
                 Console.WriteLine(
-                    $"< {Show.AutoFilename.LastPrintFilename}");
+                    string.IsNullOrEmpty(Show.AutoFilename.LastPrintFilename)
+                    ? ""
+                    : $"< {Show.AutoFilename.LastPrintFilename}");
                 throw new NoMessageException();
             }
             Auto();

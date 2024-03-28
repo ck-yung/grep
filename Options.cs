@@ -297,11 +297,11 @@ internal static partial class Options
                     }
                     var a3 = ToRegex.Invoke(it.Text);
                     Log.Debug($"Pattern of regex-1st-string '{a3}' for '{it.Text}'");
-                    return new Pattern(a3);
+                    return new Pattern(a3, it.Text);
                 }
                 var a4 = ToRegex.Invoke(it.Text);
                 Log.Debug($"Pattern of regex-string '{a4}' for '{it.Text}'");
-                return new Pattern(a4);
+                return new Pattern(a4, it.Text);
             },
             alter: (it) =>
             {
