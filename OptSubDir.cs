@@ -1,8 +1,8 @@
 using System.Collections.Immutable;
+using RegX = System.Text.RegularExpressions;
 using static grep.MyOptions;
 using static grep.Options;
 using static Dir.Wild;
-using System.Text.RegularExpressions;
 
 namespace grep;
 
@@ -44,7 +44,7 @@ static public class SubDir
                     exclMatchings.Any((match) => match(text)));
                 }
 
-                Func<string, bool> MakeMatchRegex(Regex regex)
+                Func<string, bool> MakeMatchRegex(RegX.Regex regex)
                 => (arg) => regex.Match(arg).Success;
 
                 var exclDirPostfixMatchings = aa

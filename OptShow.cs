@@ -1,6 +1,5 @@
 ﻿using static grep.MyOptions;
 using static grep.Options;
-using static grep.Show;
 namespace grep;
 
 internal static partial class Show

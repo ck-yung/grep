@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
-using System.Text.RegularExpressions;
-using static grep.MyOptions;
 using RegX = System.Text.RegularExpressions;
+using static grep.MyOptions;
 
 namespace grep;
 
@@ -58,6 +57,7 @@ internal static partial class Options
             new("-H", [TextShowFilename, TextOn]),
             new("-i", [TextCaseSensitive, TextOff]),
             new("-n", [TextLineNumber, TextOn]),
+            new("-N", [TextLineNumber, TextOff]),
             new("-p", [TextPause, TextOff]),
             new("-q", [TextQuiet, TextOn]),
             new("-w", [TextWord, TextOn]),
@@ -597,6 +597,6 @@ internal static partial class Options
             .Aggregate(seed: args, func: (acc, it) => it.Parse(acc));
     }
 
-    [GeneratedRegex(@"\-\-color.*=.*\bauto")]
-    private static partial Regex RegexColotAuto();
+    [RegX.GeneratedRegex(@"\-\-color.*=.*\bauto")]
+    private static partial RegX.Regex RegexColotAuto();
 }

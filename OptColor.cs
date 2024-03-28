@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
+using RegX = System.Text.RegularExpressions;
 using static grep.MyOptions;
 using static grep.Options;
 
@@ -239,9 +239,9 @@ internal static partial class Show
         }
     }
 
-    [GeneratedRegex(
+    [RegX.GeneratedRegex(
         @"^(?<fore>\w{3,12})(\,(?<back>\w{3,12}))?(\,(?<num>\w{1,5}))?(\,(?<foreGroup>\w{3,12}))?(\,(?<backGroup>\w{3,12}))?$")]
-    private static partial Regex RegexColors();
+    private static partial RegX.Regex RegexColors();
 
     static public readonly IInvoke<Ignore, IPrintMatchedLine> PrintLineMaker = new
         ParseInvoker<Ignore, IPrintMatchedLine>(TextColor, help: "COLOR | -",

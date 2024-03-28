@@ -18,6 +18,7 @@
 | ```-H``` | ```--show-filename```       | ```on```     |           | Yes
 | ```-m``` | ```--max-count```           |              | NUMBER    | Yes
 | ```-n``` | ```--line-number```         | ```on```     |           | Yes
+| ```-N``` | ```--line-number```         | ```off```    |           | Yes
 | ```-p``` | ```--pause```               | ```off```    |           | Yes
 | ```-q``` | ```--quiet```               | ```on```     |           | Yes
 | ```-w``` | ```--word```                | ```on```     |           | Yes
