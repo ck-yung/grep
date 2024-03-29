@@ -113,7 +113,7 @@ class Program
             .Distinct(Options.FilenameCaseSentive.Invoke(Ignore.Void))
             .Select((path) =>
             {
-                Log.Debug($"Scan file '{path}'");
+                Log.Debug("Scan file '{0}'", path);
                 var nameParam = new Show.FilenameParam(path, pause, lineMarched);
                 var cntFinding = ReadAllLinesFromFile(path, option: "FILES-FROM")
                 .Select((it) => Options.TrimLine.Invoke(it))

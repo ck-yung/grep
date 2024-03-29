@@ -134,7 +134,7 @@ static public class SubDir
                 {
                     if (false == patterns.Any())
                     {
-                        Log.Debug($"{nameof(makeMatching)} patterns is EMTPY");
+                        Log.Debug("{0} patterns is EMTPY", nameof(makeMatching));
                         return Dir.AllStrings.True;
                     }
 

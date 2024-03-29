@@ -313,7 +313,7 @@ internal static partial class Show
                 }
                 else
                 {
-                    Log.Debug($"{typeThe}> OS='{RuntimeInformation.OSDescription}'");
+                    Log.Debug("{0}> OS='{1}'", typeThe, RuntimeInformation.OSDescription);
                     ConfigException.Add(typeThe, new ArgumentException(
                         $"Inverse to {opt.Name} is NOT supported in the running OS."));
                 }

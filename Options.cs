@@ -298,20 +298,20 @@ internal static partial class Options
                     {
                         var a2 = System.Net.WebUtility
                         .UrlDecode(it.Text[2..]);
-                        Log.Debug($"Pattern of fixed-1st-string '{a2}' for '{it.Text}'");
+                        Log.Debug("Pattern of fixed-1st-string '{0}' for '{1}'", a2, it.Text);
                         return new Pattern(a2);
                     }
                     var a3 = ToRegex.Invoke(it.Text);
-                    Log.Debug($"Pattern of regex-1st-string '{a3}' for '{it.Text}'");
+                    Log.Debug("Pattern of regex-1st-string '{0}' for '{1}'", a3, it.Text);
                     return new Pattern(a3, it.Text);
                 }
                 var a4 = ToRegex.Invoke(it.Text);
-                Log.Debug($"Pattern of regex-string '{a4}' for '{it.Text}'");
+                Log.Debug("Pattern of regex-string '{0}' for '{1}'", a4, it.Text);
                 return new Pattern(a4, it.Text);
             },
             alter: (it) =>
             {
-                Log.Debug($"Pattern of fixed-string '{it.Text}'");
+                Log.Debug("Pattern of fixed-string '{0}'", it.Text);
                 return new Pattern(it.Text);
             });
 
@@ -370,15 +370,15 @@ internal static partial class Options
             {
                 var searchFor = SearchFor.Invoke(Ignore.Void)
                 .Select((it) => ToPattern.Invoke(new(IsFirstCmdLineArg: false, it)))
-                .ToArray()
-                ;
+                .ToArray();
                 Log.Debug("For {2}, Length of {0} is {1}", TextSearch, searchFor.Length, TextPatternFile);
                 if (0 < searchFor.Length)
                 {
-                    Match[] rtn(string line) => searchFor
-                    .Select((it) => it.Matches(line))
-                    .FirstOrDefault((it) => it.Length > 0) ?? [];
-                    return new(false, rtn, args);
+                    return new(false,
+                        (string line) => searchFor
+                        .Select((it) => it.Matches(line))
+                        .FirstOrDefault((it) => it.Length > 0) ?? [],
+                        args);
                 }
 
                 Pattern pattern;
@@ -427,12 +427,12 @@ internal static partial class Options
                 .Select((it) => it.Matches)
                 .ToArray();
 
-                Match[] rtn(string line) => matchFunc
-                .Select((match) => match(line))
-                .FirstOrDefault((it) => it.Length > 0) ?? [];
-
                 opt.SetImplementation((args) =>
-                new(Helper.IsShortcutConsoleInput(fileThe), rtn, args));
+                new(Helper.IsShortcutConsoleInput(fileThe),
+                (string line) => matchFunc
+                .Select((match) => match(line))
+                .FirstOrDefault((it) => it.Length > 0) ?? [],
+                args));
             });
 
     public record FilesFromParam(bool IsPatternFromRedirConsole, bool IsArgsEmpty);
