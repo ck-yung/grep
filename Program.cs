@@ -120,6 +120,7 @@ class Program
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))
                 .Where((it) => it.Matches.Length > 0)
+                .Where((it) => false == Options.ExclSearch.Invoke(it.Line))
                 .Select((it) =>
                 {
                     lineMarched.SetDefaultColor();

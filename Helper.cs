@@ -209,8 +209,12 @@ internal static partial class Helper
             .Union([new EnvrParser(IsEnvir: true, Parser: new NullParser(
                         Options.TextMapShortcut, help: "a=b[,x=y ..]   Envir only"))]);
 
+        SortedSet<string> xx = [];
+        if (isShortHelp) xx = Options.QuickHelpExclShortcuts;
+
         var cc = Options.ShortCuts
-            .Union(Options.NonEnvirShortCuts);
+            .Union(Options.NonEnvirShortCuts)
+            .Where((it) => false == xx.Contains(it.Key));
 
         var qry2 =
             from b2 in bb

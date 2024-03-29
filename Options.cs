@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using RegX = System.Text.RegularExpressions;
 using static grep.MyOptions;
+using Dir;
 
 namespace grep;
 
@@ -35,6 +36,7 @@ internal static partial class Options
     public const string TextSplitFileByComma = "--split-file-by-comma";
     public const string TextMaxReportFileNotFound = "--max-file-not-found";
     public const string TextSearch = "--search";
+    public const string TextExclSearch = "--excl-search";
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
         NonEnvirShortCuts =
@@ -47,6 +49,7 @@ internal static partial class Options
             new("-v", [TextInvertMatch, TextOn]),
             new("-r", [TextSubDir, TextOn]),
             new("-e", [TextSearch]),
+            new("-E", [TextExclSearch]),
         ];
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
@@ -64,6 +67,9 @@ internal static partial class Options
             new("-x", [TextExclFile]),
             new("-X", [TextExclDir]),
         ];
+
+    public static readonly SortedSet<string> QuickHelpExclShortcuts =
+        ["-N", "-e"];
 
     public static ImmutableDictionary<string, string> MappedShortcut
     {
@@ -329,6 +335,30 @@ internal static partial class Options
             .Where((it) => it.Length > 0));
         });
 
+    static internal readonly IInvoke<string, bool> ExclSearch = new
+    ParseInvoker<string, bool>(TextExclSearch, help: "PATTERN",
+    init: AllStrings.Never,
+
+    resolve: (opt, args) =>
+    {
+        var aa = args
+        .Select((it) => it.Arg)
+        .Distinct()
+        .Select((it) => ToPattern.Invoke(new(IsFirstCmdLineArg: false, it)))
+        .ToArray();
+        if (aa.Length > 0)
+        {
+            bool rtn(string line) => aa
+            .Select((it) => it.Matches(line))
+            .Any((it) => it.Length > 0);
+            opt.SetImplementation((it) => rtn(it));
+        }
+        else
+        {
+            opt.SetImplementation(AllStrings.Never);
+        }
+    });
+
     /// <summary>
     /// The parsing of 'SearchFor' MUST be called before 'PatternsFrom'.
     /// </summary>
@@ -345,12 +375,10 @@ internal static partial class Options
                 Log.Debug("For {2}, Length of {0} is {1}", TextSearch, searchFor.Length, TextPatternFile);
                 if (0 < searchFor.Length)
                 {
-                    return new(
-                        false,
-                        (string line) => searchFor
-                        .Select((it) => it.Matches(line))
-                        .FirstOrDefault((it) => it.Length > 0) ?? [],
-                        args);
+                    Match[] rtn(string line) => searchFor
+                    .Select((it) => it.Matches(line))
+                    .FirstOrDefault((it) => it.Length > 0) ?? [];
+                    return new(false, rtn, args);
                 }
 
                 Pattern pattern;
@@ -399,12 +427,12 @@ internal static partial class Options
                 .Select((it) => it.Matches)
                 .ToArray();
 
-                opt.SetImplementation((args) =>
-                new(Helper.IsShortcutConsoleInput(fileThe),
-                (string line) => matchFunc
+                Match[] rtn(string line) => matchFunc
                 .Select((match) => match(line))
-                .FirstOrDefault((it) => it.Length > 0) ?? [],
-                args));
+                .FirstOrDefault((it) => it.Length > 0) ?? [];
+
+                opt.SetImplementation((args) =>
+                new(Helper.IsShortcutConsoleInput(fileThe), rtn, args));
             });
 
     public record FilesFromParam(bool IsPatternFromRedirConsole, bool IsArgsEmpty);
@@ -570,6 +598,7 @@ internal static partial class Options
         (IParse)Show.MatchedFilenameWithCount,
         (IParse)Show.MatchedFilenameOnly,
         (IParse)SubDir.FileScan,
+        (IParse)ExclSearch,
     ];
 
     public static readonly IParse[] ParsersForShortHelp = [
