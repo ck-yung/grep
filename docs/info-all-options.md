@@ -7,7 +7,6 @@
 |          | ```--color```               |              | -         | No, it shows help for color setting.
 | ```-c``` | ```--count-only```          | ```on```     |           | No
 | ```-e``` | ```--search```              |              | PATTERN   | No
-| ```-E``` | ```--excl-search```         |              | PATTERN   | No
 | ```-f``` | ```--pattern-file```        |              | FILE      | No, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-pattern.md)
 | ```-F``` | ```--fixed-strings```       | ```on```     |           | No, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-pattern.md)
 | ```-l``` | ```--file-match```          | ```on```     |           | No

@@ -399,8 +399,7 @@ internal static partial class Options
                 var files = argsThe.Distinct().Take(2).ToArray();
                 if (files.Length > 1)
                 {
-                    throw new ConfigException(
-                        $"Too many files ('{files[0].Arg}','{files[1].Arg}') to {opt.Name} are found!");
+                    ConfigException.TooManyValues(files[0], files[1], opt);
                 }
 
                 var fileThe = files[0].Arg;
@@ -454,8 +453,7 @@ internal static partial class Options
                 var files = argsThe.Distinct().Take(2).ToArray();
                 if (files.Length > 1)
                 {
-                    throw new ConfigException(
-                        $"Too many files ('{files[0].Arg}','{files[1].Arg}') to {opt.Name} are found!");
+                    ConfigException.TooManyValues(files[0], files[1], opt);
                 }
 
                 var fileThe = files[0].Arg;
@@ -483,8 +481,7 @@ internal static partial class Options
             .ToArray();
             if (aa.Length > 1)
             {
-                ConfigException.WrongValue(aa[0].Type, opt,
-                        $"Too many values ('{aa[0].Arg}','{aa[1].Arg}') to {opt.Name}");
+                ConfigException.TooManyValues(aa[0], aa[1], opt);
                 return;
             }
             switch (aa[0].Arg.ToLower())
@@ -502,8 +499,7 @@ internal static partial class Options
                     opt.SetImplementation((it) => it.Trim());
                     break;
                 default:
-                    ConfigException.WrongValue(aa[0].Type, opt,
-                        $"Value '{aa[0].Arg}' to {opt.Name} is NOT one of '{opt.Help}'");
+                    ConfigException.WrongValue(aa[0], opt);
                     break;
             }
         });

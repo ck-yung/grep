@@ -48,29 +48,7 @@ class Program
                 $"'{string.Join(' ', envUnknown)}' is unknown to envir '{nameof(grep)}'.");
         }
 
-        foreach (var infoError in ConfigException.GetErrors())
-        {
-            var envrThe = infoError.Type == ArgType.Environment
-                ? $"Envir '{nameof(grep)}': " : string.Empty;
-            var errType = infoError.Error.GetType().ToString()
-                .Replace("grep.ConfigException", "")
-                .Replace("System.", "")
-                .Replace("Exception", "");
-            if (string.IsNullOrEmpty(errType))
-            {
-                Show.LogVerbose.Invoke(
-                    $"{envrThe}{infoError.Error.Message}");
-            }
-            else
-            {
-                Show.LogVerbose.Invoke(
-                    $"{envrThe}({errType}) {infoError.Error.Message}");
-            }
-            if (false == string.IsNullOrEmpty(infoError.Option?.ExtraHelp))
-            {
-                Show.LogVerbose.Invoke(infoError.Option.ExtraHelp);
-            }
-        }
+        ConfigException.PrintErrors();
     }
 
     static bool RunMain(string[] args)

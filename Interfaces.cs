@@ -37,18 +37,19 @@ public interface IInvoke<T, R>
 
 internal class ConfigException(string message) : Exception(message)
 {
-    public record Info(ArgType Type, IParse? Option, Exception Error);
+    public record Info(ArgType Type, IParse? Option,
+        Else<Exception, string> Error);
 
     static readonly List<Info> Errors = [];
 
     static public void Add(ArgType type, Exception e, IParse? option = null)
     {
-        Errors.Add(new Info(type, option, e));
+        Errors.Add(new Info(type, option, new Else<Exception, string>(e)));
     }
 
-    static public IEnumerable<Info> GetErrors()
+    static public void Add(ArgType type, string message, IParse? option = null)
     {
-        return Errors;
+        Errors.Add(new Info(type, option, new Else<Exception, string>(message)));
     }
 
     static internal ConfigException MissingValue(
@@ -63,11 +64,59 @@ internal class ConfigException(string message) : Exception(message)
             extraHelp);
     }
 
-    static internal void WrongValue(ArgType type, IParse opt,
-        string message)
+    static internal void WrongValue(FlagedArg arg, IParse opt)
     {
-        Errors.Add(new Info(type, opt, new ConfigException(message)));
+        Add(arg.Type, $"Value '{arg.Arg}' to {opt.Name} is NOT valid!", opt);
     }
+
+    static internal void TooManyValues(FlagedArg arg1, FlagedArg arg2, IParse opt)
+    {
+        Add(arg1.Type, $"Too many values ('{arg1.Arg}','{arg2.Arg}') to {opt.Name}", opt);
+    }
+
+    public static int PrintErrors() => Errors
+        .Select((errorThe) =>
+        {
+            var envrThe = errorThe.Type == ArgType.Environment
+            ? $"Envir '{nameof(grep)}': " : string.Empty;
+            var optThe = errorThe.Option;
+            if (errorThe.Error.IsFirst)
+            {
+                Exception exceptionThe = errorThe.Error.First();
+                var errType = exceptionThe.GetType().ToString()
+                    .Replace("grep.ConfigException", "")
+                    .Replace("System.", "")
+                    .Replace("Exception", "");
+                if (string.IsNullOrEmpty(errType))
+                {
+                    Show.LogVerbose.Invoke(
+                        $"{envrThe}{exceptionThe.Message}");
+                }
+                else
+                {
+                    Show.LogVerbose.Invoke(
+                        $"{envrThe}({errType}) {exceptionThe.Message}");
+                }
+            }
+            else
+            {
+                Show.LogVerbose.Invoke(
+                    $"{envrThe}{errorThe.Error.Second()}");
+            }
+
+            if (false == string.IsNullOrEmpty(optThe?.Help))
+            {
+                Show.LogVerbose.Invoke(
+                    $"Valid value is one of {optThe.Help}");
+            }
+
+            if (false == string.IsNullOrEmpty(optThe?.ExtraHelp))
+            {
+                Show.LogVerbose.Invoke(optThe.ExtraHelp);
+            }
+            return errorThe;
+        })
+        .Count();
 }
 
 internal class NoMessageException : Exception;

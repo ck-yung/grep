@@ -76,8 +76,7 @@ static public class SubDir
                     if (0 <= Show.CountReportFileNotMatched)
                     {
                         ConfigException.Add(arg.Item1,
-                            new FileNotFoundException(
-                                $"No file is matched to '{path}'"));
+                            $"No file is matched to command-line param '{path}'");
                     }
                 }
                 return aa;

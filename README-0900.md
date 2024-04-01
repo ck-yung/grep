@@ -69,21 +69,25 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 * Any leading spaces will be ignored.
 * Semi-comma is an optional separator just for friendly reading.
 
+
+## Important Differences to GNU ```grep``` in Linux and macos
+
+* GNU option ```--include=GLOB``` is NOT provided. And wild-card parameters can be leading by a comma, e.g. ```,*.cs``` and ```,*.cs,*.py```.
+
+* The above feature of comma-combining can be turn-off by option ```--split-file-by-comma off```.
+
+
 ## Major Differences to GNU ```grep```
 
 * Excluding filenames can be combined by comma. e.g. ```-x test*.cs,demo*.cs```.
 
 * Excluding directories can be combined by comma. e.g. ```-X bin,obj,packag*```.
 
-* GNU option ```--include=GLOB``` is NOT provided. And wild-card parameters can be leading by a comma, e.g. ```,*.cs``` and ```,*.cs,*.py```.
-
 * The above feature of comma-combining can be turn-off by option ```--split-file-by-comma off```.
 
 * Directory separator can be included in excluding directory. e.g. ```-X obj\re*e```.
 
 * Pause option ```--pause``` is added with default value ```on```.
-
-* The default value of option ```--show-filename``` is ```auto```. It prints the filename just before the first matching has been found.
 
 * An option ```--total``` is added for grand total sum reporting. ```--total only``` prints the grand total sum line only.
 
@@ -114,4 +118,4 @@ Yung, Chun Kau
 
 <yung.chun.kau@gmail.com>
 
-2024 March
+2024 April

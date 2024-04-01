@@ -199,7 +199,7 @@ internal static partial class Show
         var hint = "Disable the feature by";
         Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} off");
         pause.Printed(10);
-        hint = "Assign background color by";
+        hint = "Set background color by";
         Console.WriteLine($"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR");
         pause.Printed(10);
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -209,7 +209,7 @@ internal static partial class Show
             pause.Printed(10);
         }
 
-        hint = "Change color per group by";
+        hint = "Set group color by";
         Console.WriteLine(
             $"{hint,-30}  {nameof(grep)} {TextColor} COLOR,COLOR,NUMBER,COLOR");
         pause.Printed(10);
@@ -323,8 +323,7 @@ internal static partial class Show
             var matchThe = RegexColors().Match(argThe);
             if (true != matchThe.Success)
             {
-                ConfigException.Add(typeThe, new ArgumentException(
-                    $"Value '{argThe}' to {opt.Name} is NOT valid!"));
+                ConfigException.WrongValue(args[0], opt);
                 return;
             }
 

@@ -27,6 +27,7 @@ internal static partial class Show
     static public readonly IInvoke<FilenameParam, int> Filename =
         new ParseInvoker<FilenameParam, int>(TextShowFilename,
             help: "auto | off | on",
+            extraHelp: $"Default: {TextShowFilename} auto",
             init: (filename) => AutoFilename.Print(filename),
             resolve: (opt, argsThe) =>
             {
@@ -37,8 +38,7 @@ internal static partial class Show
                 .ToArray();
                 if (1 < aa.Length)
                 {
-                    ConfigException.Add(aa[0].Type, new ArgumentException(
-                        $"Too many values ({aa[0].Arg},{aa[1].Arg}) to {opt.Name}"));
+                    ConfigException.TooManyValues(aa[0], aa[1], opt);
                     return;
                 }
                 switch (aa[0].Arg)
@@ -59,8 +59,7 @@ internal static partial class Show
                         });
                         break;
                     default:
-                        ConfigException.Add(aa[0].Type, new ArgumentException(
-                            $"Value to {opt.Name} SHOULD be one of 'auto','on', or, 'off', but '{aa[0].Arg}' is found!"));
+                        ConfigException.WrongValue(aa[0], opt);
                         break;
                 }
             });
@@ -102,8 +101,7 @@ internal static partial class Show
                 var args = argsThe.Distinct().Take(2).ToArray();
                 if (args.Length > 1)
                 {
-                    throw new ConfigException(
-                        $"Too many values ({args[0].Arg},{args[1].Arg}) to {opt.Name}");
+                    ConfigException.TooManyValues(args[0], args[1], opt);
                 }
 
                 if (opt.Help.Equals(args[0].Arg,
@@ -300,11 +298,10 @@ internal static partial class Show
                 .ToArray();
                 if (aa.Length > 1)
                 {
-                    ConfigException.Add(aa[0].Type,
-                        new ConfigException(
-                            $"Too many values ('{aa[0].Arg}','{aa[1].Arg}') to {opt.Name}"));
+                    ConfigException.TooManyValues(aa[0], aa[1], opt);
                     return;
                 }
+                var typeThe = aa[0].Type;
                 switch (aa[0].Arg.ToLower())
                 {
                     case TextOff:
@@ -314,12 +311,10 @@ internal static partial class Show
                         opt.SetImplementation((it) => PrintTotalRelatedWithCount(it));
                         break;
                     case "only":
-                        var typeThe = aa[0].Type;
                         if (typeThe != ArgType.CommandLine)
                         {
                             ConfigException.Add(typeThe,
-                                new ConfigException(
-                                    $"'{aa[0].Arg}' is ignored to {opt.Name}"));
+                                $"'{aa[0].Arg}' is ignored to {opt.Name}");
                             return;
                         }
                         FindingReport.Assign(TextTotal + " only",
@@ -330,9 +325,7 @@ internal static partial class Show
                         opt.SetImplementation((it) => PrintTotalWithFindingCount(it));
                         break;
                     default:
-                        ConfigException.Add(aa[0].Type,
-                            new ConfigException(
-                                $"Value '{aa[0].Arg}' is unknown to {opt.Name}"));
+                        ConfigException.WrongValue(aa[0], opt);
                         break;
                 }
             });
@@ -352,9 +345,7 @@ internal static partial class Show
                 .ToArray();
                 if (aa.Length > 1)
                 {
-                    ConfigException.Add(aa[0].Type,
-                        new ConfigException(
-                            $"Too many values ('{aa[0].Arg}','{aa[1].Arg}') to {opt.Name}"));
+                    ConfigException.TooManyValues(aa[0], aa[1], opt);
                     return;
                 }
                 if (TextOff.Equals(aa[0].Arg, StringComparison.InvariantCultureIgnoreCase))
@@ -369,9 +360,7 @@ internal static partial class Show
                 }
                 else
                 {
-                    ConfigException.Add(aa[0].Type,
-                        new ConfigException(
-                            $"Value to {opt.Name} MUST be a number but '{aa[0].Arg}' is found."));
+                    ConfigException.WrongValue(aa[0], opt);
                 }
             });
 }
