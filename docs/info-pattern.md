@@ -33,14 +33,4 @@
 ```grep -F c++ *.cs```  is same to ```grep c\+\+ *.cs```
 
 
-## Excluding Searching Pattern
-
-### Syntax:
-
-```grep [OPTIONS] -E PATTERN [FILE [FILE ..]]```
-
-### Examples
-
-```grep using *.cs -i -E system -E text```
-
 [Back to README.md](https://github.com/ck-yung/grep/blob/master/docs/README.md)

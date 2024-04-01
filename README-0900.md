@@ -20,6 +20,7 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 * [Link to tool ```dir2```](https://www.nuget.org/packages/dir2)
 
 ## Common Options
+
 | Shortcut | for Option             | with         | Required  | Can be stored in Envir ```grep```?
 | -------- | ----------             | ----         | --------  | ----------------------------------
 | ```-c``` | ```--count-only```     | ```on```     |           | No
@@ -66,8 +67,8 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 | Win       | ```set grep= -ni; --color red,yellow,9,black,gray;``` |
 | bash      | ```export grep=" -ni; --color red,yellow,9,black,gray;"``` |
 
-* Any leading spaces will be ignored.
-* Semi-comma is an optional separator just for friendly reading.
+    ** Any leading spaces will be ignored.
+    ** Semi-comma is an optional separator just for friendly reading.
 
 
 ## Important Differences to GNU ```grep``` in Linux and macos
@@ -92,7 +93,7 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 
 * An option ```--total``` is added for grand total sum reporting. ```--total only``` prints the grand total sum line only.
 
-* An option ```--trim-start``` is added for removal of leading spaces of a matched line.
+* An option ```--trim``` is added for removal of spaces at the beginning and at the end of a matched line.
 
 * An option ```--map-shortcut``` can be defined by environement variable ```grep``` to change shortcut setting. For example:
 
@@ -110,9 +111,7 @@ Then the following command will read each ```*.cs``` file on each sub-directory 
 Under Windows Terminal, the program CANNOT display black background color to the following color scheme.
 
     * One Half Light
-
     * Solarized Light
-
     * Tango Light
 
 Yung, Chun Kau

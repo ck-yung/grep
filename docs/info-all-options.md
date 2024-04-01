@@ -11,7 +11,7 @@
 | ```-F``` | ```--fixed-strings```       | ```on```     |           | No, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-pattern.md)
 | ```-l``` | ```--file-match```          | ```on```     |           | No
 | ```-r``` | ```--sub-dir```             | ```on```     |           | No
-| ```-T``` | ```--file-from```           |              | FILE      | No, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-files-from.md)
+| ```-T``` | ```--files-from```          |              | FILE      | No, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-files-from.md)
 | ```-v``` | ```--invert-match```        | ```on```     |           | No
 | ```-i``` | ```--case-sensitive```      | ```off```    |           | Yes
 | ```-h``` | ```--show-filename```       | ```off```    |           | Yes
@@ -32,5 +32,7 @@
 |          | ```--split-file-by-comma``` |              | ```on```｜```off```            | Yes
 |          | ```--total```               |              | ```on```｜```off```｜```only``` | Yes
 |          | ```--trim```                |              | ```off```｜```start```｜```end```｜```both``` | Yes
+
+* Value ```only``` to option ```--total``` in environment variable ```grep``` is ignore. That is, ```--total only``` is only allowed by command line.
 
 [Back to README.md](https://github.com/ck-yung/grep/blob/master/docs/README.md)
