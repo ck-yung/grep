@@ -76,6 +76,7 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 
 * The above feature of comma-combining can be turn-off by option ```--split-file-by-comma off```.
 
+* ```grep/c#``` ignores command line parameter ```--color=auto``` by a default option ```--skip-arg auto```.
 
 ## Major Differences to GNU ```grep```
 

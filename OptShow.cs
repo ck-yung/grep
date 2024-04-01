@@ -7,28 +7,17 @@ internal static partial class Show
     public record FilenameParam(string Filename,
         IConsolePause Pause, IPrintMatchedLine PrintMatchedLine);
 
-    public static class AutoFilename
+    static int PrintFilenameImpl(FilenameParam arg)
     {
-        static public string LastPrintFilename
-        { get; private set; } = "";
-        static public int Print(FilenameParam arg)
-        {
-            if (Helper.IsShortcutConsoleInput(arg.Filename)) return 0;
-            if (arg.Filename == LastPrintFilename) return 0;
-            LastPrintFilename = arg.Filename;
-            var msg = $"> {arg.Filename}:";
-            arg.PrintMatchedLine.Print(new(1, msg, Match.ZeroOne));
-            arg.Pause.Printed(msg.Length);
-            arg.PrintMatchedLine.SetDefaultColor();
-            return 0;
-        }
+        if (Helper.IsShortcutConsoleInput(arg.Filename)) return 0;
+        var msg = $"{arg.Filename}:";
+        Console.Write(msg);
+        return msg.Length;
     }
-
     static public readonly IInvoke<FilenameParam, int> Filename =
         new ParseInvoker<FilenameParam, int>(TextShowFilename,
-            help: "auto | off | on",
-            extraHelp: $"Default: {TextShowFilename} auto",
-            init: (filename) => AutoFilename.Print(filename),
+            help: "on | off",
+            init: (arg) => PrintFilenameImpl(arg),
             resolve: (opt, argsThe) =>
             {
                 var aa = argsThe
@@ -43,20 +32,11 @@ internal static partial class Show
                 }
                 switch (aa[0].Arg)
                 {
-                    case "off":
+                    case TextOff:
                         opt.SetImplementation((arg) => 0);
                         break;
-                    case "auto":
-                        opt.SetImplementation((arg) => AutoFilename.Print(arg));
-                        break;
-                    case "on":
-                        opt.SetImplementation((arg) =>
-                        {
-                            if (Helper.IsShortcutConsoleInput(arg.Filename)) return 0;
-                            var msg = $"{arg.Filename}:";
-                            Console.Write(msg);
-                            return msg.Length;
-                        });
+                    case TextOn:
+                        opt.SetImplementation((arg) => PrintFilenameImpl(arg));
                         break;
                     default:
                         ConfigException.WrongValue(aa[0], opt);

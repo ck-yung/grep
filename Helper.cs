@@ -511,15 +511,8 @@ class ConsolePause : IConsolePause
         Counter = Increase(Counter, incNumber);
         if (Counter >= MaxLineNumber)
         {
-            var fname = Path.GetFileName(Show.AutoFilename.LastPrintFilename) ?? "";
-            var path = Path.GetDirectoryName(Show.AutoFilename.LastPrintFilename) ?? "";
-            string a2 = (path.Length) switch
-            {
-                < 9 => Show.AutoFilename.LastPrintFilename,
-                _ => $"{path[..8]}.. {fname}",
-            };
             Console.ResetColor();
-            var msg = $"Press any key (q to quit) {a2} ";
+            var msg = $"Press any key (q to quit) ";
             Console.Write(msg);
             var inp = Console.ReadKey();
             Console.Write("\r");
@@ -528,10 +521,6 @@ class ConsolePause : IConsolePause
             Console.Write("\r");
             if (inp.KeyChar == 'q' || inp.KeyChar == 'Q')
             {
-                Console.WriteLine(
-                    string.IsNullOrEmpty(Show.AutoFilename.LastPrintFilename)
-                    ? ""
-                    : $"< {Show.AutoFilename.LastPrintFilename}");
                 throw new NoMessageException();
             }
             Auto();
