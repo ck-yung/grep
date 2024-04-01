@@ -91,14 +91,12 @@ class Program
             .Distinct(Options.FilenameCaseSentive.Invoke(Ignore.Void))
             .Select((path) =>
             {
-                Log.Debug("Scan file '{0}'", path);
                 var nameParam = new Show.FilenameParam(path, pause, lineMarched);
                 var cntFinding = ReadAllLinesFromFile(path, option: "FILES-FROM")
                 .Select((it) => Options.TrimLine.Invoke(it))
                 .Select((line, lineNumber)
                 => new MatchResult(lineNumber, line, matches(line)))
                 .Where((it) => it.Matches.Length > 0)
-                .Where((it) => false == Options.ExclSearch.Invoke(it.Line))
                 .Select((it) =>
                 {
                     lineMarched.SetDefaultColor();

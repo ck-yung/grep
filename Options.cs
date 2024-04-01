@@ -36,7 +36,6 @@ internal static partial class Options
     public const string TextSplitFileByComma = "--split-file-by-comma";
     public const string TextMaxReportFileNotFound = "--max-file-not-found";
     public const string TextSearch = "--search";
-    public const string TextExclSearch = "--excl-search";
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
         NonEnvirShortCuts =
@@ -49,7 +48,6 @@ internal static partial class Options
             new("-v", [TextInvertMatch, TextOn]),
             new("-r", [TextSubDir, TextOn]),
             new("-e", [TextSearch]),
-            new("-E", [TextExclSearch]),
         ];
 
     public static readonly IEnumerable<KeyValuePair<string, string[]>>
@@ -335,30 +333,6 @@ internal static partial class Options
             .Where((it) => it.Length > 0));
         });
 
-    static internal readonly IInvoke<string, bool> ExclSearch = new
-    ParseInvoker<string, bool>(TextExclSearch, help: "PATTERN",
-    init: AllStrings.Never,
-
-    resolve: (opt, args) =>
-    {
-        var aa = args
-        .Select((it) => it.Arg)
-        .Distinct()
-        .Select((it) => ToPattern.Invoke(new(IsFirstCmdLineArg: false, it)))
-        .ToArray();
-        if (aa.Length > 0)
-        {
-            bool rtn(string line) => aa
-            .Select((it) => it.Matches(line))
-            .Any((it) => it.Length > 0);
-            opt.SetImplementation((it) => rtn(it));
-        }
-        else
-        {
-            opt.SetImplementation(AllStrings.Never);
-        }
-    });
-
     /// <summary>
     /// The parsing of 'SearchFor' MUST be called before 'PatternsFrom'.
     /// </summary>
@@ -594,7 +568,6 @@ internal static partial class Options
         (IParse)Show.MatchedFilenameWithCount,
         (IParse)Show.MatchedFilenameOnly,
         (IParse)SubDir.FileScan,
-        (IParse)ExclSearch,
     ];
 
     public static readonly IParse[] ParsersForShortHelp = [
