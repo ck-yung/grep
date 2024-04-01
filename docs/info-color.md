@@ -15,6 +15,7 @@
 
 * The following demo would be printed by command ```grep --color -```
 
+![Color Demo](https://raw.githubusercontent.com/ck-yung/grep/master/images/color-demo.gif)
 
 * The feature can be disabled by command ```grep --color off```
 
