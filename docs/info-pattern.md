@@ -30,7 +30,8 @@
 
 2. Examples,
 
-```grep -F c++ *.cs```  is same to ```grep c\+\+ *.cs```
+	```grep -F c++ *.cs```  is same to ```grep c\+\+ *.cs```
 
+[List of All Options](https://github.com/ck-yung/grep/blob/master/docs/info-all-options.md)
 
-[Back to README.md](https://github.com/ck-yung/grep/blob/master/docs/README.md)
+[Back to README.md](https://github.com/ck-yung/grep/blob/master/README.md)

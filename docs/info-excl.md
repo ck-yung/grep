@@ -24,4 +24,6 @@
     ** Any leading spaces will be ignored.
     ** Semi-comma is an optional separator just for friendly reading.
 
-[Back to README.md](https://github.com/ck-yung/grep/blob/master/docs/README.md)
+[List of All Options](https://github.com/ck-yung/grep/blob/master/docs/info-all-options.md)
+
+[Back to README.md](https://github.com/ck-yung/grep/blob/master/README.md)

@@ -36,7 +36,8 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 | ```-x``` | ```--excl-file```      |              | FILE      | Yes, [Link](https://github.com/ck-yung/grep/blob/master/docs/info-excl.md)
 | ```-X``` | ```--excl-dir```       |              | DIR       | Yes, [Link](https://github.com/ck-yung/grep/blob/master/docs/info-excl.md)
 
-[List of All Options](https://github.com/ck-yung/grep/blob/master/docs/info-all-options.md)
+## List of All Options
+[Link](https://github.com/ck-yung/grep/blob/master/docs/info-all-options.md)
 
 ## Demo
 

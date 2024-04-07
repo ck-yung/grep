@@ -25,7 +25,17 @@
 
 * Under Windows OS, color can be inverted by command ```grep --color --```
 
-* Group color by command ```grep --color COLOR1,COLOR2,NUMBER,COLOR3,COLOR4```. For example,
+* Group color by command ```grep --color COLOR1,COLOR2,NUMBER,COLOR3,COLOR4```.
+
+    | Name   | Setting                                            |
+    | ----   | -------                                            |
+    | COLOR1 | Foreground color of the finding text               |
+    | COLOR2 | Background color of the finding text               |
+    | NUMBER | The number of lines of a group                     |
+    | COLOR3 | Foreground color of the highlight line of a ground |
+    | COLOR4 | Background color of the highlight line of a ground |
+
+    *  For example,
 
     ```grep --color white,darkred,5,blue```
 
@@ -39,4 +49,6 @@ Under Windows Terminal, the program CANNOT display black background color to the
     * Solarized Light
     * Tango Light
 
-[Back to README.md](https://github.com/ck-yung/grep/blob/master/docs/README.md)
+[List of All Options](https://github.com/ck-yung/grep/blob/master/docs/info-all-options.md)
+
+[Back to README.md](https://github.com/ck-yung/grep/blob/master/README.md)

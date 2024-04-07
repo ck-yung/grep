@@ -4,7 +4,6 @@
 
 | Shortcut | for Option                  | with         | Required  | Stored in Envir Var
 | -------- | ----------                  | ----         | --------  | -------------------
-|          | ```--color```               |              | -         | No, it shows help for color setting.
 | ```-c``` | ```--count-only```          | ```on```     |           | No
 | ```-e``` | ```--search```              |              | PATTERN   | No
 | ```-f``` | ```--pattern-file```        |              | FILE      | No, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-pattern.md)
@@ -24,7 +23,8 @@
 | ```-w``` | ```--word```                | ```on```     |           | Yes
 | ```-x``` | ```--excl-file```           |              | FILE      | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-excl.md)
 | ```-X``` | ```--excl-dir```            |              | DIR       | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-excl.md)
-|          | ```--color```               |              | COLOR     | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-color.md)
+|          | ```--color```               |              | COLOR[,...] | Yes, [Info](https://github.com/ck-yung/grep/blob/master/docs/info-color.md)
+|          | ```--color```               |              | -         | No, it shows help for color setting.
 |          | ```--filename-case-sensitive``` |          | ```on```｜```off``` | Yes
 |          | ```--map-shortcut```        |              | a=b[,x=y]           | Envir only [Info](https://github.com/ck-yung/grep/blob/master/docs/info-map-shortcut.md)
 |          | ```--max-file-not-found```  |              | ```off```｜NUMBER   | Yes
@@ -35,4 +35,6 @@
 
 * Value ```only``` to option ```--total``` in environment variable ```grep``` is ignore. That is, ```--total only``` is only allowed by command line.
 
-[Back to README.md](https://github.com/ck-yung/grep/blob/master/docs/README.md)
+[Back to README.md](https://github.com/ck-yung/grep/blob/master/README.md)
+
+[Back to nuget](https://www.nuget.org/packages/grep)
