@@ -84,6 +84,8 @@ class Program
             Options.PatternsFrom.Invoke(args);
         Log.Debug(paths, nameof(RunMain));
 
+        var showFilename = Show.Filename.Invoke(pause);
+
         var infoTotal = SubDir.FileScan.Invoke((ArgType.CommandLine,
             Options.SplitFileByComma.Invoke(paths)))
             .Union(Options.FilesFrom.Invoke(
@@ -91,7 +93,7 @@ class Program
             .Distinct(Options.FilenameCaseSentive.Invoke(Ignore.Void))
             .Select((path) =>
             {
-                var nameParam = new Show.FilenameParam(path, pause, lineMarched);
+                showFilename.Assign(path);
                 var cntFinding = ReadAllLinesFromFile(path, option: "FILES-FROM")
                 .Select((it) => Options.TrimLine.Invoke(it))
                 .Select((line, lineNumber)
@@ -100,14 +102,14 @@ class Program
                 .Select((it) =>
                 {
                     lineMarched.SetDefaultColor();
-                    var lenPrinted = Show.Filename.Invoke(nameParam);
+                    var lenPrinted = showFilename.Print();
                     lenPrinted += Show.LineNumber.Invoke(it.LineNumber);
                     lenPrinted += lineMarched.Print(it);
                     pause.Printed(lenPrinted);
                     return it.Matches.Length;
                 })
                 .Invoke(Show.TakeSumByMax);
-
+                showFilename.PrintFooter();
                 return Show.FindingReport.Make(path, cntFinding);
             })
             .Aggregate(seed: new Show.InfoTotal(),

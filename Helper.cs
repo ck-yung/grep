@@ -3,6 +3,14 @@ using RegX = System.Text.RegularExpressions;
 
 namespace grep;
 
+static class Always
+{
+    public static Func<int> Zero = () => 0;
+    public static Func<bool> True = () => true;
+    public static Func<bool> Never = () => false;
+    public static Action DoNothing = () => { };
+}
+
 class Ignore
 {
     public static Ignore Void { get; private set; } = new();

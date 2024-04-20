@@ -43,11 +43,11 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 
 ![Color Feature](https://raw.githubusercontent.com/ck-yung/grep/master/images/help.gif)
 
-## Major Bug Fix to v0.0.2
+## Major Imporvement since v0.9.1
 
-* "Word search" now properly shows "the beginning of a line" and "the end of a line".
+* New value ```smart``` is added to option ```--show-filename```.
 
-## Major Imporvement to v0.0.2
+## Major Imporvement since v0.9.0
 
 * Command line parameter ```FILE``` now can be a wild-card (e.g. ```*.cs```) and including a path (e.g. ```zip2\*.cs```).
 
@@ -71,6 +71,9 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
     ** Any leading spaces will be ignored.
     ** Semi-comma is an optional separator just for friendly reading.
 
+## Major Bug Fix to v0.0.2
+
+* "Word search" now properly shows "the beginning of a line" and "the end of a line".
 
 ## Important Differences to GNU ```grep``` in Linux and macos
 
@@ -128,4 +131,5 @@ Yung, Chun Kau
 
 <yung.chun.kau@gmail.com>
 
-2024 April
+2024 May
+ 

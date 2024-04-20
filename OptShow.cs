@@ -4,20 +4,94 @@ namespace grep;
 
 internal static partial class Show
 {
-    public record FilenameParam(string Filename,
-        IConsolePause Pause, IPrintMatchedLine PrintMatchedLine);
-
-    static int PrintFilenameImpl(FilenameParam arg)
+    public abstract class FilenameAction
     {
-        if (Helper.IsShortcutConsoleInput(arg.Filename)) return 0;
-        var msg = $"{arg.Filename}:";
-        Console.Write(msg);
-        return msg.Length;
+        protected readonly IConsolePause Pause;
+        public FilenameAction(IConsolePause pause)
+        {
+            Pause = pause;
+        }
+        public abstract void Assign(string filename);
+        public abstract int Print();
+        public abstract void PrintFooter();
     }
-    static public readonly IInvoke<FilenameParam, int> Filename =
-        new ParseInvoker<FilenameParam, int>(TextShowFilename,
-            help: "on | off",
-            init: (arg) => PrintFilenameImpl(arg),
+
+    public class NeverPrintFilename : FilenameAction
+    {
+        public NeverPrintFilename(IConsolePause pause)
+            : base(pause) { }
+        public override void Assign(string filename) { }
+        public override int Print() => 0;
+        public override void PrintFooter() { }
+    }
+
+    public class AlwaysPrintFilename: FilenameAction
+    {
+        public AlwaysPrintFilename(IConsolePause pause)
+            : base(pause) { }
+        protected string Current = "?";
+        protected Func<int> PrintImpl = () => 0;
+        protected int RealPrintImpl()
+        {
+            var msg = $"{Current}:";
+            Console.Write(msg);
+            return msg.Length;
+        }
+        public override void Assign(string filename)
+        {
+            //Log.Debug("AlwaysPrintFilename.Assign('{0}')", filename);
+            Current = filename;
+            PrintImpl = (Helper.IsShortcutConsoleInput(Current))
+                ? Always.Zero : RealPrintImpl;
+        }
+        public override int Print() => PrintImpl();
+        public override void PrintFooter() { }
+    }
+
+    public class SmartPrintFilename: AlwaysPrintFilename
+    {
+        public SmartPrintFilename(IConsolePause pause)
+            : base(pause) { }
+        public override void Assign(string filename)
+        {
+            Current = filename;
+            PrintFooterImpl = Always.DoNothing;
+            if (Helper.IsShortcutConsoleInput(Current))
+            {
+                PrintImpl = Always.Zero;
+            }
+            else
+            {
+                PrintImpl = () =>
+                {
+                    var msg = $"> {Current}";
+                    Console.WriteLine(msg);
+                    Pause.Printed(msg.Length);
+                    PrintImpl = Always.Zero;
+                    PrintFooterImpl = RealPrintFooterImpl;
+                    return 0;
+                };
+            }
+        }
+        public override int Print()
+        {
+            return base.Print();
+        }
+        Action PrintFooterImpl = Always.DoNothing;
+        void RealPrintFooterImpl()
+        {
+            if (Helper.IsShortcutConsoleInput(Current)) return;
+            var msg = $"< {Current}";
+            Console.WriteLine(msg);
+            Pause.Printed(msg.Length);
+        }
+        public override void PrintFooter() => PrintFooterImpl();
+    }
+
+    static public readonly IInvoke<IConsolePause, FilenameAction> Filename =
+        new ParseInvoker<IConsolePause, FilenameAction>(TextShowFilename,
+            help: "on | off | smart",
+            init: (arg) => new AlwaysPrintFilename(arg),
             resolve: (opt, argsThe) =>
             {
                 var aa = argsThe
@@ -33,10 +107,13 @@ internal static partial class Show
                 switch (aa[0].Arg)
                 {
                     case TextOff:
-                        opt.SetImplementation((arg) => 0);
+                        opt.SetImplementation((arg) => new NeverPrintFilename(arg));
                         break;
                     case TextOn:
-                        opt.SetImplementation((arg) => PrintFilenameImpl(arg));
+                        opt.SetImplementation((arg) => new AlwaysPrintFilename(arg));
+                        break;
+                    case "smart":
+                        opt.SetImplementation((arg) => new SmartPrintFilename(arg));
                         break;
                     default:
                         ConfigException.WrongValue(aa[0], opt);
