@@ -1,5 +1,6 @@
  grep/c#
-**v0.9.0.0**
+
+**v0.9.2.0**
 
 Inspired by GNU ```grep```
 
@@ -42,6 +43,10 @@ grep [OPTIONS] PATTERN  [FILE [FILE ..]]
 ## Demo
 
 ![Color Feature](https://raw.githubusercontent.com/ck-yung/grep/master/images/help.gif)
+
+## Major Bug Fix to v0.9.2
+
+* Support NET 10.0
 
 ## Major Bug Fix to v0.0.2
 
@@ -120,7 +125,6 @@ Then the following command will read each ```*.cs``` file on each sub-directory 
 
 Under Windows Terminal, the program CANNOT display black background color to the following color scheme.
 
-    * One Half Light
     * Solarized Light
     * Tango Light
 
@@ -128,4 +132,4 @@ Yung, Chun Kau
 
 <yung.chun.kau@gmail.com>
 
-2024 April
+2026 July
