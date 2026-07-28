@@ -41,6 +41,10 @@
     <PackageDevelopmentDependency></PackageDevelopmentDependency>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <StartupObject>grep.Program</StartupObject>
+    <RootNamespace>grep</RootNamespace>
+    <AssemblyTitle>grep</AssemblyTitle>
+    <AssemblyName>grep</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -50,14 +54,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="LICENSE">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Update="README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
+    <None Include="LICENSE"    Pack="True" PackagePath="\" />
+    <None Include="README.md"  Pack="True" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
